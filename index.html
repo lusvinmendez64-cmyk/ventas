@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Gestión ventas + Inventario con trazabilidad y autocompletado</title>
+    <title>📱 Gestión ventas + Inventario con trazabilidad</title>
     <style>
         * {
             box-sizing: border-box;
@@ -1518,15 +1518,17 @@
             });
         }
 
-        // --- PESTAÑA PRODUCTOS con margen configurable ---
+        // --- PESTAÑA PRODUCTOS simplificada (solo nombre y precio) ---
         function renderProductos() {
             let html = `
                 <h2>📦 Catálogo de productos</h2>
                 <button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button>
-                <table>
-                    <thead><tr><th>Nombre</th><th>Costo (Q)</th><th>Precio (Q)</th><th>Margen %</th><th></th></tr></thead>
-                    <tbody id="productosCatalogoBody"></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead><tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr></thead>
+                        <tbody id="productosCatalogoBody"></tbody>
+                    </table>
+                </div>
             `;
             contentEl.innerHTML = html;
             const tbody = document.getElementById('productosCatalogoBody');
@@ -1534,46 +1536,16 @@
             function render() {
                 tbody.innerHTML = '';
                 catalogoProductos.forEach(p => {
-                    const inv = inventario.find(i => i.productoId === p.id);
-                    const costo = inv ? inv.costoUnitario : p.precioSugerido * 0.7;
-                    const precio = p.precioSugerido;
-                    const margen = costo > 0 ? ((precio - costo) / costo * 100).toFixed(1) : 0;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><input type="text" class="prod-nombre" value="${p.nombre}" data-id="${p.id}" style="width:100%;"></td>
-                        <td><input type="number" class="prod-costo" value="${costo.toFixed(2)}" step="0.01" min="0" style="width:90px;"></td>
-                        <td><input type="number" class="prod-precio" value="${precio.toFixed(2)}" step="0.01" min="0" style="width:90px;"></td>
-                        <td><input type="number" class="prod-margen" value="${margen}" step="0.1" min="0" style="width:80px;"> %</td>
-                        <td>
-                            <button class="secondary small guardarBtn" data-id="${p.id}">💾</button>
-                            <button class="delete-btn small eliminarBtn" data-id="${p.id}">🗑</button>
+                        <td><input type="number" class="prod-precio" value="${p.precioSugerido.toFixed(2)}" step="0.01" min="0" style="width:100px;"></td>
+                        <td style="white-space: nowrap;">
+                            <button class="secondary small guardarBtn" data-id="${p.id}">💾 Guardar</button>
+                            <button class="delete-btn small eliminarBtn" data-id="${p.id}">🗑 Eliminar</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
-
-                    // Lógica para actualizar precio cuando cambia costo o margen
-                    const costoInp = tr.querySelector('.prod-costo');
-                    const precioInp = tr.querySelector('.prod-precio');
-                    const margenInp = tr.querySelector('.prod-margen');
-
-                    const actualizarPrecioDesdeMargen = () => {
-                        const c = parseFloat(costoInp.value) || 0;
-                        const m = parseFloat(margenInp.value) || 0;
-                        precioInp.value = (c * (1 + m/100)).toFixed(2);
-                    };
-                    const actualizarMargenDesdePrecio = () => {
-                        const c = parseFloat(costoInp.value) || 0;
-                        const p = parseFloat(precioInp.value) || 0;
-                        if (c > 0) {
-                            margenInp.value = ((p - c) / c * 100).toFixed(1);
-                        } else {
-                            margenInp.value = 0;
-                        }
-                    };
-
-                    costoInp.addEventListener('input', actualizarPrecioDesdeMargen);
-                    margenInp.addEventListener('input', actualizarPrecioDesdeMargen);
-                    precioInp.addEventListener('input', actualizarMargenDesdePrecio);
                 });
 
                 document.querySelectorAll('.guardarBtn').forEach(b => {
@@ -1581,7 +1553,6 @@
                         const id = b.dataset.id;
                         const tr = b.closest('tr');
                         const nombre = tr.querySelector('.prod-nombre').value.trim();
-                        const costo = parseFloat(tr.querySelector('.prod-costo').value);
                         const precio = parseFloat(tr.querySelector('.prod-precio').value);
                         const prod = catalogoProductos.find(p => p.id === id);
                         if (prod && nombre) {
@@ -1591,10 +1562,11 @@
                             if (invItem) {
                                 invItem.nombre = nombre;
                                 invItem.precioUnitario = precio;
-                                invItem.costoUnitario = costo;
+                                // Mantener el costo anterior o calcular por defecto
+                                if (invItem.costoUnitario === undefined) invItem.costoUnitario = precio * 0.7;
                             }
                             saveData();
-                            alert('Guardado');
+                            alert('Producto guardado');
                         }
                     });
                 });
@@ -1602,7 +1574,7 @@
                 document.querySelectorAll('.eliminarBtn').forEach(b => {
                     b.addEventListener('click', () => {
                         const id = b.dataset.id;
-                        if (confirm('Eliminar producto? También se eliminará del inventario.')) {
+                        if (confirm('¿Eliminar producto? También se eliminará del inventario.')) {
                             catalogoProductos = catalogoProductos.filter(p => p.id !== id);
                             inventario = inventario.filter(i => i.productoId !== id);
                             movimientosInventario = movimientosInventario.filter(m => m.productoId !== id);
@@ -1623,7 +1595,7 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO CON TRAZABILIDAD Y GANANCIA CONFIGURABLE ---
+        // --- PESTAÑA INVENTARIO CON TRAZABILIDAD (sin cambios) ---
         function renderInventario() {
             let html = `
                 <h2>📊 Gestión de inventario con trazabilidad</h2>
