@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Gestión ventas + Inventario con trazabilidad</title>
+    <title>📱 Gestión ventas + Inventario con comisión</title>
     <style>
         * {
             box-sizing: border-box;
@@ -294,9 +294,15 @@
             padding: 16px;
             margin-top: 16px;
             font-weight: 600;
+            align-items: center;
         }
-        .margen-positivo { color: green; }
-        .margen-negativo { color: red; }
+        .comision-input {
+            width: 80px;
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid #a0b9cf;
+            text-align: center;
+        }
         @media (max-width: 480px) {
             .tab { font-size: 0.75rem; padding: 10px 4px; }
             button { width: 100%; margin: 6px 0; }
@@ -323,7 +329,7 @@
         let clientes = [];
         let ventas = [];
         let catalogoProductos = [];
-        let inventario = []; // { productoId, nombre, stock, precioUnitario, costoUnitario }
+        let inventario = []; // { productoId, nombre, stock, precioUnitario, costoUnitario (para comisión interna) }
         let movimientosInventario = []; // { id, fecha, productoId, productoNombre, tipo, cantidad, motivo, stockResultante, usuario, documento }
 
         // Funciones para generar IDs únicos
@@ -331,6 +337,22 @@
         function generarIdVenta() { return 'ven_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdProducto() { return 'prod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
         function generarIdMovimiento() { return 'mov_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+
+        // Lista de productos predefinidos
+        const productosPredefinidos = [
+            { nombre: 'AZIREN 500', precio: 18.00 },
+            { nombre: 'CLARIRON IV', precio: 78.00 },
+            { nombre: 'CLARIRON TABLETAS', precio: 66.00 },
+            { nombre: 'CORTICINATE 500', precio: 25.00 },
+            { nombre: 'ESOMEREN', precio: 149.00 },
+            { nombre: 'ITRACOREN', precio: 49.00 },
+            { nombre: 'MEROPE', precio: 54.00 },
+            { nombre: 'OMEZIL CAPSULAS', precio: 35.00 },
+            { nombre: 'OMEZIL IV', precio: 55.00 },
+            { nombre: 'PANZITOP', precio: 67.00 },
+            { nombre: 'VANCOREAN', precio: 105.00 },
+            { nombre: 'DOLO NERVIPLEX', precio: 25.00 }
+        ];
 
         // Cargar datos desde localStorage
         function loadData() {
@@ -362,25 +384,38 @@
                     }
                     migrado = true;
                 }
-                // Asegurar que las ventas tengan fecha en formato ISO
                 if (v.fecha && !v.fecha.includes('T')) {
                     v.fecha = new Date(v.fecha).toISOString();
                 }
             });
 
-            // Migrar inventario: agregar campo costo si no existe
+            // Migrar inventario: agregar campo costo si no existe (para comisión interna)
             inventario.forEach(i => {
-                if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7; // valor por defecto
+                if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7; // 70% como ejemplo
             });
 
-            // Migrar movimientos: agregar campos de trazabilidad si no existen
+            // Migrar movimientos
             movimientosInventario.forEach(m => {
                 if (m.usuario === undefined) m.usuario = 'admin';
                 if (m.documento === undefined) m.documento = '';
             });
 
-            // Inicializar inventario para productos del catálogo
-            if (catalogoProductos.length > 0) {
+            // Si no hay productos, cargar los predefinidos
+            if (catalogoProductos.length === 0) {
+                productosPredefinidos.forEach(p => {
+                    const id = generarIdProducto();
+                    catalogoProductos.push({ id, nombre: p.nombre, precioSugerido: p.precio });
+                    inventario.push({
+                        productoId: id,
+                        nombre: p.nombre,
+                        stock: 10, // stock inicial de ejemplo
+                        precioUnitario: p.precio,
+                        costoUnitario: p.precio * 0.7
+                    });
+                });
+                migrado = true;
+            } else {
+                // Sincronizar inventario con catálogo
                 catalogoProductos.forEach(prod => {
                     let item = inventario.find(i => i.productoId === prod.id);
                     if (!item) {
@@ -399,55 +434,14 @@
                 inventario = inventario.filter(i => catalogoProductos.some(p => p.id === i.productoId));
             }
 
-            // Datos iniciales de ejemplo si todo está vacío
+            // Datos de clientes de ejemplo si no hay
             if (!clientes.length) {
                 clientes = [
                     { id: generarIdCliente(), codigo: 'CL001', razonSocial: 'Comercial López', nit: '123456-7', direccion: 'San Salvador, San Salvador', telefono: '7000-1234', correo: 'lopez@com', fechaCreacion: new Date().toISOString() },
                     { id: generarIdCliente(), codigo: '', razonSocial: 'Ferremaya', nit: '891234-5', direccion: 'Santa Ana, Santa Ana', telefono: '6000-5678', correo: 'ventas@ferre.com', fechaCreacion: new Date().toISOString() },
                 ];
             }
-            if (!catalogoProductos.length) {
-                catalogoProductos = [
-                    { id: 'p1', nombre: 'Cemento', precioSugerido: 9.10 },
-                    { id: 'p2', nombre: 'Varilla 3/8', precioSugerido: 12.50 },
-                    { id: 'p3', nombre: 'Bloque 15x20x40', precioSugerido: 1.20 },
-                ];
-                inventario = catalogoProductos.map(p => ({
-                    productoId: p.id,
-                    nombre: p.nombre,
-                    stock: 10,
-                    precioUnitario: p.precioSugerido,
-                    costoUnitario: p.precioSugerido * 0.7
-                }));
-            }
-            if (!ventas.length && clientes.length) {
-                const prod = catalogoProductos.find(p => p.nombre === 'Cemento');
-                const cliente = clientes.find(c => c.codigo === 'CL001');
-                ventas = [
-                    { id: generarIdVenta(), clienteId: cliente ? cliente.id : null, fecha: new Date().toISOString(), productos: [{ unidades: 5, productoId: prod ? prod.id : null, producto: 'Cemento', monto: 45.5, precioUnitario: 9.1 }], total: '45.50', tipoVenta: 'Crédito', mensaje: '' },
-                ];
-                if (prod) {
-                    let item = inventario.find(i => i.productoId === prod.id);
-                    if (item) item.stock -= 5;
-                }
-            }
-            if (!movimientosInventario.length && ventas.length) {
-                const prod = catalogoProductos.find(p => p.nombre === 'Cemento');
-                if (prod) {
-                    movimientosInventario.push({
-                        id: generarIdMovimiento(),
-                        fecha: new Date().toISOString(),
-                        productoId: prod.id,
-                        productoNombre: prod.nombre,
-                        tipo: 'venta',
-                        cantidad: -5,
-                        motivo: 'Venta inicial',
-                        stockResultante: inventario.find(i => i.productoId === prod.id)?.stock || 0,
-                        usuario: 'admin',
-                        documento: 'Venta inicial'
-                    });
-                }
-            }
+
             if (migrado) saveData();
         }
 
@@ -461,7 +455,6 @@
         loadData();
         saveData();
 
-        // Variable global para edición de venta
         let ventaEditandoId = null;
 
         const formatoQ = (val) => 'Q' + parseFloat(val).toFixed(2);
@@ -522,7 +515,6 @@
 
         // --- PESTAÑA VENTA (con fecha seleccionable y autocompletado) ---
         function renderVenta() {
-            // Crear datalists para autocompletado de NIT y código
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
 
@@ -599,14 +591,12 @@
             `;
             contentEl.innerHTML = html;
 
-            // Botones de respaldo
             document.getElementById('backupBtn').addEventListener('click', exportarBackup);
             document.getElementById('restoreFile').addEventListener('change', (e) => {
                 if (e.target.files.length) importarBackup(e.target.files[0]);
                 e.target.value = '';
             });
 
-            // Referencias
             const buscarInput = document.getElementById('buscarClienteInput');
             const listaResultado = document.getElementById('listaClientesResultado');
             const paginacionDiv = document.getElementById('paginacionClientes');
@@ -742,10 +732,7 @@
 
             function agregarMultiplesFilas() {
                 let cantidad = parseInt(cantidadFilas.value) || 1;
-                if (cantidad < 1) cantidad = 1;
-                for (let i = 0; i < cantidad; i++) {
-                    agregarFilaProducto();
-                }
+                for (let i = 0; i < cantidad; i++) agregarFilaProducto();
             }
 
             function actualizarTotal() {
@@ -757,11 +744,10 @@
             }
 
             if (productosBody.children.length === 0) agregarFilaProducto();
-
             agregarFila.addEventListener('click', () => agregarFilaProducto());
             agregarMultiples.addEventListener('click', agregarMultiplesFilas);
 
-            // --- Lógica de búsqueda con paginación ---
+            // Búsqueda con paginación
             let resultadosFiltrados = [];
             let paginaActual = 0;
             const itemsPorPagina = 5;
@@ -848,7 +834,6 @@
             limpiarBusqueda.addEventListener('click', () => { buscarInput.value = ''; renderBusqueda(''); });
             nuevoBtn.addEventListener('click', limpiarFormularioCompleto);
 
-            // Guardar venta
             function guardarVenta() {
                 const razon = razonSocial.value.trim();
                 if (!razon) { alert('Razón social obligatoria'); return; }
@@ -898,17 +883,15 @@
                 let tipoVenta = 'Crédito';
                 for (let r of tipoVentaRadios) if (r.checked) tipoVenta = r.value;
 
-                // Fecha seleccionada
                 let fechaSeleccionada = fechaVenta.value;
                 if (!fechaSeleccionada) fechaSeleccionada = new Date().toISOString().slice(0,10);
                 const fechaISO = new Date(fechaSeleccionada + 'T12:00:00').toISOString();
 
-                // Manejo del cliente
                 let clienteFinal = clienteSeleccionado;
                 const datosForm = {
                     codigo: codigoCliente.value.trim() || null,
                     razonSocial: razon,
-                    nit: nit.value.trim() || null, // si está vacío, será null (luego se mostrará C/F)
+                    nit: nit.value.trim() || null,
                     direccion: direccion.value.trim(),
                     telefono: telefono.value.trim(),
                     correo: correo.value.trim()
@@ -1037,7 +1020,6 @@
                             const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                             mensaje += `*VENTA ${index+1}*\n`;
                             mensaje += `Razón Social o Nombre: ${cliente.razonSocial}\n`;
-                            // Mostrar NIT o C/F si está vacío
                             mensaje += `NIT: ${cliente.nit || 'C/F'}\n`;
                             if (cliente.direccion) mensaje += `Dirección Exacta: ${cliente.direccion}\n`;
                             if (cliente.telefono) mensaje += `Teléfono: ${cliente.telefono}\n`;
@@ -1562,7 +1544,6 @@
                             if (invItem) {
                                 invItem.nombre = nombre;
                                 invItem.precioUnitario = precio;
-                                // Mantener el costo anterior o calcular por defecto
                                 if (invItem.costoUnitario === undefined) invItem.costoUnitario = precio * 0.7;
                             }
                             saveData();
@@ -1595,23 +1576,43 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO CON TRAZABILIDAD (sin cambios) ---
+        // --- PESTAÑA INVENTARIO SIMPLIFICADA con comisión ---
         function renderInventario() {
+            // Calcular ventas del mes actual para la comisión
+            const hoy = new Date();
+            const mesActual = hoy.getMonth();
+            const anioActual = hoy.getFullYear();
+            const ventasMes = ventas.filter(v => {
+                const fecha = new Date(v.fecha);
+                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
+            });
+            const totalVentasMes = ventasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
             let html = `
-                <h2>📊 Gestión de inventario con trazabilidad</h2>
+                <h2>📊 Inventario y comisiones</h2>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
-                    <button id="reporteSemanalBtn" class="secondary">📆 Reporte semanal</button>
-                    <button id="reporteMensualBtn" class="secondary">📅 Reporte mensual</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
                 </div>
                 <div id="inventarioTableContainer">
                     <table>
-                        <thead><tr><th>Producto</th><th>Stock</th><th>Costo (Q)</th><th>Precio (Q)</th><th>Margen %</th><th>Valor costo (Q)</th><th>Valor venta (Q)</th><th>Ganancia potencial (Q)</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr></thead>
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
 
+                <!-- Panel de comisiones y valorización -->
+                <div class="valorizacion">
+                    <span>💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
+                    <span>📅 Ventas del mes: <span id="ventasMes">${formatoQ(totalVentasMes)}</span></span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        Comisión: 
+                        <input type="number" id="porcentajeComision" class="comision-input" value="10" min="0" max="100" step="0.1"> %
+                        = <span id="montoComision">Q0.00</span>
+                    </span>
+                </div>
+
+                <!-- Trazabilidad por producto (opcional, se puede ocultar si no se desea) -->
                 <div class="trazabilidad-panel">
                     <h3>🔍 Trazabilidad por producto</h3>
                     <div class="producto-selector">
@@ -1624,26 +1625,12 @@
                     <div id="historialProductoContainer" style="max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
                 </div>
 
-                <div class="trazabilidad-panel">
-                    <h3>📅 Stock a fecha específica</h3>
-                    <div class="fecha-historial">
-                        <input type="date" id="fechaConsulta" value="${new Date().toISOString().slice(0,10)}">
-                        <button id="consultarStockBtn" class="secondary small">Consultar</button>
-                    </div>
-                    <div id="stockFechaContainer" style="background: white; border-radius: 20px; padding: 12px;"></div>
-                </div>
-
-                <div class="valorizacion">
-                    <span>💰 Valor inventario (costo): <span id="valorCosto">Q0.00</span></span>
-                    <span>💰 Valor inventario (venta): <span id="valorVenta">Q0.00</span></span>
-                    <span>📈 Ganancia potencial: <span id="gananciaPotencial">Q0.00</span></span>
-                </div>
-
+                <!-- Últimos movimientos -->
                 <div id="movimientosContainer" style="margin-top: 20px;">
-                    <h3>Últimos movimientos (todos)</h3>
+                    <h3>Últimos movimientos</h3>
                     <div style="max-height: 300px; overflow-y: auto;">
                         <table>
-                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th><th>Usuario</th><th>Documento</th></tr></thead>
+                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
                             <tbody id="movimientosBody"></tbody>
                         </table>
                     </div>
@@ -1655,33 +1642,30 @@
             const movimientosBody = document.getElementById('movimientosBody');
             const selectorProducto = document.getElementById('selectorProducto');
             const historialContainer = document.getElementById('historialProductoContainer');
-            const fechaConsulta = document.getElementById('fechaConsulta');
-            const stockFechaContainer = document.getElementById('stockFechaContainer');
-            const valorCostoSpan = document.getElementById('valorCosto');
-            const valorVentaSpan = document.getElementById('valorVenta');
-            const gananciaPotencialSpan = document.getElementById('gananciaPotencial');
+            const valorInventarioSpan = document.getElementById('valorInventario');
+            const ventasMesSpan = document.getElementById('ventasMes');
+            const porcentajeInput = document.getElementById('porcentajeComision');
+            const montoComisionSpan = document.getElementById('montoComision');
+
+            function actualizarComision() {
+                const totalVentas = parseFloat(ventasMesSpan.innerText.replace('Q', '')) || 0;
+                const porcentaje = parseFloat(porcentajeInput.value) || 0;
+                const comision = totalVentas * porcentaje / 100;
+                montoComisionSpan.innerText = formatoQ(comision);
+            }
 
             function renderInventarioTabla() {
                 inventarioBody.innerHTML = '';
-                let totalCosto = 0, totalVenta = 0;
+                let totalValorVenta = 0;
                 inventario.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(item => {
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
-                    const valorCosto = item.stock * (item.costoUnitario || 0);
                     const valorVenta = item.stock * item.precioUnitario;
-                    const ganancia = valorVenta - valorCosto;
-                    const margen = item.costoUnitario > 0 ? ((item.precioUnitario - item.costoUnitario) / item.costoUnitario * 100).toFixed(1) : 0;
-                    totalCosto += valorCosto;
-                    totalVenta += valorVenta;
+                    totalValorVenta += valorVenta;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
                         <td class="${stockClass}">${item.stock}</td>
-                        <td>${formatoQ(item.costoUnitario || 0)}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
-                        <td>${margen}%</td>
-                        <td>${formatoQ(valorCosto)}</td>
-                        <td>${formatoQ(valorVenta)}</td>
-                        <td>${formatoQ(ganancia)}</td>
                         <td>
                             <button class="secondary small ajustarBtn" data-id="${item.productoId}">✏️ Ajustar</button>
                             <button class="secondary small verHistorialBtn" data-id="${item.productoId}">📜 Historial</button>
@@ -1689,9 +1673,8 @@
                     `;
                     inventarioBody.appendChild(tr);
                 });
-                valorCostoSpan.innerText = formatoQ(totalCosto);
-                valorVentaSpan.innerText = formatoQ(totalVenta);
-                gananciaPotencialSpan.innerText = formatoQ(totalVenta - totalCosto);
+                valorInventarioSpan.innerText = formatoQ(totalValorVenta);
+                actualizarComision();
 
                 document.querySelectorAll('.ajustarBtn').forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -1702,7 +1685,7 @@
                         if (nuevaCant === null) return;
                         const nueva = parseInt(nuevaCant);
                         if (isNaN(nueva)) { alert('Cantidad no válida'); return; }
-                        const motivo = prompt('Motivo del ajuste (ej. "inventario semanal", "compra", etc.):', 'ajuste manual');
+                        const motivo = prompt('Motivo del ajuste:', 'ajuste manual');
                         if (motivo === null) return;
                         const diferencia = nueva - item.stock;
                         item.stock = nueva;
@@ -1745,7 +1728,7 @@
                     historialContainer.innerHTML = '<p>No hay movimientos para este producto.</p>';
                     return;
                 }
-                let html = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th><th>Documento</th></tr></thead><tbody>';
+                let html = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead><tbody>';
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     html += `<tr>
@@ -1754,7 +1737,6 @@
                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
                         <td>${m.stockResultante}</td>
                         <td>${m.motivo || ''}</td>
-                        <td>${m.documento || ''}</td>
                     </tr>`;
                 });
                 html += '</tbody></table>';
@@ -1763,34 +1745,6 @@
 
             document.getElementById('verHistorialBtn').addEventListener('click', () => {
                 mostrarHistorialProducto(selectorProducto.value);
-            });
-
-            function consultarStockFecha(fecha) {
-                const fechaObj = new Date(fecha + 'T23:59:59');
-                const stocks = {};
-                inventario.forEach(item => {
-                    stocks[item.productoId] = item.stock;
-                });
-                const movsPosteriores = movimientosInventario.filter(m => new Date(m.fecha) > fechaObj);
-                movsPosteriores.forEach(m => {
-                    if (stocks.hasOwnProperty(m.productoId)) {
-                        stocks[m.productoId] -= m.cantidad;
-                    }
-                });
-                return stocks;
-            }
-
-            document.getElementById('consultarStockBtn').addEventListener('click', () => {
-                const fecha = fechaConsulta.value;
-                if (!fecha) { alert('Seleccione una fecha'); return; }
-                const stocks = consultarStockFecha(fecha);
-                let html = '<table><thead><tr><th>Producto</th><th>Stock a la fecha</th></tr></thead><tbody>';
-                inventario.forEach(item => {
-                    const stockFecha = stocks[item.productoId] || 0;
-                    html += `<tr><td>${item.nombre}</td><td>${stockFecha}</td></tr>`;
-                });
-                html += '</tbody></table>';
-                stockFechaContainer.innerHTML = html;
             });
 
             function renderMovimientos() {
@@ -1805,9 +1759,6 @@
                         <td>${m.tipo}</td>
                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
                         <td>${m.stockResultante}</td>
-                        <td>${m.motivo || ''}</td>
-                        <td>${m.usuario || ''}</td>
-                        <td>${m.documento || ''}</td>
                     `;
                     movimientosBody.appendChild(tr);
                 });
@@ -1816,10 +1767,12 @@
             renderInventarioTabla();
             renderMovimientos();
 
+            porcentajeInput.addEventListener('input', actualizarComision);
+
             document.getElementById('ajusteManualBtn').addEventListener('click', () => {
                 if (catalogoProductos.length === 0) { alert('No hay productos'); return; }
                 const prodSelect = catalogoProductos.map(p => `${p.nombre} (ID: ${p.id})`).join('\n');
-                const prodId = prompt(`Ingresa el ID del producto (ver consola o lista):\n${prodSelect}\n\nPuedes ver los IDs en la consola (F12).`, '');
+                const prodId = prompt(`Ingresa el ID del producto:\n${prodSelect}`, '');
                 if (!prodId) return;
                 const item = inventario.find(i => i.productoId === prodId);
                 if (!item) { alert('ID no válido'); return; }
@@ -1848,56 +1801,12 @@
                 renderMovimientos();
             });
 
-            function generarReportePeriodo(tipo) {
-                let inicio, fin;
-                const hoy = new Date();
-                if (tipo === 'semana') {
-                    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - hoy.getDay());
-                    fin = new Date(inicio);
-                    fin.setDate(inicio.getDate() + 6);
-                } else if (tipo === 'mes') {
-                    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-                    fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-                }
-                const movsPeriodo = movimientosInventario.filter(m => {
-                    const fecha = new Date(m.fecha);
-                    return fecha >= inicio && fecha <= fin;
-                });
-                let resumen = `📊 Reporte ${tipo} (${inicio.toLocaleDateString()} - ${fin.toLocaleDateString()})\n\n`;
-                if (movsPeriodo.length === 0) {
-                    resumen += 'No hay movimientos en este período.';
-                } else {
-                    movsPeriodo.forEach(m => {
-                        resumen += `${new Date(m.fecha).toLocaleDateString()} - ${m.productoNombre}: ${m.cantidad > 0 ? '+' : ''}${m.cantidad} (${m.motivo})\n`;
-                    });
-                    const totals = {};
-                    movsPeriodo.forEach(m => {
-                        if (!totals[m.productoNombre]) totals[m.productoNombre] = 0;
-                        totals[m.productoNombre] += m.cantidad;
-                    });
-                    resumen += '\n*Totales por producto:*\n';
-                    for (let prod in totals) {
-                        resumen += `${prod}: ${totals[prod] > 0 ? '+' : ''}${totals[prod]}\n`;
-                    }
-                }
-                alert('Reporte generado. Revisa la consola para copiarlo (se muestra en alerta).');
-                console.log(resumen);
-            }
-
-            document.getElementById('reporteSemanalBtn').addEventListener('click', () => generarReportePeriodo('semana'));
-            document.getElementById('reporteMensualBtn').addEventListener('click', () => generarReportePeriodo('mes'));
-
             document.getElementById('exportarInventarioBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
                 const inventarioData = inventario.map(i => ({
                     Producto: i.nombre,
-                    'Stock actual': i.stock,
-                    'Costo unitario (Q)': i.costoUnitario || 0,
-                    'Precio unitario (Q)': i.precioUnitario,
-                    'Margen %': i.costoUnitario > 0 ? ((i.precioUnitario - i.costoUnitario) / i.costoUnitario * 100).toFixed(1) : 0,
-                    'Valor costo (Q)': (i.stock * (i.costoUnitario || 0)).toFixed(2),
-                    'Valor venta (Q)': (i.stock * i.precioUnitario).toFixed(2),
-                    'Ganancia potencial (Q)': (i.stock * i.precioUnitario - i.stock * (i.costoUnitario || 0)).toFixed(2)
+                    Stock: i.stock,
+                    'Precio unitario (Q)': i.precioUnitario
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventarioData), 'Inventario');
                 const movimientosData = movimientosInventario.map(m => ({
@@ -1905,13 +1814,10 @@
                     Producto: m.productoNombre,
                     Tipo: m.tipo,
                     Cantidad: m.cantidad,
-                    'Stock resultante': m.stockResultante,
-                    Motivo: m.motivo,
-                    Usuario: m.usuario,
-                    Documento: m.documento
+                    'Stock resultante': m.stockResultante
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientosData), 'Movimientos');
-                XLSX.writeFile(wb, 'inventario_completo.xlsx');
+                XLSX.writeFile(wb, 'inventario.xlsx');
             });
         }
 
