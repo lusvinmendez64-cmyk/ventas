@@ -567,6 +567,7 @@
                     if (data.movimientosInventario) movimientosInventario = data.movimientosInventario;
                     if (data.abonos) abonos = data.abonos;
                     migrarDatos();
+                    saveData(); // <--- ¡Clave! Guardar los datos importados
                     alert('Respaldo importado correctamente');
                     const activeTab = document.querySelector('.tab.active').dataset.tab;
                     showTab(activeTab);
