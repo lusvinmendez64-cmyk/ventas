@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Gestión ventas + Inventario con comisión</title>
+    <title>📱 Gestión ventas + Créditos + Comisiones</title>
     <style>
         * {
             box-sizing: border-box;
@@ -278,13 +278,6 @@
             margin-bottom: 16px;
             flex-wrap: wrap;
         }
-        .fecha-historial {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
         .valorizacion {
             display: flex;
             gap: 20px;
@@ -302,6 +295,53 @@
             border-radius: 20px;
             border: 1px solid #a0b9cf;
             text-align: center;
+        }
+        .recordatorios {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 24px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+        .recordatorio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .vencido { color: #dc3545; font-weight: 600; }
+        .proximo { color: #fd7e14; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .flex-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
         }
         @media (max-width: 480px) {
             .tab { font-size: 0.75rem; padding: 10px 4px; }
@@ -323,22 +363,34 @@
     <div class="content" id="content"></div>
 </div>
 
+<!-- Modal para estado de cuenta / abonos -->
+<div id="estadoCuentaModal" class="modal">
+    <div class="modal-content" id="estadoCuentaContent"></div>
+</div>
+
+<!-- Modal para registrar abono desde ventas -->
+<div id="abonoModal" class="modal">
+    <div class="modal-content" id="abonoContent"></div>
+</div>
+
 <script>
     (function() {
         // --- DATOS GLOBALES ---
         let clientes = [];
         let ventas = [];
         let catalogoProductos = [];
-        let inventario = []; // { productoId, nombre, stock, precioUnitario, costoUnitario (para comisión interna) }
-        let movimientosInventario = []; // { id, fecha, productoId, productoNombre, tipo, cantidad, motivo, stockResultante, usuario, documento }
+        let inventario = [];
+        let movimientosInventario = [];
+        let abonos = [];
 
         // Funciones para generar IDs únicos
         function generarIdCliente() { return 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdVenta() { return 'ven_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdProducto() { return 'prod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
         function generarIdMovimiento() { return 'mov_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+        function generarIdAbono() { return 'abo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
 
-        // Lista de productos predefinidos
+        // Lista de productos predefinidos (12)
         const productosPredefinidos = [
             { nombre: 'AZIREN 500', precio: 18.00 },
             { nombre: 'CLARIRON IV', precio: 78.00 },
@@ -354,18 +406,11 @@
             { nombre: 'DOLO NERVIPLEX', precio: 25.00 }
         ];
 
-        // Cargar datos desde localStorage
-        function loadData() {
-            try {
-                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
-                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
-                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
-                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
-            } catch (e) { console.warn("Error cargando datos", e); }
-
-            // Migrar clientes antiguos: asignar un id único si no tienen
+        // Migración de datos antiguos a nueva estructura
+        function migrarDatos() {
             let migrado = false;
+
+            // Migrar clientes antiguos: asignar id si no tienen
             clientes.forEach(c => {
                 if (!c.id) {
                     c.id = generarIdCliente();
@@ -373,25 +418,40 @@
                 }
             });
 
-            // Migrar ventas antiguas: si usaban clienteCodigo, buscar el cliente por codigo y asignar clienteId
+            // Migrar ventas antiguas: asignar clienteId desde clienteCodigo si existe
             ventas.forEach(v => {
                 if (!v.clienteId && v.clienteCodigo) {
                     const cliente = clientes.find(c => c.codigo === v.clienteCodigo);
-                    if (cliente) {
-                        v.clienteId = cliente.id;
-                    } else {
-                        v.clienteId = null;
-                    }
+                    v.clienteId = cliente ? cliente.id : null;
                     migrado = true;
                 }
                 if (v.fecha && !v.fecha.includes('T')) {
                     v.fecha = new Date(v.fecha).toISOString();
                 }
+                // Nuevos campos para crédito
+                if (v.tipoVenta === 'Crédito') {
+                    if (v.saldoPendiente === undefined) {
+                        v.saldoPendiente = parseFloat(v.total) || 0;
+                        migrado = true;
+                    }
+                    if (v.diasCredito === undefined) {
+                        v.diasCredito = 30;
+                        migrado = true;
+                    }
+                    if (v.fechaVencimiento === undefined) {
+                        const fechaVenta = new Date(v.fecha);
+                        fechaVenta.setDate(fechaVenta.getDate() + v.diasCredito);
+                        v.fechaVencimiento = fechaVenta.toISOString();
+                        migrado = true;
+                    }
+                } else {
+                    if (v.saldoPendiente === undefined) v.saldoPendiente = 0;
+                }
             });
 
-            // Migrar inventario: agregar campo costo si no existe (para comisión interna)
+            // Migrar inventario: agregar costo si no existe
             inventario.forEach(i => {
-                if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7; // 70% como ejemplo
+                if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7;
             });
 
             // Migrar movimientos
@@ -400,7 +460,10 @@
                 if (m.documento === undefined) m.documento = '';
             });
 
-            // Si no hay productos, cargar los predefinidos
+            // Inicializar abonos si no existe
+            if (!abonos) abonos = [];
+
+            // Si no hay productos, cargar los 12 predefinidos
             if (catalogoProductos.length === 0) {
                 productosPredefinidos.forEach(p => {
                     const id = generarIdProducto();
@@ -408,7 +471,7 @@
                     inventario.push({
                         productoId: id,
                         nombre: p.nombre,
-                        stock: 10, // stock inicial de ejemplo
+                        stock: 10,
                         precioUnitario: p.precio,
                         costoUnitario: p.precio * 0.7
                     });
@@ -434,7 +497,7 @@
                 inventario = inventario.filter(i => catalogoProductos.some(p => p.id === i.productoId));
             }
 
-            // Datos de clientes de ejemplo si no hay
+            // Clientes de ejemplo si no hay
             if (!clientes.length) {
                 clientes = [
                     { id: generarIdCliente(), codigo: 'CL001', razonSocial: 'Comercial López', nit: '123456-7', direccion: 'San Salvador, San Salvador', telefono: '7000-1234', correo: 'lopez@com', fechaCreacion: new Date().toISOString() },
@@ -445,12 +508,25 @@
             if (migrado) saveData();
         }
 
+        function loadData() {
+            try {
+                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
+                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
+                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
+                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
+                abonos = JSON.parse(localStorage.getItem('abonos')) || [];
+            } catch (e) { console.warn("Error cargando datos", e); }
+
+            migrarDatos();
+        }
         function saveData() {
             localStorage.setItem('clientes', JSON.stringify(clientes));
             localStorage.setItem('ventas', JSON.stringify(ventas));
             localStorage.setItem('catalogoProductos', JSON.stringify(catalogoProductos));
             localStorage.setItem('inventario', JSON.stringify(inventario));
             localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
+            localStorage.setItem('abonos', JSON.stringify(abonos));
         }
         loadData();
         saveData();
@@ -459,7 +535,7 @@
 
         const formatoQ = (val) => 'Q' + parseFloat(val).toFixed(2);
 
-        // --- Utilidad para respaldo ---
+        // --- Utilidad para respaldo (incluye abonos) ---
         function exportarBackup() {
             const backup = {
                 clientes,
@@ -467,6 +543,7 @@
                 catalogoProductos,
                 inventario,
                 movimientosInventario,
+                abonos,
                 fecha: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -488,7 +565,8 @@
                     if (data.catalogoProductos) catalogoProductos = data.catalogoProductos;
                     if (data.inventario) inventario = data.inventario;
                     if (data.movimientosInventario) movimientosInventario = data.movimientosInventario;
-                    saveData();
+                    if (data.abonos) abonos = data.abonos;
+                    migrarDatos();
                     alert('Respaldo importado correctamente');
                     const activeTab = document.querySelector('.tab.active').dataset.tab;
                     showTab(activeTab);
@@ -497,6 +575,64 @@
                 }
             };
             reader.readAsText(file);
+        }
+
+        // --- Panel de recordatorios ---
+        function mostrarRecordatorios() {
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+
+            let facturasProximas = [];
+            let chequesPendientes = [];
+
+            ventas.forEach(v => {
+                if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
+                    const venc = new Date(v.fechaVencimiento);
+                    venc.setHours(0,0,0,0);
+                    const diasRestantes = Math.ceil((venc - hoy) / (1000*60*60*24));
+                    if (diasRestantes <= 3) {
+                        const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
+                        facturasProximas.push({
+                            ...v,
+                            clienteNombre: cliente.razonSocial,
+                            diasRestantes,
+                            vencida: diasRestantes < 0
+                        });
+                    }
+                }
+            });
+
+            abonos.forEach(a => {
+                if (a.tipoPago === 'cheque' && a.estado === 'pendiente' && a.fechaCobro) {
+                    const fechaCobro = new Date(a.fechaCobro);
+                    fechaCobro.setHours(0,0,0,0);
+                    const dias = Math.ceil((fechaCobro - hoy) / (1000*60*60*24));
+                    if (dias <= 3 && dias >= 0) {
+                        const venta = ventas.find(v => v.id === a.ventaId);
+                        const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
+                        chequesPendientes.push({
+                            ...a,
+                            clienteNombre: cliente.razonSocial,
+                            dias
+                        });
+                    }
+                }
+            });
+
+            let html = '';
+            if (facturasProximas.length > 0 || chequesPendientes.length > 0) {
+                html += '<div class="recordatorios">';
+                html += '<strong>⏰ Recordatorios</strong>';
+                facturasProximas.forEach(f => {
+                    const clase = f.vencida ? 'vencido' : 'proximo';
+                    html += `<div class="recordatorio-item ${clase}">📄 Factura ${f.id.substr(0,8)} - ${f.clienteNombre}: ${f.vencida ? 'VENCIDA' : 'Vence en '+f.diasRestantes+' día(s)'} (Q${f.saldoPendiente.toFixed(2)})</div>`;
+                });
+                chequesPendientes.forEach(c => {
+                    html += `<div class="recordatorio-item proximo">💰 Cheque de Q${c.monto.toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div>`;
+                });
+                html += '</div>';
+            }
+            return html;
         }
 
         // --- Pestañas ---
@@ -513,7 +649,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // --- PESTAÑA VENTA (con fecha seleccionable y autocompletado) ---
+        // --- PESTAÑA VENTA ---
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
@@ -525,6 +661,7 @@
                     <label for="restoreFile" class="secondary small" style="display: inline-block; padding: 8px 14px; background: #eaf0f6; border-radius: 40px; cursor: pointer;">⬆️ Restaurar</label>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;">
                 </div>
+                ${mostrarRecordatorios()}
                 <div id="editIndicator" class="edit-indicator" style="display: none;">
                     <span>✏️ Editando venta <span id="editVentaId"></span></span>
                     <button id="cancelarEdicionBtn" class="small secondary">Cancelar</button>
@@ -582,6 +719,10 @@
                     <label style="display:inline-block;"><input type="radio" name="tipoVenta" value="Contado"> Contado</label>
                 </fieldset>
 
+                <div id="diasCreditoContainer" style="margin-bottom:16px;">
+                    <label>Días de crédito: <input type="number" id="diasCredito" value="30" min="1" max="365" step="1"></label>
+                </div>
+
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                     <button id="guardarVentaBtn" class="secondary">💾 Guardar venta</button>
                     <button id="nuevoClienteBtn" class="secondary">➕ Nuevo cliente</button>
@@ -590,6 +731,15 @@
                 <div class="total-dia" id="totalesDiaContainer"></div>
             `;
             contentEl.innerHTML = html;
+
+            const radios = document.getElementsByName('tipoVenta');
+            const diasContainer = document.getElementById('diasCreditoContainer');
+            function toggleDias() {
+                const credito = document.querySelector('input[name="tipoVenta"]:checked').value === 'Crédito';
+                diasContainer.style.display = credito ? 'block' : 'none';
+            }
+            radios.forEach(r => r.addEventListener('change', toggleDias));
+            toggleDias();
 
             document.getElementById('backupBtn').addEventListener('click', exportarBackup);
             document.getElementById('restoreFile').addEventListener('change', (e) => {
@@ -610,7 +760,6 @@
             const fechaVenta = document.getElementById('fechaVenta');
             const productosBody = document.getElementById('productosBody');
             const totalSpan = document.getElementById('totalVentaCalc');
-            const tipoVentaRadios = document.getElementsByName('tipoVenta');
             const guardarBtn = document.getElementById('guardarVentaBtn');
             const nuevoBtn = document.getElementById('nuevoClienteBtn');
             const limpiarBusqueda = document.getElementById('limpiarBusquedaBtn');
@@ -655,6 +804,7 @@
                 agregarFilaProducto();
                 actualizarTotal();
                 document.querySelector('input[name="tipoVenta"][value="Crédito"]').checked = true;
+                toggleDias();
                 buscarInput.value = '';
                 paginaActual = 0;
                 resultadosFiltrados = [];
@@ -881,7 +1031,7 @@
 
                 const total = totalSpan.innerText.replace('Q','');
                 let tipoVenta = 'Crédito';
-                for (let r of tipoVentaRadios) if (r.checked) tipoVenta = r.value;
+                for (let r of radios) if (r.checked) tipoVenta = r.value;
 
                 let fechaSeleccionada = fechaVenta.value;
                 if (!fechaSeleccionada) fechaSeleccionada = new Date().toISOString().slice(0,10);
@@ -910,6 +1060,11 @@
                 }
                 saveData();
 
+                let diasCredito = 30;
+                if (tipoVenta === 'Crédito') {
+                    diasCredito = parseInt(document.getElementById('diasCredito').value) || 30;
+                }
+
                 let ventaId;
                 if (ventaEditandoId) {
                     const ventaAnterior = ventas.find(v => v.id === ventaEditandoId);
@@ -925,7 +1080,7 @@
                                     productoNombre: p.producto,
                                     tipo: 'ajuste',
                                     cantidad: p.unidades,
-                                    motivo: 'Reversión por edición de venta ' + ventaEditandoId,
+                                    motivo: 'Reversión por edición de venta ' + ventaEditandoId + ' (cliente: ' + clienteFinal.razonSocial + ')',
                                     stockResultante: itemInv.stock,
                                     usuario: 'admin',
                                     documento: `Reversión venta ${ventaEditandoId}`
@@ -942,6 +1097,9 @@
                             productos: filas,
                             total: total,
                             tipoVenta: tipoVenta,
+                            diasCredito: diasCredito,
+                            saldoPendiente: tipoVenta === 'Crédito' ? parseFloat(total) : 0,
+                            fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
                             mensaje: ''
                         };
                         ventaId = ventaEditandoId;
@@ -957,6 +1115,9 @@
                         productos: filas,
                         total: total,
                         tipoVenta,
+                        diasCredito: tipoVenta === 'Crédito' ? diasCredito : null,
+                        saldoPendiente: tipoVenta === 'Crédito' ? parseFloat(total) : 0,
+                        fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
                         mensaje: ''
                     };
                     ventas.push(nuevaVenta);
@@ -975,7 +1136,7 @@
                             productoNombre: p.producto,
                             tipo: 'venta',
                             cantidad: -p.unidades,
-                            motivo: `Venta ${ventaId}`,
+                            motivo: `Venta a ${clienteFinal.razonSocial} (${ventaId})`,
                             stockResultante: itemInv.stock,
                             usuario: 'admin',
                             documento: `Venta ${ventaId}`
@@ -1082,6 +1243,10 @@
                     actualizarTotal();
                     const radio = document.querySelector(`input[name="tipoVenta"][value="${venta.tipoVenta}"]`);
                     if (radio) radio.checked = true;
+                    if (venta.tipoVenta === 'Crédito' && venta.diasCredito) {
+                        document.getElementById('diasCredito').value = venta.diasCredito;
+                    }
+                    toggleDias();
                 } else {
                     ventaEditandoId = null;
                     editIndicator.style.display = 'none';
@@ -1089,10 +1254,11 @@
             }
         }
 
-        // --- PESTAÑA VENTAS (historial con filtros) ---
+        // --- PESTAÑA VENTAS (historial con filtros y botón de abono) ---
         function renderVentasHistorial() {
             let html = `
                 <h2>📅 Historial de ventas</h2>
+                ${mostrarRecordatorios()}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                     <button id="exportarVentasBtn" class="secondary">📥 Exportar Excel</button>
                     <button id="enviarResumenMensualBtn" class="secondary">📲 Resumen del mes por WhatsApp</button>
@@ -1125,7 +1291,7 @@
                 </div>
                 <div id="tablaVentasContainer" style="overflow-x: auto;">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr></thead>
                         <tbody id="ventasBody"></tbody>
                     </table>
                 </div>
@@ -1189,6 +1355,8 @@
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
                     const fecha = new Date(v.fecha).toLocaleDateString();
                     const productosStr = v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ');
+                    const saldo = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '—';
+                    const vcto = v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '—';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${fecha}</td>
@@ -1196,10 +1364,13 @@
                         <td>${productosStr}</td>
                         <td>${formatoQ(v.total)}</td>
                         <td>${v.tipoVenta}</td>
+                        <td>${saldo !== '—' ? 'Q' + saldo : '—'}</td>
+                        <td>${vcto}</td>
                         <td>
                             <button class="secondary small editarVentaBtn" data-id="${v.id}">✏️</button>
                             <button class="delete-btn small eliminarVentaBtn" data-id="${v.id}">🗑</button>
                             <button class="secondary small whatsappVentaBtn" data-id="${v.id}">📲</button>
+                            ${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? `<button class="secondary small abonoVentaBtn" data-id="${v.id}">💰 Abono</button>` : ''}
                         </td>
                     `;
                     ventasBody.appendChild(tr);
@@ -1253,6 +1424,7 @@
                                 }
                             });
                             ventas = ventas.filter(v => v.id !== id);
+                            abonos = abonos.filter(a => a.ventaId !== id);
                             saveData();
                             aplicarFiltro();
                         }
@@ -1279,8 +1451,19 @@
                         });
                         mensaje += `\n*Total: ${formatoQ(venta.total)}*\n`;
                         mensaje += `Tipo: ${venta.tipoVenta}`;
+                        if (venta.tipoVenta === 'Crédito') {
+                            mensaje += `\nSaldo pendiente: Q${(venta.saldoPendiente || 0).toFixed(2)}`;
+                            mensaje += `\nVence: ${new Date(venta.fechaVencimiento).toLocaleDateString()}`;
+                        }
                         const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                         window.open(url, '_blank');
+                    });
+                });
+
+                document.querySelectorAll('.abonoVentaBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const ventaId = btn.dataset.id;
+                        mostrarFormularioAbono(ventaId);
                     });
                 });
             }
@@ -1322,6 +1505,8 @@
                         Cliente: cliente.razonSocial,
                         'Tipo Venta': v.tipoVenta,
                         Total: v.total,
+                        Saldo: v.saldoPendiente || 0,
+                        Vencimiento: v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '',
                         Productos: v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ')
                     };
                 });
@@ -1351,128 +1536,280 @@
             });
         }
 
-        // --- PESTAÑA CATÁLOGO (clientes) ---
+        // --- Función para mostrar formulario de abono en modal ---
+        function mostrarFormularioAbono(ventaId) {
+            const venta = ventas.find(v => v.id === ventaId);
+            if (!venta) return;
+            const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' };
+
+            const modal = document.getElementById('abonoModal');
+            const content = document.getElementById('abonoContent');
+            content.innerHTML = `
+                <h3>Registrar abono</h3>
+                <p>Venta: ${new Date(venta.fecha).toLocaleDateString()} - ${cliente.razonSocial}</p>
+                <p>Total: ${formatoQ(venta.total)} | Saldo pendiente: ${formatoQ(venta.saldoPendiente)}</p>
+                <label>Monto del abono: <input type="number" id="abonoMonto" step="0.01" min="0.01" max="${venta.saldoPendiente}"></label>
+                <label>Tipo de pago:
+                    <select id="abonoTipoPago">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </label>
+                <div id="chequeOpciones" style="display:none; margin-top:10px;">
+                    <div class="flex-row">
+                        <label class="checkbox-label"><input type="radio" name="chequeTipo" value="hoy" checked> Cheque del día</label>
+                        <label class="checkbox-label"><input type="radio" name="chequeTipo" value="futuro"> Cheque posfechado</label>
+                    </div>
+                    <div id="fechaChequeContainer" style="display:none;">
+                        <label>Fecha de cobro: <input type="date" id="fechaCheque"></label>
+                    </div>
+                </div>
+                <div style="margin-top:20px;">
+                    <button id="guardarAbonoBtn" class="secondary">Guardar abono</button>
+                    <button id="cancelarAbonoBtn" class="secondary small">Cancelar</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+
+            const tipoPago = document.getElementById('abonoTipoPago');
+            const chequeOpciones = document.getElementById('chequeOpciones');
+            const fechaChequeContainer = document.getElementById('fechaChequeContainer');
+            const radioChequeHoy = document.querySelector('input[name="chequeTipo"][value="hoy"]');
+            const radioChequeFuturo = document.querySelector('input[name="chequeTipo"][value="futuro"]');
+
+            tipoPago.addEventListener('change', () => {
+                if (tipoPago.value === 'cheque') {
+                    chequeOpciones.style.display = 'block';
+                } else {
+                    chequeOpciones.style.display = 'none';
+                }
+            });
+
+            radioChequeHoy.addEventListener('change', () => {
+                fechaChequeContainer.style.display = 'none';
+            });
+            radioChequeFuturo.addEventListener('change', () => {
+                fechaChequeContainer.style.display = 'block';
+            });
+
+            document.getElementById('guardarAbonoBtn').addEventListener('click', () => {
+                const monto = parseFloat(document.getElementById('abonoMonto').value);
+                if (isNaN(monto) || monto <= 0 || monto > venta.saldoPendiente) {
+                    alert('Monto no válido');
+                    return;
+                }
+                const tipo = tipoPago.value;
+                let fechaCobro = null;
+                let estado = 'cobrado';
+
+                if (tipo === 'cheque') {
+                    if (radioChequeFuturo.checked) {
+                        fechaCobro = document.getElementById('fechaCheque').value;
+                        if (!fechaCobro) {
+                            alert('Debe ingresar fecha de cobro para cheque posfechado');
+                            return;
+                        }
+                        estado = 'pendiente';
+                    } else {
+                        fechaCobro = new Date().toISOString().slice(0,10);
+                        estado = 'cobrado';
+                    }
+                }
+
+                const nuevoAbono = {
+                    id: generarIdAbono(),
+                    ventaId: venta.id,
+                    fecha: new Date().toISOString(),
+                    monto,
+                    tipoPago: tipo,
+                    fechaCobro,
+                    estado
+                };
+                abonos.push(nuevoAbono);
+
+                venta.saldoPendiente -= monto;
+                if (venta.saldoPendiente < 0) venta.saldoPendiente = 0;
+
+                saveData();
+                alert('Abono registrado');
+                modal.style.display = 'none';
+                if (document.querySelector('.tab.active').dataset.tab === 'ventas') renderVentasHistorial();
+            });
+
+            document.getElementById('cancelarAbonoBtn').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        // --- PESTAÑA CATÁLOGO (clientes) con paginación y estado de cuenta ---
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
+                ${mostrarRecordatorios()}
                 <button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button>
                 <div id="contenedorClientes"></div>
+                <div id="paginacionClientesCatalogo" class="paginacion" style="margin-top:20px;"></div>
             `;
             contentEl.innerHTML = html;
 
             const contenedor = document.getElementById('contenedorClientes');
+            const paginacionDiv = document.getElementById('paginacionClientesCatalogo');
+
+            let paginaActual = 0;
+            const itemsPorPagina = 10;
+
             function render() {
-                if (!clientes.length) { contenedor.innerHTML = '<p>No hay clientes</p>'; return; }
-                let out = '';
-                clientes.sort((a,b) => (a.codigo || '').localeCompare(b.codigo || '')).forEach(cli => {
-                    const ventasCliente = ventas.filter(v => v.clienteId === cli.id);
-                    const totalCliente = ventasCliente.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
-                    out += `
-                        <fieldset style="margin-bottom:20px;">
-                            <legend>${cli.razonSocial} ${cli.codigo ? '· '+cli.codigo : '(sin código)'}</legend>
-                            <div>NIT: ${cli.nit || 'C/F'}</div>
-                            <div>Dirección: ${cli.direccion || '—'}</div>
-                            <div>Tel/Correo: ${cli.telefono || '—'} / ${cli.correo || '—'}</div>
-                            <div class="cliente-total">💰 Total comprado: ${formatoQ(totalCliente)}</div>
-                            ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
-                            <table>
-                                <thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th></th></tr></thead>
-                                <tbody>
-                                    ${ventasCliente.map(v => `
-                                        <tr>
-                                            <td>${new Date(v.fecha).toLocaleDateString()}</td>
-                                            <td>${v.productos.map(p => `${p.unidades||0} ${p.producto||'—'}`).join(', ')}</td>
-                                            <td>${formatoQ(v.total)}</td>
-                                            <td>${v.tipoVenta}</td>
-                                            <td><button class="secondary small editarVentaBtn" data-ventaid="${v.id}">✏️ Editar</button></td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                            <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
-                                ${!cli.codigo ? `
-                                    <input type="text" id="cod_${cli.id}" placeholder="Nuevo código" style="width:130px;">
-                                    <button class="secondary small asignarBtn" data-id="${cli.id}">Asignar</button>
-                                ` : ''}
-                                <button class="secondary small editarClienteBtn" data-id="${cli.id}">✏️ Editar cliente</button>
-                                <button class="delete-btn small eliminarClienteBtn" data-id="${cli.id}">🗑 Eliminar</button>
-                            </div>
-                        </fieldset>
-                    `;
-                });
-                contenedor.innerHTML = out;
+                const inicio = paginaActual * itemsPorPagina;
+                const fin = inicio + itemsPorPagina;
+                const clientesPagina = clientes.slice(inicio, fin);
 
-                document.querySelectorAll('.asignarBtn').forEach(b => {
-                    b.addEventListener('click', () => {
-                        const id = b.dataset.id;
-                        const input = document.getElementById('cod_'+id);
-                        const nuevo = input.value.trim();
-                        if (!nuevo) return;
-                        const cli = clientes.find(c => c.id === id);
-                        if (cli && !clientes.some(c => c.codigo === nuevo && c.id !== id)) {
-                            cli.codigo = nuevo;
-                            saveData();
-                            render();
-                        } else alert('Código ya existe o cliente no válido');
+                if (clientesPagina.length === 0) {
+                    contenedor.innerHTML = '<p>No hay clientes</p>';
+                } else {
+                    let out = '';
+                    clientesPagina.sort((a,b) => (a.codigo || '').localeCompare(b.codigo || '')).forEach(cli => {
+                        const ventasCliente = ventas.filter(v => v.clienteId === cli.id);
+                        const totalCliente = ventasCliente.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
+                        const saldoPendiente = ventasCliente.reduce((acc, v) => acc + (v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0) : 0), 0);
+                        out += `
+                            <fieldset style="margin-bottom:20px;">
+                                <legend>${cli.razonSocial} ${cli.codigo ? '· '+cli.codigo : '(sin código)'}</legend>
+                                <div>NIT: ${cli.nit || 'C/F'}</div>
+                                <div>Dirección: ${cli.direccion || '—'}</div>
+                                <div>Tel/Correo: ${cli.telefono || '—'} / ${cli.correo || '—'}</div>
+                                <div class="cliente-total">💰 Total comprado: ${formatoQ(totalCliente)}</div>
+                                <div class="cliente-saldo">💳 Saldo pendiente: ${formatoQ(saldoPendiente)}</div>
+                                ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
+                                <table>
+                                    <thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr></thead>
+                                    <tbody>
+                                        ${ventasCliente.slice(0,5).map(v => `
+                                            <tr>
+                                                <td>${new Date(v.fecha).toLocaleDateString()}</td>
+                                                <td>${v.productos.map(p => `${p.unidades||0} ${p.producto||'—'}`).join(', ')}</td>
+                                                <td>${formatoQ(v.total)}</td>
+                                                <td>${v.tipoVenta}</td>
+                                                <td>${v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente || 0) : '—'}</td>
+                                                <td><button class="secondary small editarVentaBtn" data-ventaid="${v.id}">✏️</button></td>
+                                            </tr>
+                                        `).join('')}
+                                        ${ventasCliente.length > 5 ? '<tr><td colspan="6">... y más ventas</td></tr>' : ''}
+                                    </tbody>
+                                </table>
+                                <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
+                                    ${!cli.codigo ? `
+                                        <input type="text" id="cod_${cli.id}" placeholder="Nuevo código" style="width:130px;">
+                                        <button class="secondary small asignarBtn" data-id="${cli.id}">Asignar</button>
+                                    ` : ''}
+                                    <button class="secondary small editarClienteBtn" data-id="${cli.id}">✏️ Editar cliente</button>
+                                    <button class="secondary small estadoCuentaBtn" data-id="${cli.id}">📊 Estado de cuenta</button>
+                                    <button class="delete-btn small eliminarClienteBtn" data-id="${cli.id}">🗑 Eliminar</button>
+                                </div>
+                            </fieldset>
+                        `;
                     });
-                });
+                    contenedor.innerHTML = out;
 
-                document.querySelectorAll('.editarClienteBtn').forEach(b => {
-                    b.addEventListener('click', () => {
-                        const id = b.dataset.id;
-                        const cli = clientes.find(c => c.id === id);
-                        if (cli) {
-                            ventaEditandoId = null;
-                            showTab('venta');
-                            setTimeout(() => {
-                                const razonInput = document.getElementById('razonSocial');
-                                if (razonInput) {
-                                    document.getElementById('codigoCliente').value = cli.codigo || '';
-                                    razonInput.value = cli.razonSocial;
-                                    document.getElementById('nit').value = cli.nit || '';
-                                    document.getElementById('direccion').value = cli.direccion || '';
-                                    document.getElementById('telefono').value = cli.telefono || '';
-                                    document.getElementById('correo').value = cli.correo || '';
-                                    const container = document.getElementById('clienteSeleccionadoContainer');
-                                    if (container) {
-                                        container.innerHTML = `
-                                            <div class="badge">✅ Cliente: ${cli.razonSocial} <button id="quitarSeleccionBtn" class="small secondary">✕ Quitar</button></div>
-                                        `;
-                                        document.getElementById('quitarSeleccionBtn')?.addEventListener('click', () => {
-                                            document.getElementById('razonSocial').value = '';
-                                            renderVenta();
-                                        });
+                    document.querySelectorAll('.asignarBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const id = b.dataset.id;
+                            const input = document.getElementById('cod_'+id);
+                            const nuevo = input.value.trim();
+                            if (!nuevo) return;
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli && !clientes.some(c => c.codigo === nuevo && c.id !== id)) {
+                                cli.codigo = nuevo;
+                                saveData();
+                                render();
+                            } else alert('Código ya existe o cliente no válido');
+                        });
+                    });
+
+                    document.querySelectorAll('.editarClienteBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const id = b.dataset.id;
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli) {
+                                ventaEditandoId = null;
+                                showTab('venta');
+                                setTimeout(() => {
+                                    const razonInput = document.getElementById('razonSocial');
+                                    if (razonInput) {
+                                        document.getElementById('codigoCliente').value = cli.codigo || '';
+                                        razonInput.value = cli.razonSocial;
+                                        document.getElementById('nit').value = cli.nit || '';
+                                        document.getElementById('direccion').value = cli.direccion || '';
+                                        document.getElementById('telefono').value = cli.telefono || '';
+                                        document.getElementById('correo').value = cli.correo || '';
+                                        const container = document.getElementById('clienteSeleccionadoContainer');
+                                        if (container) {
+                                            container.innerHTML = `
+                                                <div class="badge">✅ Cliente: ${cli.razonSocial} <button id="quitarSeleccionBtn" class="small secondary">✕ Quitar</button></div>
+                                            `;
+                                            document.getElementById('quitarSeleccionBtn')?.addEventListener('click', () => {
+                                                document.getElementById('razonSocial').value = '';
+                                                renderVenta();
+                                            });
+                                        }
                                     }
-                                }
-                            }, 100);
-                        }
+                                }, 100);
+                            }
+                        });
                     });
-                });
 
-                document.querySelectorAll('.editarVentaBtn').forEach(b => {
-                    b.addEventListener('click', () => {
-                        const ventaId = b.dataset.ventaid;
-                        const venta = ventas.find(v => v.id === ventaId);
-                        if (venta) {
-                            ventaEditandoId = venta.id;
-                            showTab('venta');
-                        }
+                    document.querySelectorAll('.editarVentaBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const ventaId = b.dataset.ventaid;
+                            const venta = ventas.find(v => v.id === ventaId);
+                            if (venta) {
+                                ventaEditandoId = venta.id;
+                                showTab('venta');
+                            }
+                        });
                     });
-                });
 
-                document.querySelectorAll('.eliminarClienteBtn').forEach(b => {
-                    b.addEventListener('click', () => {
-                        const id = b.dataset.id;
-                        const cli = clientes.find(c => c.id === id);
-                        if (cli && confirm(`¿Eliminar cliente ${cli.razonSocial} y sus ventas?`)) {
-                            ventas = ventas.filter(v => v.clienteId !== cli.id);
-                            clientes = clientes.filter(c => c.id !== id);
-                            saveData();
-                            render();
-                        }
+                    document.querySelectorAll('.eliminarClienteBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const id = b.dataset.id;
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli && confirm(`¿Eliminar cliente ${cli.razonSocial} y sus ventas?`)) {
+                                ventas = ventas.filter(v => v.clienteId !== cli.id);
+                                clientes = clientes.filter(c => c.id !== id);
+                                saveData();
+                                render();
+                            }
+                        });
                     });
+
+                    document.querySelectorAll('.estadoCuentaBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const clienteId = b.dataset.id;
+                            mostrarEstadoCuenta(clienteId);
+                        });
+                    });
+                }
+
+                const totalPaginas = Math.ceil(clientes.length / itemsPorPagina);
+                let paginacionHtml = '';
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaAnteriorCat" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaSiguienteCat" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
+
+                document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => {
+                    if (paginaActual > 0) { paginaActual--; render(); }
+                });
+                document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => {
+                    if (paginaActual < totalPaginas-1) { paginaActual++; render(); }
                 });
             }
+
             render();
 
             document.getElementById('exportarExcelBtn').addEventListener('click', () => {
@@ -1492,6 +1829,8 @@
                         Fecha: new Date(v.fecha).toLocaleString(),
                         Total: v.total,
                         Tipo: v.tipoVenta,
+                        Saldo: v.saldoPendiente || 0,
+                        Vencimiento: v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '',
                         Productos: v.productos.map(p => `${p.unidades} ${p.producto} (Q${p.precioUnitario} c/u)`).join('; ')
                     };
                 });
@@ -1500,10 +1839,161 @@
             });
         }
 
-        // --- PESTAÑA PRODUCTOS simplificada (solo nombre y precio) ---
+        // --- Función para mostrar estado de cuenta en modal ---
+        function mostrarEstadoCuenta(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+
+            const ventasCliente = ventas.filter(v => v.clienteId === clienteId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            const abonosCliente = abonos.filter(a => ventasCliente.some(v => v.id === a.ventaId));
+
+            let html = `
+                <h3>Estado de cuenta: ${cliente.razonSocial}</h3>
+                <p>NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || '—'}</p>
+                <h4>Facturas pendientes</h4>
+                <table>
+                    <thead><tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead>
+                    <tbody>
+            `;
+            let totalPendiente = 0;
+            ventasCliente.forEach(v => {
+                if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
+                    totalPendiente += v.saldoPendiente;
+                    const venc = new Date(v.fechaVencimiento);
+                    const hoy = new Date();
+                    const diasRest = Math.ceil((venc - hoy) / (1000*60*60*24));
+                    const clase = diasRest < 0 ? 'vencido' : (diasRest <= 3 ? 'proximo' : '');
+                    html += `<tr class="${clase}"><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${formatoQ(v.total)}</td><td>${formatoQ(v.saldoPendiente)}</td><td>${venc.toLocaleDateString()}</td><td>${diasRest}</td></tr>`;
+                }
+            });
+            html += `</tbody></table>`;
+            html += `<p><strong>Total pendiente: ${formatoQ(totalPendiente)}</strong></p>`;
+
+            html += `<h4>Abonos realizados</h4>`;
+            if (abonosCliente.length === 0) {
+                html += '<p>No hay abonos registrados.</p>';
+            } else {
+                html += `<table><thead><tr><th>Fecha</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
+                abonosCliente.forEach(a => {
+                    const venta = ventas.find(v => v.id === a.ventaId);
+                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${a.estado || 'cobrado'}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+
+            html += `
+                <h4>Registrar nuevo abono</h4>
+                <div>
+                    <label>Factura: <select id="abonoVentaId">
+                        ${ventasCliente.filter(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0).map(v => `<option value="${v.id}">${new Date(v.fecha).toLocaleDateString()} - Q${v.saldoPendiente.toFixed(2)}</option>`).join('')}
+                    </select></label>
+                    <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
+                    <label>Tipo de pago: 
+                        <select id="abonoTipoPago">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </label>
+                    <div id="chequeOpcionesModal" style="display:none; margin-top:10px;">
+                        <div class="flex-row">
+                            <label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="hoy" checked> Cheque del día</label>
+                            <label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="futuro"> Cheque posfechado</label>
+                        </div>
+                        <div id="fechaChequeModalContainer" style="display:none;">
+                            <label>Fecha de cobro: <input type="date" id="fechaChequeModal"></label>
+                        </div>
+                    </div>
+                    <button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button>
+                </div>
+            `;
+
+            const modal = document.getElementById('estadoCuentaModal');
+            const modalContent = document.getElementById('estadoCuentaContent');
+            modalContent.innerHTML = html;
+            modal.style.display = 'flex';
+
+            const tipoPago = document.getElementById('abonoTipoPago');
+            const chequeOpciones = document.getElementById('chequeOpcionesModal');
+            const fechaChequeContainer = document.getElementById('fechaChequeModalContainer');
+            const radioHoy = document.querySelector('input[name="chequeTipoModal"][value="hoy"]');
+            const radioFuturo = document.querySelector('input[name="chequeTipoModal"][value="futuro"]');
+
+            tipoPago.addEventListener('change', () => {
+                if (tipoPago.value === 'cheque') {
+                    chequeOpciones.style.display = 'block';
+                } else {
+                    chequeOpciones.style.display = 'none';
+                }
+            });
+
+            radioHoy.addEventListener('change', () => {
+                fechaChequeContainer.style.display = 'none';
+            });
+            radioFuturo.addEventListener('change', () => {
+                fechaChequeContainer.style.display = 'block';
+            });
+
+            document.getElementById('guardarAbonoModalBtn').addEventListener('click', () => {
+                const ventaId = document.getElementById('abonoVentaId').value;
+                const monto = parseFloat(document.getElementById('abonoMonto').value);
+                const tipo = tipoPago.value;
+                if (!ventaId || isNaN(monto) || monto <= 0) {
+                    alert('Seleccione una factura y monto válido');
+                    return;
+                }
+                const venta = ventas.find(v => v.id === ventaId);
+                if (!venta) return;
+                if (monto > venta.saldoPendiente) {
+                    alert('El monto no puede ser mayor al saldo pendiente');
+                    return;
+                }
+
+                let fechaCobro = null;
+                let estado = 'cobrado';
+                if (tipo === 'cheque') {
+                    if (radioFuturo.checked) {
+                        fechaCobro = document.getElementById('fechaChequeModal').value;
+                        if (!fechaCobro) {
+                            alert('Debe ingresar fecha de cobro para cheque posfechado');
+                            return;
+                        }
+                        estado = 'pendiente';
+                    } else {
+                        fechaCobro = new Date().toISOString().slice(0,10);
+                        estado = 'cobrado';
+                    }
+                }
+
+                const nuevoAbono = {
+                    id: generarIdAbono(),
+                    ventaId,
+                    fecha: new Date().toISOString(),
+                    monto,
+                    tipoPago: tipo,
+                    fechaCobro,
+                    estado
+                };
+                abonos.push(nuevoAbono);
+
+                venta.saldoPendiente -= monto;
+                if (venta.saldoPendiente < 0) venta.saldoPendiente = 0;
+
+                saveData();
+                alert('Abono registrado');
+                modal.style.display = 'none';
+                if (document.querySelector('.tab.active').dataset.tab === 'catalogo') renderCatalogo();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        // --- PESTAÑA PRODUCTOS ---
         function renderProductos() {
             let html = `
                 <h2>📦 Catálogo de productos</h2>
+                ${mostrarRecordatorios()}
                 <button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button>
                 <div style="overflow-x: auto;">
                     <table>
@@ -1576,20 +2066,24 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO SIMPLIFICADA con comisión ---
+        // --- PESTAÑA INVENTARIO con comisión sobre contado + créditos pagados ---
         function renderInventario() {
-            // Calcular ventas del mes actual para la comisión
             const hoy = new Date();
             const mesActual = hoy.getMonth();
             const anioActual = hoy.getFullYear();
+
             const ventasMes = ventas.filter(v => {
                 const fecha = new Date(v.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
+                if (fecha.getMonth() !== mesActual || fecha.getFullYear() !== anioActual) return false;
+                if (v.tipoVenta === 'Contado') return true;
+                if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) return true;
+                return false;
             });
             const totalVentasMes = ventasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
             let html = `
                 <h2>📊 Inventario y comisiones</h2>
+                ${mostrarRecordatorios()}
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
@@ -1601,18 +2095,16 @@
                     </table>
                 </div>
 
-                <!-- Panel de comisiones y valorización -->
                 <div class="valorizacion">
                     <span>💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
-                    <span>📅 Ventas del mes: <span id="ventasMes">${formatoQ(totalVentasMes)}</span></span>
+                    <span>📅 Ventas del mes (contado + créditos pagados): <span id="ventasMes">${formatoQ(totalVentasMes)}</span></span>
                     <span style="display: flex; align-items: center; gap: 8px;">
                         Comisión: 
-                        <input type="number" id="porcentajeComision" class="comision-input" value="10" min="0" max="100" step="0.1"> %
+                        <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
                         = <span id="montoComision">Q0.00</span>
                     </span>
                 </div>
 
-                <!-- Trazabilidad por producto (opcional, se puede ocultar si no se desea) -->
                 <div class="trazabilidad-panel">
                     <h3>🔍 Trazabilidad por producto</h3>
                     <div class="producto-selector">
@@ -1625,12 +2117,11 @@
                     <div id="historialProductoContainer" style="max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
                 </div>
 
-                <!-- Últimos movimientos -->
                 <div id="movimientosContainer" style="margin-top: 20px;">
                     <h3>Últimos movimientos</h3>
                     <div style="max-height: 300px; overflow-y: auto;">
                         <table>
-                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
+                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
                             <tbody id="movimientosBody"></tbody>
                         </table>
                     </div>
@@ -1759,6 +2250,7 @@
                         <td>${m.tipo}</td>
                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
                         <td>${m.stockResultante}</td>
+                        <td>${m.motivo || ''}</td>
                     `;
                     movimientosBody.appendChild(tr);
                 });
@@ -1814,7 +2306,8 @@
                     Producto: m.productoNombre,
                     Tipo: m.tipo,
                     Cantidad: m.cantidad,
-                    'Stock resultante': m.stockResultante
+                    'Stock resultante': m.stockResultante,
+                    Motivo: m.motivo
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientosData), 'Movimientos');
                 XLSX.writeFile(wb, 'inventario.xlsx');
