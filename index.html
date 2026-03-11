@@ -343,6 +343,29 @@
             gap: 5px;
             margin: 0;
         }
+        .sub-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            background: #f0f7fc;
+            border-radius: 40px;
+            padding: 5px;
+        }
+        .sub-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .sub-tab.active {
+            background: #25d366;
+            color: white;
+        }
+        .buscador {
+            margin-bottom: 15px;
+        }
         @media (max-width: 480px) {
             .tab { font-size: 0.75rem; padding: 10px 4px; }
             button { width: 100%; margin: 6px 0; }
@@ -350,6 +373,8 @@
         }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 <div class="app" id="app">
@@ -1646,12 +1671,23 @@
             });
         }
 
-        // --- PESTAÑA CATÁLOGO (clientes) con paginación y estado de cuenta ---
+        // --- PESTAÑA CATÁLOGO MEJORADA con buscador y vistas ---
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
                 ${mostrarRecordatorios()}
-                <button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button>
+                    <button id="exportarPdfBtn" class="secondary">📄 Exportar PDF</button>
+                </div>
+                <div class="buscador">
+                    <input type="text" id="buscarClienteCatalogo" placeholder="Buscar por nombre o código...">
+                </div>
+                <div class="sub-tabs">
+                    <div class="sub-tab active" data-vista="todos">Todos</div>
+                    <div class="sub-tab" data-vista="credito">Crédito</div>
+                    <div class="sub-tab" data-vista="contado">Contado</div>
+                </div>
                 <div id="contenedorClientes"></div>
                 <div id="paginacionClientesCatalogo" class="paginacion" style="margin-top:20px;"></div>
             `;
@@ -1659,17 +1695,49 @@
 
             const contenedor = document.getElementById('contenedorClientes');
             const paginacionDiv = document.getElementById('paginacionClientesCatalogo');
+            const buscarInput = document.getElementById('buscarClienteCatalogo');
+            const subTabs = document.querySelectorAll('.sub-tab');
+            const exportarPdfBtn = document.getElementById('exportarPdfBtn');
 
+            let vistaActual = 'todos';
             let paginaActual = 0;
-            const itemsPorPagina = 10;
+            const itemsPorPagina = 5;
+            let clientesFiltrados = [];
+
+            function tieneSaldoPendiente(clienteId) {
+                return ventas.some(v => v.clienteId === clienteId && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0);
+            }
+
+            function filtrarClientes() {
+                const termino = buscarInput.value.toLowerCase().trim();
+                let base = clientes;
+
+                if (vistaActual === 'credito') {
+                    base = clientes.filter(c => tieneSaldoPendiente(c.id));
+                } else if (vistaActual === 'contado') {
+                    base = clientes.filter(c => !tieneSaldoPendiente(c.id));
+                }
+
+                if (termino) {
+                    clientesFiltrados = base.filter(c => 
+                        c.razonSocial.toLowerCase().includes(termino) || 
+                        (c.codigo && c.codigo.toLowerCase().includes(termino))
+                    );
+                } else {
+                    clientesFiltrados = [...base];
+                }
+
+                paginaActual = 0;
+                render();
+            }
 
             function render() {
                 const inicio = paginaActual * itemsPorPagina;
                 const fin = inicio + itemsPorPagina;
-                const clientesPagina = clientes.slice(inicio, fin);
+                const clientesPagina = clientesFiltrados.slice(inicio, fin);
 
                 if (clientesPagina.length === 0) {
-                    contenedor.innerHTML = '<p>No hay clientes</p>';
+                    contenedor.innerHTML = '<p>No hay clientes en esta categoría.</p>';
                 } else {
                     let out = '';
                     clientesPagina.sort((a,b) => (a.codigo || '').localeCompare(b.codigo || '')).forEach(cli => {
@@ -1725,7 +1793,7 @@
                             if (cli && !clientes.some(c => c.codigo === nuevo && c.id !== id)) {
                                 cli.codigo = nuevo;
                                 saveData();
-                                render();
+                                filtrarClientes();
                             } else alert('Código ya existe o cliente no válido');
                         });
                     });
@@ -1781,7 +1849,7 @@
                                 ventas = ventas.filter(v => v.clienteId !== cli.id);
                                 clientes = clientes.filter(c => c.id !== id);
                                 saveData();
-                                render();
+                                filtrarClientes();
                             }
                         });
                     });
@@ -1794,7 +1862,7 @@
                     });
                 }
 
-                const totalPaginas = Math.ceil(clientes.length / itemsPorPagina);
+                const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
                 let paginacionHtml = '';
                 if (totalPaginas > 1) {
                     paginacionHtml += `<button class="secondary small" id="paginaAnteriorCat" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
@@ -1811,7 +1879,17 @@
                 });
             }
 
-            render();
+            subTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    subTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    vistaActual = tab.dataset.vista;
+                    filtrarClientes();
+                });
+            });
+
+            buscarInput.addEventListener('input', filtrarClientes);
+            filtrarClientes();
 
             document.getElementById('exportarExcelBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
@@ -1838,9 +1916,37 @@
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ventasData), 'Ventas');
                 XLSX.writeFile(wb, 'clientes_ventas.xlsx');
             });
+
+            exportarPdfBtn.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.text('Listado de Clientes', 14, 16);
+                
+                const tableColumn = ['Código', 'Razón Social', 'NIT', 'Teléfono', 'Saldo Pendiente'];
+                const tableRows = [];
+                
+                clientesFiltrados.forEach(c => {
+                    const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+                    tableRows.push([
+                        c.codigo || '',
+                        c.razonSocial,
+                        c.nit || 'C/F',
+                        c.telefono || '',
+                        'Q' + saldo.toFixed(2)
+                    ]);
+                });
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 20,
+                });
+                
+                doc.save('clientes.pdf');
+            });
         }
 
-        // --- Función para mostrar estado de cuenta en modal ---
+        // --- Función para mostrar estado de cuenta en modal (sin cambios) ---
         function mostrarEstadoCuenta(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (!cliente) return;
@@ -2073,14 +2179,22 @@
             const mesActual = hoy.getMonth();
             const anioActual = hoy.getFullYear();
 
-            const ventasMes = ventas.filter(v => {
+            // Ventas que entran en comisión: contado + créditos con saldo 0 (totalmente pagados)
+            const ventasComision = ventas.filter(v => {
                 const fecha = new Date(v.fecha);
                 if (fecha.getMonth() !== mesActual || fecha.getFullYear() !== anioActual) return false;
                 if (v.tipoVenta === 'Contado') return true;
                 if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) return true;
                 return false;
             });
-            const totalVentasMes = ventasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+            const totalVentasComision = ventasComision.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
+            // Todas las ventas del mes (para otros reportes)
+            const todasVentasMes = ventas.filter(v => {
+                const fecha = new Date(v.fecha);
+                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
+            });
+            const totalVentasMes = todasVentasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
             let html = `
                 <h2>📊 Inventario y comisiones</h2>
@@ -2098,11 +2212,12 @@
 
                 <div class="valorizacion">
                     <span>💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
-                    <span>📅 Ventas del mes (contado + créditos pagados): <span id="ventasMes">${formatoQ(totalVentasMes)}</span></span>
+                    <span>📅 Ventas del mes (total): <span id="ventasMesTotal">${formatoQ(totalVentasMes)}</span></span>
                     <span style="display: flex; align-items: center; gap: 8px;">
-                        Comisión: 
+                        Comisión (solo contado + créditos pagados): 
                         <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
                         = <span id="montoComision">Q0.00</span>
+                        (Base: <span id="baseComision">${formatoQ(totalVentasComision)}</span>)
                     </span>
                 </div>
 
@@ -2135,14 +2250,15 @@
             const selectorProducto = document.getElementById('selectorProducto');
             const historialContainer = document.getElementById('historialProductoContainer');
             const valorInventarioSpan = document.getElementById('valorInventario');
-            const ventasMesSpan = document.getElementById('ventasMes');
+            const ventasMesTotalSpan = document.getElementById('ventasMesTotal');
+            const baseComisionSpan = document.getElementById('baseComision');
             const porcentajeInput = document.getElementById('porcentajeComision');
             const montoComisionSpan = document.getElementById('montoComision');
 
             function actualizarComision() {
-                const totalVentas = parseFloat(ventasMesSpan.innerText.replace('Q', '')) || 0;
+                const base = parseFloat(baseComisionSpan.innerText.replace('Q', '')) || 0;
                 const porcentaje = parseFloat(porcentajeInput.value) || 0;
-                const comision = totalVentas * porcentaje / 100;
+                const comision = base * porcentaje / 100;
                 montoComisionSpan.innerText = formatoQ(comision);
             }
 
