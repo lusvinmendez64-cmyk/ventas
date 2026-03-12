@@ -1188,21 +1188,30 @@
                     if (v.tipoVenta === 'Contado') contado += t;
                     else credito += t;
                 });
+
+                // 🔹 NUEVO: Abonos del día
+                const abonosHoy = abonos.filter(a => new Date(a.fecha).toDateString() === hoy);
+                const totalAbonosHoy = abonosHoy.reduce((acc, a) => acc + (a.monto || 0), 0);
+
                 const container = document.getElementById('totalesDiaContainer');
                 container.innerHTML = `
                     <div class="total-item">💰 Ventas hoy<br><span>${formatoQ(contado+credito)}</span></div>
                     <div class="total-item">💵 Contado<br><span>${formatoQ(contado)}</span></div>
                     <div class="total-item">📄 Crédito<br><span>${formatoQ(credito)}</span></div>
+                    <div class="total-item">📥 Abonos hoy<br><span>${formatoQ(totalAbonosHoy)}</span></div>
                     <div style="flex: 1 1 100%; margin-top: 12px;">
                         <button id="enviarResumenDiaBtn" class="secondary">📲 Enviar resumen del día por WhatsApp</button>
                     </div>
                 `;
 
                 document.getElementById('enviarResumenDiaBtn')?.addEventListener('click', () => {
-                    let mensaje = `📋 *RESUMEN DE VENTAS DEL DÍA* (${new Date().toLocaleDateString()})\n\n`;
+                    let mensaje = `📋 *RESUMEN DEL DÍA* (${new Date().toLocaleDateString()})\n\n`;
+
+                    // Ventas
                     if (ventasHoy.length === 0) {
                         mensaje += 'No hay ventas registradas hoy.';
                     } else {
+                        mensaje += '*VENTAS DEL DÍA*\n';
                         ventasHoy.forEach((v, index) => {
                             const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                             mensaje += `*VENTA ${index+1}*\n`;
@@ -1220,11 +1229,30 @@
                             });
                             mensaje += '\n';
                         });
-                        mensaje += `*RESUMEN*\n`;
-                        mensaje += `Total Contado: ${formatoQ(contado)}\n`;
-                        mensaje += `Total Crédito: ${formatoQ(credito)}\n`;
-                        mensaje += `Total General: ${formatoQ(contado+credito)}`;
                     }
+
+                    // 🔹 NUEVO: Abonos del día
+                    if (abonosHoy.length > 0) {
+                        mensaje += '*ABONOS DEL DÍA*\n';
+                        abonosHoy.forEach((a, i) => {
+                            const venta = ventas.find(v => v.id === a.ventaId);
+                            const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
+                            mensaje += `${i+1}. ${cliente.razonSocial} - Monto: ${formatoQ(a.monto)} (${a.tipoPago})`;
+                            if (a.tipoPago === 'cheque' && a.fechaCobro) {
+                                mensaje += ` - Fecha cobro: ${new Date(a.fechaCobro).toLocaleDateString()}`;
+                            }
+                            mensaje += '\n';
+                        });
+                        mensaje += `Total abonado hoy: ${formatoQ(totalAbonosHoy)}\n\n`;
+                    }
+
+                    // Totales generales
+                    mensaje += `*RESUMEN*\n`;
+                    mensaje += `Total Ventas: ${formatoQ(contado+credito)}\n`;
+                    mensaje += `  Contado: ${formatoQ(contado)}\n`;
+                    mensaje += `  Crédito: ${formatoQ(credito)}\n`;
+                    mensaje += `Total Abonos: ${formatoQ(totalAbonosHoy)}\n`;
+
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
                 });
@@ -1917,12 +1945,14 @@
                 XLSX.writeFile(wb, 'clientes_ventas.xlsx');
             });
 
+            // 🔹 MODIFICADO: Exportar PDF incluyendo dirección
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 doc.text('Listado de Clientes', 14, 16);
                 
-                const tableColumn = ['Código', 'Razón Social', 'NIT', 'Teléfono', 'Saldo Pendiente'];
+                // Nuevas columnas: Código, Razón Social, NIT, Dirección, Teléfono, Saldo Pendiente
+                const tableColumn = ['Código', 'Razón Social', 'NIT', 'Dirección', 'Teléfono', 'Saldo Pendiente'];
                 const tableRows = [];
                 
                 clientesFiltrados.forEach(c => {
@@ -1931,7 +1961,8 @@
                         c.codigo || '',
                         c.razonSocial,
                         c.nit || 'C/F',
-                        c.telefono || '',
+                        c.direccion || '—',
+                        c.telefono || '—',
                         'Q' + saldo.toFixed(2)
                     ]);
                 });
@@ -2173,7 +2204,7 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO con comisión sobre contado + créditos pagados ---
+        // --- PESTAÑA INVENTARIO con comisión sobre contado + créditos pagados y sumas por semana/mes ---
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2196,6 +2227,31 @@
             });
             const totalVentasMes = todasVentasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
+            // 🔹 NUEVO: Calcular ventas por producto en la última semana y mes actual
+            const semanaMs = 7 * 24 * 60 * 60 * 1000;
+            const inicioSemana = new Date(hoy.getTime() - semanaMs);
+            const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+            // Objetos para acumular unidades vendidas por producto
+            let vendidoSemana = {};
+            let vendidoMes = {};
+
+            ventas.forEach(v => {
+                const fechaVenta = new Date(v.fecha);
+                v.productos.forEach(p => {
+                    const prodId = p.productoId;
+                    const unidades = p.unidades || 0;
+                    // Semana
+                    if (fechaVenta >= inicioSemana && fechaVenta <= hoy) {
+                        vendidoSemana[prodId] = (vendidoSemana[prodId] || 0) + unidades;
+                    }
+                    // Mes
+                    if (fechaVenta >= inicioMes && fechaVenta <= hoy) {
+                        vendidoMes[prodId] = (vendidoMes[prodId] || 0) + unidades;
+                    }
+                });
+            });
+
             let html = `
                 <h2>📊 Inventario y comisiones</h2>
                 ${mostrarRecordatorios()}
@@ -2205,7 +2261,7 @@
                 </div>
                 <div id="inventarioTableContainer">
                     <table>
-                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Vend. semana</th><th>Vend. mes</th><th>Acciones</th></tr></thead>
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
@@ -2269,11 +2325,15 @@
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
                     const valorVenta = item.stock * item.precioUnitario;
                     totalValorVenta += valorVenta;
+                    const vendSem = vendidoSemana[item.productoId] || 0;
+                    const vendMes = vendidoMes[item.productoId] || 0;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
                         <td class="${stockClass}">${item.stock}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
+                        <td>${vendSem}</td>
+                        <td>${vendMes}</td>
                         <td>
                             <button class="secondary small ajustarBtn" data-id="${item.productoId}">✏️ Ajustar</button>
                             <button class="secondary small verHistorialBtn" data-id="${item.productoId}">📜 Historial</button>
@@ -2415,7 +2475,9 @@
                 const inventarioData = inventario.map(i => ({
                     Producto: i.nombre,
                     Stock: i.stock,
-                    'Precio unitario (Q)': i.precioUnitario
+                    'Precio unitario (Q)': i.precioUnitario,
+                    'Vend. semana': vendidoSemana[i.productoId] || 0,
+                    'Vend. mes': vendidoMes[i.productoId] || 0
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventarioData), 'Inventario');
                 const movimientosData = movimientosInventario.map(m => ({
