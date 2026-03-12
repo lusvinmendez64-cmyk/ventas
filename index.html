@@ -366,10 +366,23 @@
         .buscador {
             margin-bottom: 15px;
         }
+        /* Mejoras para móviles */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 16px;
+        }
+        .table-responsive table {
+            min-width: 600px; /* Forzar scroll en pantallas pequeñas */
+        }
         @media (max-width: 480px) {
             .tab { font-size: 0.75rem; padding: 10px 4px; }
             button { width: 100%; margin: 6px 0; }
             th, td { font-size: 0.75rem; }
+            .total-item { flex: 1 1 100%; }
+            .table-responsive table {
+                min-width: 500px;
+            }
         }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -724,7 +737,7 @@
 
                 <fieldset>
                     <legend>🛒 Productos (precio unitario)</legend>
-                    <div style="overflow-x: auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead><tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr></thead>
                             <tbody id="productosBody"></tbody>
@@ -1343,7 +1356,7 @@
                 <div id="resumenFiltro" style="background: #e3f0fa; border-radius: 24px; padding: 12px; margin-bottom: 20px; font-weight: 600;">
                     Total período: <span id="totalPeriodo">Q0.00</span> (Contado: <span id="totalContadoPeriodo">Q0.00</span> | Crédito: <span id="totalCreditoPeriodo">Q0.00</span>)
                 </div>
-                <div id="tablaVentasContainer" style="overflow-x: auto;">
+                <div class="table-responsive">
                     <table>
                         <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr></thead>
                         <tbody id="ventasBody"></tbody>
@@ -1781,22 +1794,24 @@
                                 <div class="cliente-total">💰 Total comprado: ${formatoQ(totalCliente)}</div>
                                 <div class="cliente-saldo">💳 Saldo pendiente: ${formatoQ(saldoPendiente)}</div>
                                 ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
-                                <table>
-                                    <thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr></thead>
-                                    <tbody>
-                                        ${ventasCliente.slice(0,5).map(v => `
-                                            <tr>
-                                                <td>${new Date(v.fecha).toLocaleDateString()}</td>
-                                                <td>${v.productos.map(p => `${p.unidades||0} ${p.producto||'—'}`).join(', ')}</td>
-                                                <td>${formatoQ(v.total)}</td>
-                                                <td>${v.tipoVenta}</td>
-                                                <td>${v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente || 0) : '—'}</td>
-                                                <td><button class="secondary small editarVentaBtn" data-ventaid="${v.id}">✏️</button></td>
-                                            </tr>
-                                        `).join('')}
-                                        ${ventasCliente.length > 5 ? '<tr><td colspan="6">... y más ventas</td></tr>' : ''}
-                                    </tbody>
-                                </table>
+                                <div class="table-responsive">
+                                    <table>
+                                        <thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr></thead>
+                                        <tbody>
+                                            ${ventasCliente.slice(0,5).map(v => `
+                                                <tr>
+                                                    <td>${new Date(v.fecha).toLocaleDateString()}</td>
+                                                    <td>${v.productos.map(p => `${p.unidades||0} ${p.producto||'—'}`).join(', ')}</td>
+                                                    <td>${formatoQ(v.total)}</td>
+                                                    <td>${v.tipoVenta}</td>
+                                                    <td>${v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente || 0) : '—'}</td>
+                                                    <td><button class="secondary small editarVentaBtn" data-ventaid="${v.id}">✏️</button></td>
+                                                </tr>
+                                            `).join('')}
+                                            ${ventasCliente.length > 5 ? '<tr><td colspan="6">... y más ventas</td></tr>' : ''}
+                                        </tbody>
+                                    </table>
+                                </div>
                                 <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">
                                     ${!cli.codigo ? `
                                         <input type="text" id="cod_${cli.id}" placeholder="Nuevo código" style="width:130px;">
@@ -1989,9 +2004,10 @@
                 <h3>Estado de cuenta: ${cliente.razonSocial}</h3>
                 <p>NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || '—'}</p>
                 <h4>Facturas pendientes</h4>
-                <table>
-                    <thead><tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead>
-                    <tbody>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead>
+                        <tbody>
             `;
             let totalPendiente = 0;
             ventasCliente.forEach(v => {
@@ -2004,19 +2020,19 @@
                     html += `<tr class="${clase}"><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${formatoQ(v.total)}</td><td>${formatoQ(v.saldoPendiente)}</td><td>${venc.toLocaleDateString()}</td><td>${diasRest}</td></tr>`;
                 }
             });
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             html += `<p><strong>Total pendiente: ${formatoQ(totalPendiente)}</strong></p>`;
 
             html += `<h4>Abonos realizados</h4>`;
             if (abonosCliente.length === 0) {
                 html += '<p>No hay abonos registrados.</p>';
             } else {
-                html += `<table><thead><tr><th>Fecha</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
+                html += `<div class="table-responsive"><table><thead><tr><th>Fecha</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
                 abonosCliente.forEach(a => {
                     const venta = ventas.find(v => v.id === a.ventaId);
                     html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${a.estado || 'cobrado'}</td></tr>`;
                 });
-                html += `</tbody></table>`;
+                html += `</tbody></table></div>`;
             }
 
             html += `
@@ -2133,7 +2149,7 @@
                 <h2>📦 Catálogo de productos</h2>
                 ${mostrarRecordatorios()}
                 <button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button>
-                <div style="overflow-x: auto;">
+                <div class="table-responsive">
                     <table>
                         <thead><tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr></thead>
                         <tbody id="productosCatalogoBody"></tbody>
@@ -2242,18 +2258,33 @@
             inicioMes.setHours(0,0,0,0);
             const finMes = hoy; // hasta hoy inclusive
 
-            let movSemana = {};
-            let movMes = {};
+            // Variables para acumular ventas y recargas separadas
+            let ventasSemana = {};
+            let recargasSemana = {};
+            let ventasMes = {};
+            let recargasMes = {};
 
             movimientosInventario.forEach(m => {
                 const fechaMov = new Date(m.fecha);
                 const prodId = m.productoId;
                 const cantidad = m.cantidad || 0;
-                if (fechaMov >= lunes && fechaMov <= finSemana) {
-                    movSemana[prodId] = (movSemana[prodId] || 0) + cantidad;
+                // Ventas (cantidad negativa)
+                if (m.tipo === 'venta') {
+                    if (fechaMov >= lunes && fechaMov <= finSemana) {
+                        ventasSemana[prodId] = (ventasSemana[prodId] || 0) + Math.abs(cantidad);
+                    }
+                    if (fechaMov >= inicioMes && fechaMov <= finMes) {
+                        ventasMes[prodId] = (ventasMes[prodId] || 0) + Math.abs(cantidad);
+                    }
                 }
-                if (fechaMov >= inicioMes && fechaMov <= finMes) {
-                    movMes[prodId] = (movMes[prodId] || 0) + cantidad;
+                // Recargas (ajustes positivos)
+                if (m.tipo === 'ajuste' && cantidad > 0) {
+                    if (fechaMov >= lunes && fechaMov <= finSemana) {
+                        recargasSemana[prodId] = (recargasSemana[prodId] || 0) + cantidad;
+                    }
+                    if (fechaMov >= inicioMes && fechaMov <= finMes) {
+                        recargasMes[prodId] = (recargasMes[prodId] || 0) + cantidad;
+                    }
                 }
             });
 
@@ -2264,7 +2295,7 @@
                     <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
                 </div>
-                <div id="inventarioTableContainer">
+                <div class="table-responsive">
                     <table>
                         <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Mov. semana</th><th>Mov. mes</th><th>Acciones</th></tr></thead>
                         <tbody id="inventarioBody"></tbody>
@@ -2296,7 +2327,7 @@
 
                 <div id="movimientosContainer" style="margin-top: 20px;">
                     <h3>Últimos movimientos</h3>
-                    <div style="max-height: 300px; overflow-y: auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
                             <tbody id="movimientosBody"></tbody>
@@ -2330,8 +2361,9 @@
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
                     const valorVenta = item.stock * item.precioUnitario;
                     totalValorVenta += valorVenta;
-                    const movSem = movSemana[item.productoId] || 0;
-                    const movM = movMes[item.productoId] || 0;
+                    // Movimiento neto (para columna)
+                    const movSem = (ventasSemana[item.productoId] || 0) - (recargasSemana[item.productoId] || 0);
+                    const movM = (ventasMes[item.productoId] || 0) - (recargasMes[item.productoId] || 0);
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
@@ -2418,12 +2450,12 @@
                 const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= finMes);
 
                 // Totales por tipo en semana y mes
-                const totalVentasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
-                const totalAjustesSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+                const ventasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const recargasSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
                 const netoSemana = movsSemana.reduce((acc, m) => acc + m.cantidad, 0);
 
-                const totalVentasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
-                const totalAjustesMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+                const ventasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
                 const netoMes = movsMes.reduce((acc, m) => acc + m.cantidad, 0);
 
                 const { jsPDF } = window.jspdf;
@@ -2436,9 +2468,12 @@
                 doc.text(`Periodo semana (lunes a ${finSemana === viernes ? 'viernes' : 'hoy'}): ${lunes.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`, 14, 32);
                 doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${finMes.toLocaleDateString()}`, 14, 40);
 
+                // Resumen semana
+                doc.text(`Resumen semana: Ventas: ${ventasSemana}, Recargas: ${recargasSemana}, Neto: ${netoSemana}`, 14, 48);
+
                 // Tabla de movimientos en la semana
                 if (movsSemana.length > 0) {
-                    doc.text('Movimientos en la semana:', 14, 50);
+                    doc.text('Movimientos en la semana:', 14, 56);
                     const semanaRows = movsSemana.map(m => [
                         new Date(m.fecha).toLocaleString(),
                         m.tipo,
@@ -2447,18 +2482,22 @@
                         m.motivo || ''
                     ]);
                     doc.autoTable({
-                        startY: 54,
+                        startY: 60,
                         head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']],
                         body: semanaRows,
                         margin: { left: 14 },
                         styles: { fontSize: 8 }
                     });
                 } else {
-                    doc.text('No hay movimientos en la semana.', 14, 50);
+                    doc.text('No hay movimientos en la semana.', 14, 56);
                 }
 
-                // Tabla de movimientos en el mes (puede ser después de la semana)
+                // Resumen mes
                 let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 70;
+                doc.text(`Resumen mes: Ventas: ${ventasMes}, Recargas: ${recargasMes}, Neto: ${netoMes}`, 14, finalY);
+                finalY += 6;
+
+                // Tabla de movimientos en el mes
                 if (movsMes.length > 0) {
                     doc.text('Movimientos en el mes:', 14, finalY);
                     const mesRows = movsMes.map(m => [
@@ -2479,11 +2518,6 @@
                     doc.text('No hay movimientos en el mes.', 14, finalY);
                 }
 
-                // Totales
-                finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : finalY + 20;
-                doc.text(`Resumen semana: Ventas: ${totalVentasSemana}, Ajustes (+): ${totalAjustesSemana}, Neto: ${netoSemana}`, 14, finalY);
-                doc.text(`Resumen mes: Ventas: ${totalVentasMes}, Ajustes (+): ${totalAjustesMes}, Neto: ${netoMes}`, 14, finalY + 6);
-
                 doc.save(`historial_${producto.nombre.replace(/\s+/g, '_')}.pdf`);
             }
 
@@ -2499,7 +2533,40 @@
                     historialContainer.innerHTML = '<p>No hay movimientos para este producto.</p>';
                     return;
                 }
-                let html = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead><tbody>';
+
+                // Calcular resumen para mostrar en el panel
+                const hoy = new Date();
+                const diaSemana = hoy.getDay();
+                const diff = diaSemana === 0 ? 6 : diaSemana - 1;
+                const lunes = new Date(hoy);
+                lunes.setDate(hoy.getDate() - diff);
+                lunes.setHours(0,0,0,0);
+                const viernes = new Date(lunes);
+                viernes.setDate(lunes.getDate() + 4);
+                viernes.setHours(23,59,59,999);
+                const finSemana = hoy < viernes ? hoy : viernes;
+                const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                inicioMes.setHours(0,0,0,0);
+                const finMes = hoy;
+
+                const movsSemana = movs.filter(m => new Date(m.fecha) >= lunes && new Date(m.fecha) <= finSemana);
+                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= finMes);
+
+                const ventasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const recargasSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+                const ventasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+
+                let html = `
+                    <div style="background: #e8f5e9; padding: 10px; border-radius: 20px; margin-bottom: 10px;">
+                        <strong>Resumen semana:</strong> Ventas: ${ventasSemana} | Recargas: ${recargasSemana}<br>
+                        <strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
+                            <tbody>
+                `;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     html += `<tr>
@@ -2510,7 +2577,7 @@
                         <td>${m.motivo || ''}</td>
                     </tr>`;
                 });
-                html += '</tbody></table>';
+                html += '</tbody></table></div>';
                 // Agregar botón para exportar PDF
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
@@ -2585,8 +2652,10 @@
                     Producto: i.nombre,
                     Stock: i.stock,
                     'Precio unitario (Q)': i.precioUnitario,
-                    'Mov. semana': movSemana[i.productoId] || 0,
-                    'Mov. mes': movMes[i.productoId] || 0
+                    'Ventas semana': ventasSemana[i.productoId] || 0,
+                    'Recargas semana': recargasSemana[i.productoId] || 0,
+                    'Ventas mes': ventasMes[i.productoId] || 0,
+                    'Recargas mes': recargasMes[i.productoId] || 0
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventarioData), 'Inventario');
                 const movimientosData = movimientosInventario.map(m => ({
