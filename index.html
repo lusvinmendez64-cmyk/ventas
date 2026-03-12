@@ -2227,10 +2227,20 @@
             });
             const totalVentasMes = todasVentasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-            // 🔹 NUEVO: Calcular movimientos por producto en la última semana y mes actual (usando movimientosInventario)
-            const semanaMs = 7 * 24 * 60 * 60 * 1000;
-            const inicioSemana = new Date(hoy.getTime() - semanaMs);
+            // 🔹 NUEVO: Calcular movimientos por producto en la semana actual (lunes a viernes) y mes actual (desde 1 hasta hoy)
+            const diaSemana = hoy.getDay(); // 0 domingo, 1 lunes, ..., 6 sábado
+            const diff = diaSemana === 0 ? 6 : diaSemana - 1; // días a restar para llegar al lunes
+            const lunes = new Date(hoy);
+            lunes.setDate(hoy.getDate() - diff);
+            lunes.setHours(0,0,0,0);
+            const viernes = new Date(lunes);
+            viernes.setDate(lunes.getDate() + 4);
+            viernes.setHours(23,59,59,999);
+            const finSemana = hoy < viernes ? hoy : viernes; // si hoy es antes del viernes, usamos hoy; si hoy es después (sáb/dom), usamos viernes
+
             const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            inicioMes.setHours(0,0,0,0);
+            const finMes = hoy; // hasta hoy inclusive
 
             let movSemana = {};
             let movMes = {};
@@ -2239,10 +2249,10 @@
                 const fechaMov = new Date(m.fecha);
                 const prodId = m.productoId;
                 const cantidad = m.cantidad || 0;
-                if (fechaMov >= inicioSemana && fechaMov <= hoy) {
+                if (fechaMov >= lunes && fechaMov <= finSemana) {
                     movSemana[prodId] = (movSemana[prodId] || 0) + cantidad;
                 }
-                if (fechaMov >= inicioMes && fechaMov <= hoy) {
+                if (fechaMov >= inicioMes && fechaMov <= finMes) {
                     movMes[prodId] = (movMes[prodId] || 0) + cantidad;
                 }
             });
@@ -2387,16 +2397,25 @@
                 const stockActual = itemInv ? itemInv.stock : 0;
 
                 const hoy = new Date();
-                const semanaMs = 7 * 24 * 60 * 60 * 1000;
-                const inicioSemana = new Date(hoy.getTime() - semanaMs);
+                const diaSemana = hoy.getDay();
+                const diff = diaSemana === 0 ? 6 : diaSemana - 1;
+                const lunes = new Date(hoy);
+                lunes.setDate(hoy.getDate() - diff);
+                lunes.setHours(0,0,0,0);
+                const viernes = new Date(lunes);
+                viernes.setDate(lunes.getDate() + 4);
+                viernes.setHours(23,59,59,999);
+                const finSemana = hoy < viernes ? hoy : viernes;
                 const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                inicioMes.setHours(0,0,0,0);
+                const finMes = hoy;
 
                 const movs = movimientosInventario
                     .filter(m => m.productoId === prodId)
                     .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
-                const movsSemana = movs.filter(m => new Date(m.fecha) >= inicioSemana && new Date(m.fecha) <= hoy);
-                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= hoy);
+                const movsSemana = movs.filter(m => new Date(m.fecha) >= lunes && new Date(m.fecha) <= finSemana);
+                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= finMes);
 
                 // Totales por tipo en semana y mes
                 const totalVentasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
@@ -2414,8 +2433,8 @@
                 doc.text(`Historial de ${producto.nombre}`, 14, 16);
                 doc.setFontSize(11);
                 doc.text(`Stock actual: ${stockActual}`, 14, 24);
-                doc.text(`Periodo semana: ${inicioSemana.toLocaleDateString()} - ${hoy.toLocaleDateString()}`, 14, 32);
-                doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${hoy.toLocaleDateString()}`, 14, 40);
+                doc.text(`Periodo semana (lunes a ${finSemana === viernes ? 'viernes' : 'hoy'}): ${lunes.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`, 14, 32);
+                doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${finMes.toLocaleDateString()}`, 14, 40);
 
                 // Tabla de movimientos en la semana
                 if (movsSemana.length > 0) {
