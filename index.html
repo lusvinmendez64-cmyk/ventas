@@ -2204,7 +2204,7 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO con comisión sobre contado + créditos pagados y sumas por semana/mes ---
+        // --- PESTAÑA INVENTARIO con comisión y reportes mejorados ---
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2227,29 +2227,24 @@
             });
             const totalVentasMes = todasVentasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-            // 🔹 NUEVO: Calcular ventas por producto en la última semana y mes actual
+            // 🔹 NUEVO: Calcular movimientos por producto en la última semana y mes actual (usando movimientosInventario)
             const semanaMs = 7 * 24 * 60 * 60 * 1000;
             const inicioSemana = new Date(hoy.getTime() - semanaMs);
             const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 
-            // Objetos para acumular unidades vendidas por producto
-            let vendidoSemana = {};
-            let vendidoMes = {};
+            let movSemana = {};
+            let movMes = {};
 
-            ventas.forEach(v => {
-                const fechaVenta = new Date(v.fecha);
-                v.productos.forEach(p => {
-                    const prodId = p.productoId;
-                    const unidades = p.unidades || 0;
-                    // Semana
-                    if (fechaVenta >= inicioSemana && fechaVenta <= hoy) {
-                        vendidoSemana[prodId] = (vendidoSemana[prodId] || 0) + unidades;
-                    }
-                    // Mes
-                    if (fechaVenta >= inicioMes && fechaVenta <= hoy) {
-                        vendidoMes[prodId] = (vendidoMes[prodId] || 0) + unidades;
-                    }
-                });
+            movimientosInventario.forEach(m => {
+                const fechaMov = new Date(m.fecha);
+                const prodId = m.productoId;
+                const cantidad = m.cantidad || 0;
+                if (fechaMov >= inicioSemana && fechaMov <= hoy) {
+                    movSemana[prodId] = (movSemana[prodId] || 0) + cantidad;
+                }
+                if (fechaMov >= inicioMes && fechaMov <= hoy) {
+                    movMes[prodId] = (movMes[prodId] || 0) + cantidad;
+                }
             });
 
             let html = `
@@ -2261,7 +2256,7 @@
                 </div>
                 <div id="inventarioTableContainer">
                     <table>
-                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Vend. semana</th><th>Vend. mes</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Mov. semana</th><th>Mov. mes</th><th>Acciones</th></tr></thead>
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
@@ -2325,15 +2320,15 @@
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
                     const valorVenta = item.stock * item.precioUnitario;
                     totalValorVenta += valorVenta;
-                    const vendSem = vendidoSemana[item.productoId] || 0;
-                    const vendMes = vendidoMes[item.productoId] || 0;
+                    const movSem = movSemana[item.productoId] || 0;
+                    const movM = movMes[item.productoId] || 0;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
                         <td class="${stockClass}">${item.stock}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
-                        <td>${vendSem}</td>
-                        <td>${vendMes}</td>
+                        <td>${movSem > 0 ? '+' : ''}${movSem}</td>
+                        <td>${movM > 0 ? '+' : ''}${movM}</td>
                         <td>
                             <button class="secondary small ajustarBtn" data-id="${item.productoId}">✏️ Ajustar</button>
                             <button class="secondary small verHistorialBtn" data-id="${item.productoId}">📜 Historial</button>
@@ -2384,6 +2379,95 @@
                 });
             }
 
+            // 🔹 NUEVA FUNCIÓN: Exportar historial de un producto a PDF
+            function exportarHistorialProductoPDF(prodId) {
+                const producto = catalogoProductos.find(p => p.id === prodId);
+                if (!producto) return;
+                const itemInv = inventario.find(i => i.productoId === prodId);
+                const stockActual = itemInv ? itemInv.stock : 0;
+
+                const hoy = new Date();
+                const semanaMs = 7 * 24 * 60 * 60 * 1000;
+                const inicioSemana = new Date(hoy.getTime() - semanaMs);
+                const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+                const movs = movimientosInventario
+                    .filter(m => m.productoId === prodId)
+                    .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+                const movsSemana = movs.filter(m => new Date(m.fecha) >= inicioSemana && new Date(m.fecha) <= hoy);
+                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= hoy);
+
+                // Totales por tipo en semana y mes
+                const totalVentasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const totalAjustesSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+                const netoSemana = movsSemana.reduce((acc, m) => acc + m.cantidad, 0);
+
+                const totalVentasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
+                const totalAjustesMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
+                const netoMes = movsMes.reduce((acc, m) => acc + m.cantidad, 0);
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(16);
+                doc.text(`Historial de ${producto.nombre}`, 14, 16);
+                doc.setFontSize(11);
+                doc.text(`Stock actual: ${stockActual}`, 14, 24);
+                doc.text(`Periodo semana: ${inicioSemana.toLocaleDateString()} - ${hoy.toLocaleDateString()}`, 14, 32);
+                doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${hoy.toLocaleDateString()}`, 14, 40);
+
+                // Tabla de movimientos en la semana
+                if (movsSemana.length > 0) {
+                    doc.text('Movimientos en la semana:', 14, 50);
+                    const semanaRows = movsSemana.map(m => [
+                        new Date(m.fecha).toLocaleString(),
+                        m.tipo,
+                        m.cantidad,
+                        m.stockResultante,
+                        m.motivo || ''
+                    ]);
+                    doc.autoTable({
+                        startY: 54,
+                        head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']],
+                        body: semanaRows,
+                        margin: { left: 14 },
+                        styles: { fontSize: 8 }
+                    });
+                } else {
+                    doc.text('No hay movimientos en la semana.', 14, 50);
+                }
+
+                // Tabla de movimientos en el mes (puede ser después de la semana)
+                let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 70;
+                if (movsMes.length > 0) {
+                    doc.text('Movimientos en el mes:', 14, finalY);
+                    const mesRows = movsMes.map(m => [
+                        new Date(m.fecha).toLocaleString(),
+                        m.tipo,
+                        m.cantidad,
+                        m.stockResultante,
+                        m.motivo || ''
+                    ]);
+                    doc.autoTable({
+                        startY: finalY + 4,
+                        head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']],
+                        body: mesRows,
+                        margin: { left: 14 },
+                        styles: { fontSize: 8 }
+                    });
+                } else {
+                    doc.text('No hay movimientos en el mes.', 14, finalY);
+                }
+
+                // Totales
+                finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : finalY + 20;
+                doc.text(`Resumen semana: Ventas: ${totalVentasSemana}, Ajustes (+): ${totalAjustesSemana}, Neto: ${netoSemana}`, 14, finalY);
+                doc.text(`Resumen mes: Ventas: ${totalVentasMes}, Ajustes (+): ${totalAjustesMes}, Neto: ${netoMes}`, 14, finalY + 6);
+
+                doc.save(`historial_${producto.nombre.replace(/\s+/g, '_')}.pdf`);
+            }
+
             function mostrarHistorialProducto(prodId) {
                 if (!prodId) {
                     historialContainer.innerHTML = '<p>Seleccione un producto</p>';
@@ -2408,7 +2492,13 @@
                     </tr>`;
                 });
                 html += '</tbody></table>';
+                // Agregar botón para exportar PDF
+                html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
+
+                document.getElementById('exportarHistorialPDF')?.addEventListener('click', () => {
+                    exportarHistorialProductoPDF(prodId);
+                });
             }
 
             document.getElementById('verHistorialBtn').addEventListener('click', () => {
@@ -2476,8 +2566,8 @@
                     Producto: i.nombre,
                     Stock: i.stock,
                     'Precio unitario (Q)': i.precioUnitario,
-                    'Vend. semana': vendidoSemana[i.productoId] || 0,
-                    'Vend. mes': vendidoMes[i.productoId] || 0
+                    'Mov. semana': movSemana[i.productoId] || 0,
+                    'Mov. mes': movMes[i.productoId] || 0
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventarioData), 'Inventario');
                 const movimientosData = movimientosInventario.map(m => ({
