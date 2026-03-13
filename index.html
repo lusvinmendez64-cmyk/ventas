@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Gestión ventas + Créditos + Comisiones</title>
+    <title>📱 Gestión ventas + Créditos + Comisiones + Cobros</title>
     <style>
         * {
             box-sizing: border-box;
@@ -416,11 +416,12 @@
         <div class="tab" data-tab="catalogo">📇 Clientes</div>
         <div class="tab" data-tab="productos">📦 Productos</div>
         <div class="tab" data-tab="inventario">📊 Inventario</div>
+        <div class="tab" data-tab="cobros">💰 Cobros</div>
     </div>
     <div class="content" id="content"></div>
 </div>
 
-<!-- Modal para estado de cuenta / abonos -->
+<!-- Modal para estado de cuenta / abonos (créditos) -->
 <div id="estadoCuentaModal" class="modal">
     <div class="modal-content" id="estadoCuentaContent"></div>
 </div>
@@ -428,6 +429,11 @@
 <!-- Modal para registrar abono desde ventas -->
 <div id="abonoModal" class="modal">
     <div class="modal-content" id="abonoContent"></div>
+</div>
+
+<!-- Modal para estado de cuenta de cobros -->
+<div id="estadoCobroModal" class="modal">
+    <div class="modal-content" id="estadoCobroContent"></div>
 </div>
 
 <script>
@@ -439,6 +445,8 @@
         let inventario = [];
         let movimientosInventario = [];
         let abonos = [];
+        let cobros = [];          // Cobros recuperados
+        let pagosCobro = [];      // Pagos de cobros recuperados
 
         // Funciones para generar IDs únicos
         function generarIdCliente() { return 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
@@ -446,6 +454,8 @@
         function generarIdProducto() { return 'prod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
         function generarIdMovimiento() { return 'mov_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdAbono() { return 'abo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+        function generarIdCobro() { return 'cob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+        function generarIdPagoCobro() { return 'pag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
 
         // Lista de productos predefinidos (12)
         const productosPredefinidos = [
@@ -471,6 +481,11 @@
             clientes.forEach(c => {
                 if (!c.id) {
                     c.id = generarIdCliente();
+                    migrado = true;
+                }
+                // Agregar campo encargado si no existe
+                if (c.encargado === undefined) {
+                    c.encargado = '';
                     migrado = true;
                 }
             });
@@ -520,6 +535,10 @@
             // Inicializar abonos si no existe
             if (!abonos) abonos = [];
 
+            // Inicializar cobros y pagosCobro si no existen
+            if (!cobros) cobros = [];
+            if (!pagosCobro) pagosCobro = [];
+
             // Si no hay productos, cargar los 12 predefinidos
             if (catalogoProductos.length === 0) {
                 productosPredefinidos.forEach(p => {
@@ -557,8 +576,8 @@
             // Clientes de ejemplo si no hay
             if (!clientes.length) {
                 clientes = [
-                    { id: generarIdCliente(), codigo: 'CL001', razonSocial: 'Comercial López', nit: '123456-7', direccion: 'San Salvador, San Salvador', telefono: '7000-1234', correo: 'lopez@com', fechaCreacion: new Date().toISOString() },
-                    { id: generarIdCliente(), codigo: '', razonSocial: 'Ferremaya', nit: '891234-5', direccion: 'Santa Ana, Santa Ana', telefono: '6000-5678', correo: 'ventas@ferre.com', fechaCreacion: new Date().toISOString() },
+                    { id: generarIdCliente(), codigo: 'CL001', razonSocial: 'Comercial López', nit: '123456-7', direccion: 'San Salvador, San Salvador', telefono: '7000-1234', correo: 'lopez@com', encargado: 'Juan Pérez', fechaCreacion: new Date().toISOString() },
+                    { id: generarIdCliente(), codigo: '', razonSocial: 'Ferremaya', nit: '891234-5', direccion: 'Santa Ana, Santa Ana', telefono: '6000-5678', correo: 'ventas@ferre.com', encargado: '', fechaCreacion: new Date().toISOString() },
                 ];
             }
 
@@ -573,6 +592,8 @@
                 inventario = JSON.parse(localStorage.getItem('inventario')) || [];
                 movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
                 abonos = JSON.parse(localStorage.getItem('abonos')) || [];
+                cobros = JSON.parse(localStorage.getItem('cobros')) || [];
+                pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
             } catch (e) { console.warn("Error cargando datos", e); }
 
             migrarDatos();
@@ -584,6 +605,8 @@
             localStorage.setItem('inventario', JSON.stringify(inventario));
             localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
             localStorage.setItem('abonos', JSON.stringify(abonos));
+            localStorage.setItem('cobros', JSON.stringify(cobros));
+            localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
         }
         loadData();
         saveData();
@@ -592,7 +615,7 @@
 
         const formatoQ = (val) => 'Q' + parseFloat(val).toFixed(2);
 
-        // --- Utilidad para respaldo (incluye abonos) ---
+        // --- Utilidad para respaldo (incluye abonos y cobros) ---
         function exportarBackup() {
             const backup = {
                 clientes,
@@ -601,6 +624,8 @@
                 inventario,
                 movimientosInventario,
                 abonos,
+                cobros,
+                pagosCobro,
                 fecha: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -623,6 +648,8 @@
                     if (data.inventario) inventario = data.inventario;
                     if (data.movimientosInventario) movimientosInventario = data.movimientosInventario;
                     if (data.abonos) abonos = data.abonos;
+                    if (data.cobros) cobros = data.cobros;
+                    if (data.pagosCobro) pagosCobro = data.pagosCobro;
                     migrarDatos();
                     saveData(); // <--- ¡Clave! Guardar los datos importados
                     alert('Respaldo importado correctamente');
@@ -704,17 +731,18 @@
             else if (tabId === 'catalogo') renderCatalogo();
             else if (tabId === 'productos') renderProductos();
             else if (tabId === 'inventario') renderInventario();
+            else if (tabId === 'cobros') renderCobros();
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // --- PESTAÑA VENTA ---
+        // ========== PESTAÑA VENTA (modificada) ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
 
             let html = `
                 <h2>🧾 Registrar venta (Q)</h2>
-                <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
                     <button id="backupBtn" class="secondary small">⬇️ Respaldo</button>
                     <label for="restoreFile" class="secondary small" style="display: inline-block; padding: 8px 14px; background: #eaf0f6; border-radius: 40px; cursor: pointer;">⬆️ Restaurar</label>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;">
@@ -1110,6 +1138,7 @@
                         id: generarIdCliente(),
                         ...datosForm,
                         codigo: datosForm.codigo || '',
+                        encargado: '',
                         fechaCreacion: new Date().toISOString() 
                     };
                     clientes.push(clienteFinal);
@@ -1221,16 +1250,21 @@
                     else credito += t;
                 });
 
-                // 🔹 NUEVO: Abonos del día
+                // Abonos de créditos del día
                 const abonosHoy = abonos.filter(a => new Date(a.fecha).toDateString() === hoy);
                 const totalAbonosHoy = abonosHoy.reduce((acc, a) => acc + (a.monto || 0), 0);
+
+                // Pagos de cobros del día
+                const pagosCobroHoy = pagosCobro.filter(p => new Date(p.fecha).toDateString() === hoy);
+                const totalPagosCobroHoy = pagosCobroHoy.reduce((acc, p) => acc + (p.monto || 0), 0);
 
                 const container = document.getElementById('totalesDiaContainer');
                 container.innerHTML = `
                     <div class="total-item">💰 Ventas hoy<br><span>${formatoQ(contado+credito)}</span></div>
                     <div class="total-item">💵 Contado<br><span>${formatoQ(contado)}</span></div>
                     <div class="total-item">📄 Crédito<br><span>${formatoQ(credito)}</span></div>
-                    <div class="total-item">📥 Abonos hoy<br><span>${formatoQ(totalAbonosHoy)}</span></div>
+                    <div class="total-item">📥 Abonos créditos<br><span>${formatoQ(totalAbonosHoy)}</span></div>
+                    <div class="total-item">💰 Cobros hoy<br><span>${formatoQ(totalPagosCobroHoy)}</span></div>
                     <div style="flex: 1 1 100%; margin-top: 12px;">
                         <button id="enviarResumenDiaBtn" class="secondary">📲 Enviar resumen del día por WhatsApp</button>
                     </div>
@@ -1263,9 +1297,9 @@
                         });
                     }
 
-                    // 🔹 NUEVO: Abonos del día
+                    // Abonos de créditos del día
                     if (abonosHoy.length > 0) {
-                        mensaje += '*ABONOS DEL DÍA*\n';
+                        mensaje += '*ABONOS A CRÉDITOS DEL DÍA*\n';
                         abonosHoy.forEach((a, i) => {
                             const venta = ventas.find(v => v.id === a.ventaId);
                             const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
@@ -1275,7 +1309,20 @@
                             }
                             mensaje += '\n';
                         });
-                        mensaje += `Total abonado hoy: ${formatoQ(totalAbonosHoy)}\n\n`;
+                        mensaje += `Total abonado a créditos: ${formatoQ(totalAbonosHoy)}\n\n`;
+                    }
+
+                    // Pagos de cobros del día
+                    if (pagosCobroHoy.length > 0) {
+                        mensaje += '*PAGOS DE COBROS DEL DÍA*\n';
+                        pagosCobroHoy.forEach((p, i) => {
+                            const cobro = cobros.find(c => c.id === p.cobroId);
+                            const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
+                            mensaje += `${i+1}. ${cliente.razonSocial} - Monto: ${formatoQ(p.monto)} (${p.tipo})`;
+                            if (p.tipo === 'ajeno') mensaje += ` (${p.porcentaje}% base)`;
+                            mensaje += '\n';
+                        });
+                        mensaje += `Total pagado en cobros: ${formatoQ(totalPagosCobroHoy)}\n\n`;
                     }
 
                     // Totales generales
@@ -1283,7 +1330,7 @@
                     mensaje += `Total Ventas: ${formatoQ(contado+credito)}\n`;
                     mensaje += `  Contado: ${formatoQ(contado)}\n`;
                     mensaje += `  Crédito: ${formatoQ(credito)}\n`;
-                    mensaje += `Total Abonos: ${formatoQ(totalAbonosHoy)}\n`;
+                    mensaje += `Total Abonos (créditos + cobros): ${formatoQ(totalAbonosHoy + totalPagosCobroHoy)}\n`;
 
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
@@ -1340,7 +1387,7 @@
             }
         }
 
-        // --- PESTAÑA VENTAS (historial con filtros y botón de abono) ---
+        // ========== PESTAÑA VENTAS (historial) ==========
         function renderVentasHistorial() {
             let html = `
                 <h2>📅 Historial de ventas</h2>
@@ -1622,7 +1669,7 @@
             });
         }
 
-        // --- Función para mostrar formulario de abono en modal ---
+        // --- Función para mostrar formulario de abono en modal (desde ventas) ---
         function mostrarFormularioAbono(ventaId) {
             const venta = ventas.find(v => v.id === ventaId);
             if (!venta) return;
@@ -1731,7 +1778,7 @@
             });
         }
 
-        // --- PESTAÑA CATÁLOGO MEJORADA con buscador y vistas ---
+        // ========== PESTAÑA CATÁLOGO (clientes) ==========
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
@@ -1979,16 +2026,12 @@
                 XLSX.writeFile(wb, 'clientes_ventas.xlsx');
             });
 
-            // 🔹 MODIFICADO: Exportar PDF incluyendo dirección
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 doc.text('Listado de Clientes', 14, 16);
-                
-                // Nuevas columnas: Código, Razón Social, NIT, Dirección, Teléfono, Saldo Pendiente
                 const tableColumn = ['Código', 'Razón Social', 'NIT', 'Dirección', 'Teléfono', 'Saldo Pendiente'];
                 const tableRows = [];
-                
                 clientesFiltrados.forEach(c => {
                     const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     tableRows.push([
@@ -2000,18 +2043,16 @@
                         'Q' + saldo.toFixed(2)
                     ]);
                 });
-
                 doc.autoTable({
                     head: [tableColumn],
                     body: tableRows,
                     startY: 20,
                 });
-                
                 doc.save('clientes.pdf');
             });
         }
 
-        // --- Función para mostrar estado de cuenta en modal (sin cambios) ---
+        // --- Función para mostrar estado de cuenta en modal (créditos) ---
         function mostrarEstadoCuenta(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (!cliente) return;
@@ -2162,7 +2203,7 @@
             });
         }
 
-        // --- PESTAÑA PRODUCTOS ---
+        // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
             let html = `
                 <h2>📦 Catálogo de productos</h2>
@@ -2239,7 +2280,7 @@
             });
         }
 
-        // --- PESTAÑA INVENTARIO con comisión y reportes mejorados (sin columnas de movimientos) ---
+        // ========== PESTAÑA INVENTARIO ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2390,7 +2431,6 @@
                 });
             }
 
-            // 🔹 NUEVA FUNCIÓN: Exportar historial de un producto a PDF (con resumen ventas/recargas)
             function exportarHistorialProductoPDF(prodId) {
                 const producto = catalogoProductos.find(p => p.id === prodId);
                 if (!producto) return;
@@ -2636,6 +2676,378 @@
             });
         }
 
+        // ========== PESTAÑA COBROS (nueva) ==========
+        function renderCobros() {
+            let html = `
+                <h2>💰 Cobros recuperados</h2>
+                ${mostrarRecordatorios()}
+                <fieldset>
+                    <legend>Registrar nuevo cobro</legend>
+                    <div class="search-section">
+                        <label>🔍 Buscar cliente</label>
+                        <input type="text" id="buscarClienteCobro" placeholder="Nombre, NIT o código">
+                        <button class="secondary small" id="limpiarBusquedaCobroBtn">Limpiar</button>
+                    </div>
+                    <div id="clienteSeleccionadoCobroContainer"></div>
+                    <div id="listaClientesCobroResultado" class="client-list"></div>
+                    <div id="paginacionClientesCobro" class="paginacion"></div>
+
+                    <label>Código: <input type="text" id="codigoClienteCobro" placeholder="Código"></label>
+                    <label>Nombre/Razón Social: <input type="text" id="razonSocialCobro" required></label>
+                    <label>NIT: <input type="text" id="nitCobro" placeholder="C/F"></label>
+                    <label>Dirección: <input type="text" id="direccionCobro"></label>
+                    <label>Teléfono: <input type="tel" id="telefonoCobro"></label>
+                    <label>Encargado: <input type="text" id="encargadoCobro"></label>
+
+                    <label>Número de documento: <input type="text" id="numeroDocumentoCobro" required></label>
+                    <label>Fecha: <input type="date" id="fechaCobro" value="${new Date().toISOString().slice(0,10)}"></label>
+                    <label>Monto total: <input type="number" id="montoTotalCobro" step="0.01" min="0" required></label>
+
+                    <button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button>
+                </fieldset>
+
+                <h3>Lista de cobros</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
+                        <tbody id="cobrosBody"></tbody>
+                    </table>
+                </div>
+                <div id="paginacionCobros" class="paginacion"></div>
+            `;
+            contentEl.innerHTML = html;
+
+            const buscarInput = document.getElementById('buscarClienteCobro');
+            const listaResultado = document.getElementById('listaClientesCobroResultado');
+            const paginacionDiv = document.getElementById('paginacionClientesCobro');
+            const clienteSelContainer = document.getElementById('clienteSeleccionadoCobroContainer');
+            const codigoCliente = document.getElementById('codigoClienteCobro');
+            const razonSocial = document.getElementById('razonSocialCobro');
+            const nit = document.getElementById('nitCobro');
+            const direccion = document.getElementById('direccionCobro');
+            const telefono = document.getElementById('telefonoCobro');
+            const encargado = document.getElementById('encargadoCobro');
+            const numeroDocumento = document.getElementById('numeroDocumentoCobro');
+            const fechaCobro = document.getElementById('fechaCobro');
+            const montoTotal = document.getElementById('montoTotalCobro');
+            const guardarBtn = document.getElementById('guardarCobroBtn');
+
+            let clienteSeleccionado = null;
+            let resultadosFiltrados = [];
+            let paginaActual = 0;
+            const itemsPorPagina = 5;
+
+            function renderBusqueda(termino) {
+                const term = termino.toLowerCase().trim();
+                resultadosFiltrados = clientes.filter(c => 
+                    c.razonSocial.toLowerCase().includes(term) || 
+                    (c.nit && c.nit.toLowerCase().includes(term)) || 
+                    (c.codigo && c.codigo.toLowerCase().includes(term))
+                );
+                paginaActual = 0;
+                mostrarPagina();
+            }
+
+            function mostrarPagina() {
+                const inicio = paginaActual * itemsPorPagina;
+                const fin = inicio + itemsPorPagina;
+                const paginaResultados = resultadosFiltrados.slice(inicio, fin);
+
+                if (paginaResultados.length === 0) {
+                    listaResultado.innerHTML = '<div class="client-item">(ningún cliente coincide)</div>';
+                } else {
+                    let items = '';
+                    paginaResultados.forEach(c => {
+                        items += `
+                            <div class="client-item" data-id="${c.id}">
+                                <span>${c.razonSocial} ${c.codigo ? '· '+c.codigo : ''}</span>
+                                <span class="client-code">${c.nit || 'sin NIT'}</span>
+                            </div>
+                        `;
+                    });
+                    listaResultado.innerHTML = items;
+                }
+
+                let paginacionHtml = '';
+                const totalPaginas = Math.ceil(resultadosFiltrados.length / itemsPorPagina);
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaAnteriorCobro" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaSiguienteCobro" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
+
+                document.querySelectorAll('.client-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const id = el.dataset.id;
+                        const cliente = clientes.find(c => c.id === id);
+                        if (cliente) {
+                            clienteSeleccionado = cliente;
+                            codigoCliente.value = cliente.codigo || '';
+                            razonSocial.value = cliente.razonSocial;
+                            nit.value = cliente.nit || '';
+                            direccion.value = cliente.direccion || '';
+                            telefono.value = cliente.telefono || '';
+                            encargado.value = cliente.encargado || '';
+                            clienteSelContainer.innerHTML = `
+                                <div class="badge">
+                                    ✅ Cliente: ${cliente.razonSocial} ${cliente.codigo ? '('+cliente.codigo+')' : ''}
+                                    <button id="quitarSeleccionCobroBtn" class="small secondary">✕ Quitar</button>
+                                </div>
+                            `;
+                            document.getElementById('quitarSeleccionCobroBtn')?.addEventListener('click', () => limpiarCliente());
+                            renderBusqueda('');
+                            buscarInput.value = '';
+                        }
+                    });
+                });
+
+                const btnAnterior = document.getElementById('paginaAnteriorCobro');
+                const btnSiguiente = document.getElementById('paginaSiguienteCobro');
+                if (btnAnterior) btnAnterior.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; mostrarPagina(); } });
+                if (btnSiguiente) btnSiguiente.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; mostrarPagina(); } });
+            }
+
+            function limpiarCliente() {
+                codigoCliente.value = ''; razonSocial.value = ''; nit.value = ''; direccion.value = ''; telefono.value = ''; encargado.value = '';
+                clienteSeleccionado = null;
+                clienteSelContainer.innerHTML = '';
+                renderBusqueda(buscarInput.value);
+            }
+
+            buscarInput.addEventListener('input', () => renderBusqueda(buscarInput.value));
+            document.getElementById('limpiarBusquedaCobroBtn').addEventListener('click', () => { buscarInput.value = ''; renderBusqueda(''); });
+
+            guardarBtn.addEventListener('click', () => {
+                const razon = razonSocial.value.trim();
+                if (!razon) { alert('Razón social obligatoria'); return; }
+                const doc = numeroDocumento.value.trim();
+                if (!doc) { alert('Número de documento obligatorio'); return; }
+                const monto = parseFloat(montoTotal.value);
+                if (isNaN(monto) || monto <= 0) { alert('Monto total inválido'); return; }
+
+                let clienteFinal = clienteSeleccionado;
+                const datosForm = {
+                    codigo: codigoCliente.value.trim() || null,
+                    razonSocial: razon,
+                    nit: nit.value.trim() || null,
+                    direccion: direccion.value.trim(),
+                    telefono: telefono.value.trim(),
+                    encargado: encargado.value.trim()
+                };
+
+                if (!clienteFinal) {
+                    clienteFinal = { 
+                        id: generarIdCliente(),
+                        ...datosForm,
+                        codigo: datosForm.codigo || '',
+                        correo: '',
+                        fechaCreacion: new Date().toISOString() 
+                    };
+                    clientes.push(clienteFinal);
+                } else {
+                    Object.assign(clienteFinal, datosForm);
+                }
+                saveData();
+
+                const nuevoCobro = {
+                    id: generarIdCobro(),
+                    numeroDocumento: doc,
+                    fecha: new Date(fechaCobro.value + 'T12:00:00').toISOString(),
+                    montoTotal: monto,
+                    clienteId: clienteFinal.id,
+                    saldoPendiente: monto,
+                    fechaCreacion: new Date().toISOString()
+                };
+                cobros.push(nuevoCobro);
+                saveData();
+
+                alert('Cobro registrado');
+                limpiarCliente();
+                numeroDocumento.value = '';
+                fechaCobro.value = new Date().toISOString().slice(0,10);
+                montoTotal.value = '';
+                renderListaCobros();
+            });
+
+            function renderListaCobros() {
+                const tbody = document.getElementById('cobrosBody');
+                const paginacionCobros = document.getElementById('paginacionCobros');
+                if (!tbody) return;
+
+                // Ordenar por fecha descendente
+                const cobrosOrdenados = [...cobros].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                let paginaCobros = 0;
+                const itemsPorPaginaCobros = 10;
+
+                function mostrarPaginaCobros() {
+                    const inicio = paginaCobros * itemsPorPaginaCobros;
+                    const fin = inicio + itemsPorPaginaCobros;
+                    const pagina = cobrosOrdenados.slice(inicio, fin);
+
+                    tbody.innerHTML = '';
+                    pagina.forEach(c => {
+                        const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: 'Desconocido' };
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${new Date(c.fecha).toLocaleDateString()}</td>
+                            <td>${c.numeroDocumento}</td>
+                            <td>${cliente.razonSocial}</td>
+                            <td>${formatoQ(c.montoTotal)}</td>
+                            <td>${formatoQ(c.saldoPendiente)}</td>
+                            <td>
+                                <button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button>
+                                <button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    const totalPaginas = Math.ceil(cobrosOrdenados.length / itemsPorPaginaCobros);
+                    let paginacionHtml = '';
+                    if (totalPaginas > 1) {
+                        paginacionHtml += `<button class="secondary small" id="paginaCobrosAnterior" ${paginaCobros === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                        paginacionHtml += `<span> Página ${paginaCobros+1} de ${totalPaginas} </span>`;
+                        paginacionHtml += `<button class="secondary small" id="paginaCobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                    }
+                    paginacionCobros.innerHTML = paginacionHtml;
+
+                    document.getElementById('paginaCobrosAnterior')?.addEventListener('click', () => {
+                        if (paginaCobros > 0) { paginaCobros--; mostrarPaginaCobros(); }
+                    });
+                    document.getElementById('paginaCobrosSiguiente')?.addEventListener('click', () => {
+                        if (paginaCobros < totalPaginas-1) { paginaCobros++; mostrarPaginaCobros(); }
+                    });
+
+                    document.querySelectorAll('.verEstadoCobroBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobroId = btn.dataset.id;
+                            mostrarEstadoCuentaCobro(cobroId);
+                        });
+                    });
+
+                    document.querySelectorAll('.agregarPagoCobroBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobroId = btn.dataset.id;
+                            mostrarEstadoCuentaCobro(cobroId);
+                        });
+                    });
+                }
+                mostrarPaginaCobros();
+            }
+
+            renderListaCobros();
+        }
+
+        // --- Modal de estado de cuenta de cobro ---
+        function mostrarEstadoCuentaCobro(cobroId) {
+            const cobro = cobros.find(c => c.id === cobroId);
+            if (!cobro) return;
+            const cliente = clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' };
+            const pagos = pagosCobro.filter(p => p.cobroId === cobroId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+            let html = `
+                <h3>Estado de cobro: ${cobro.numeroDocumento}</h3>
+                <p>Cliente: ${cliente.razonSocial}</p>
+                <p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p>
+                <h4>Pagos realizados</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr></thead>
+                        <tbody>
+            `;
+            if (pagos.length === 0) {
+                html += '<tr><td colspan="4">No hay pagos registrados.</td></tr>';
+            } else {
+                pagos.forEach(p => {
+                    html += `<tr>
+                        <td>${new Date(p.fecha).toLocaleDateString()}</td>
+                        <td>${formatoQ(p.monto)}</td>
+                        <td>${p.tipo}</td>
+                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td>
+                    </tr>`;
+                });
+            }
+            html += '</tbody></table></div>';
+
+            html += `
+                <h4>Registrar nuevo pago</h4>
+                <label>Monto: <input type="number" id="pagoMontoCobro" step="0.01" min="0.01" max="${cobro.saldoPendiente}"></label>
+                <label>Tipo:
+                    <select id="pagoTipoCobro">
+                        <option value="propio">Propio</option>
+                        <option value="ajeno">Ajeno</option>
+                    </select>
+                </label>
+                <div id="porcentajeContainerCobro" style="display:none; margin-top:10px;">
+                    <label>Porcentaje base para comisión (0-100): <input type="number" id="pagoPorcentajeCobro" value="100" min="0" max="100" step="0.1"></label>
+                </div>
+                <label>Fecha del pago: <input type="date" id="pagoFechaCobro" value="${new Date().toISOString().slice(0,10)}"></label>
+                <div style="margin-top:20px;">
+                    <button id="guardarPagoCobroBtn" class="secondary">Guardar pago</button>
+                    <button id="cancelarPagoCobroBtn" class="secondary small">Cancelar</button>
+                </div>
+            `;
+
+            const modal = document.getElementById('estadoCobroModal');
+            const modalContent = document.getElementById('estadoCobroContent');
+            modalContent.innerHTML = html;
+            modal.style.display = 'flex';
+
+            const tipoSelect = document.getElementById('pagoTipoCobro');
+            const porcentajeDiv = document.getElementById('porcentajeContainerCobro');
+            tipoSelect.addEventListener('change', () => {
+                porcentajeDiv.style.display = tipoSelect.value === 'ajeno' ? 'block' : 'none';
+            });
+
+            document.getElementById('guardarPagoCobroBtn').addEventListener('click', () => {
+                const monto = parseFloat(document.getElementById('pagoMontoCobro').value);
+                if (isNaN(monto) || monto <= 0 || monto > cobro.saldoPendiente) {
+                    alert('Monto inválido');
+                    return;
+                }
+                const tipo = tipoSelect.value;
+                let porcentaje = 100;
+                if (tipo === 'ajeno') {
+                    porcentaje = parseFloat(document.getElementById('pagoPorcentajeCobro').value);
+                    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                        alert('Porcentaje debe ser entre 0 y 100');
+                        return;
+                    }
+                }
+                const fecha = document.getElementById('pagoFechaCobro').value;
+                if (!fecha) { alert('Fecha requerida'); return; }
+
+                const nuevoPago = {
+                    id: generarIdPagoCobro(),
+                    cobroId: cobro.id,
+                    fecha: new Date(fecha + 'T12:00:00').toISOString(),
+                    monto,
+                    tipo,
+                    porcentaje: tipo === 'ajeno' ? porcentaje : 100
+                };
+                pagosCobro.push(nuevoPago);
+                cobro.saldoPendiente -= monto;
+                saveData();
+
+                alert('Pago registrado');
+                modal.style.display = 'none';
+                // Actualizar lista de cobros si estamos en esa pestaña
+                if (document.querySelector('.tab.active').dataset.tab === 'cobros') {
+                    renderCobros();
+                }
+            });
+
+            document.getElementById('cancelarPagoCobroBtn').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        // Iniciar con la pestaña venta
         showTab('venta');
     })();
 </script>
