@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>📱 Gestión ventas + Créditos + Comisiones + Cobros</title>
     <style>
-        /* (Estilos completos, igual que antes) */
         * {
             box-sizing: border-box;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -668,7 +667,7 @@
             reader.readAsText(file);
         }
 
-        // --- Panel de recordatorios (modificado para incluir cobros pendientes) ---
+        // --- Panel de recordatorios (incluye cobros pendientes) ---
         function mostrarRecordatorios() {
             const hoy = new Date();
             hoy.setHours(0,0,0,0);
@@ -710,7 +709,7 @@
                 }
             });
 
-            // 🔹 NUEVO: Cobros pendientes (saldo > 0)
+            // Cobros pendientes (saldo > 0)
             const cobrosPendientes = cobros.filter(c => c.saldoPendiente > 0).slice(0, 5); // mostrar máximo 5
 
             let html = '';
@@ -727,7 +726,6 @@
                     html += `<div class="recordatorio-item proximo">💰 Cheque de Q${c.monto.toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div>`;
                 });
 
-                // Mostrar cobros pendientes
                 if (cobrosPendientes.length > 0) {
                     html += '<div><strong>💰 Cobros pendientes</strong></div>';
                     cobrosPendientes.forEach(c => {
@@ -756,7 +754,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (modificada con botones simétricos) ==========
+        // ========== PESTAÑA VENTA (botones simétricos) ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
@@ -1004,7 +1002,7 @@
             agregarFila.addEventListener('click', () => agregarFilaProducto());
             agregarMultiples.addEventListener('click', agregarMultiplesFilas);
 
-            // Búsqueda con paginación
+            // Búsqueda con paginación (clientes)
             let resultadosFiltrados = [];
             let paginaActual = 0;
             const itemsPorPagina = 5;
@@ -1294,7 +1292,6 @@
                 document.getElementById('enviarResumenDiaBtn')?.addEventListener('click', () => {
                     let mensaje = `📋 *RESUMEN DEL DÍA* (${new Date().toLocaleDateString()})\n\n`;
 
-                    // Ventas
                     if (ventasHoy.length === 0) {
                         mensaje += 'No hay ventas registradas hoy.';
                     } else {
@@ -1318,7 +1315,6 @@
                         });
                     }
 
-                    // Abonos de créditos del día
                     if (abonosHoy.length > 0) {
                         mensaje += '*ABONOS A CRÉDITOS DEL DÍA*\n';
                         abonosHoy.forEach((a, i) => {
@@ -1333,7 +1329,6 @@
                         mensaje += `Total abonado a créditos: ${formatoQ(totalAbonosHoy)}\n\n`;
                     }
 
-                    // Pagos de cobros del día
                     if (pagosCobroHoy.length > 0) {
                         mensaje += '*PAGOS DE COBROS DEL DÍA*\n';
                         pagosCobroHoy.forEach((p, i) => {
@@ -1346,7 +1341,6 @@
                         mensaje += `Total pagado en cobros: ${formatoQ(totalPagosCobroHoy)}\n\n`;
                     }
 
-                    // Totales generales
                     mensaje += `*RESUMEN*\n`;
                     mensaje += `Total Ventas: ${formatoQ(contado+credito)}\n`;
                     mensaje += `  Contado: ${formatoQ(contado)}\n`;
@@ -1408,7 +1402,7 @@
             }
         }
 
-        // ========== PESTAÑA VENTAS (historial) ==========
+        // ========== PESTAÑA VENTAS (historial) con paginación de 5 ==========
         function renderVentasHistorial() {
             let html = `
                 <h2>📅 Historial de ventas</h2>
@@ -1467,7 +1461,7 @@
 
             let ventasFiltradas = [];
             let paginaVentas = 0;
-            const itemsPorPaginaVentas = 10;
+            const itemsPorPaginaVentas = 5; // Cambiado de 10 a 5
 
             function aplicarFiltro() {
                 const mes = parseInt(filtroMes.value);
@@ -1799,7 +1793,7 @@
             });
         }
 
-        // ========== PESTAÑA CATÁLOGO (clientes) ==========
+        // ========== PESTAÑA CATÁLOGO (clientes) con paginación de 5 ==========
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
@@ -2224,7 +2218,7 @@
             });
         }
 
-        // ========== PESTAÑA PRODUCTOS ==========
+        // ========== PESTAÑA PRODUCTOS con paginación de 5 ==========
         function renderProductos() {
             let html = `
                 <h2>📦 Catálogo de productos</h2>
@@ -2236,13 +2230,22 @@
                         <tbody id="productosCatalogoBody"></tbody>
                     </table>
                 </div>
+                <div id="paginacionProductos" class="paginacion"></div>
             `;
             contentEl.innerHTML = html;
+
             const tbody = document.getElementById('productosCatalogoBody');
+            const paginacionDiv = document.getElementById('paginacionProductos');
+            let paginaActual = 0;
+            const itemsPorPagina = 5;
 
             function render() {
+                const inicio = paginaActual * itemsPorPagina;
+                const fin = inicio + itemsPorPagina;
+                const productosPagina = catalogoProductos.slice(inicio, fin);
+
                 tbody.innerHTML = '';
-                catalogoProductos.forEach(p => {
+                productosPagina.forEach(p => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><input type="text" class="prod-nombre" value="${p.nombre}" data-id="${p.id}" style="width:100%;"></td>
@@ -2289,7 +2292,25 @@
                         }
                     });
                 });
+
+                // Actualizar paginación
+                const totalPaginas = Math.ceil(catalogoProductos.length / itemsPorPagina);
+                let paginacionHtml = '';
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaProductosAnterior" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaProductosSiguiente" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
+
+                document.getElementById('paginaProductosAnterior')?.addEventListener('click', () => {
+                    if (paginaActual > 0) { paginaActual--; render(); }
+                });
+                document.getElementById('paginaProductosSiguiente')?.addEventListener('click', () => {
+                    if (paginaActual < totalPaginas-1) { paginaActual++; render(); }
+                });
             }
+
             render();
 
             document.getElementById('nuevoProductoBtn').addEventListener('click', () => {
@@ -2301,7 +2322,7 @@
             });
         }
 
-        // ========== PESTAÑA INVENTARIO ==========
+        // ========== PESTAÑA INVENTARIO (modificada para incluir cobros propios en comisión) ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2316,6 +2337,16 @@
                 return false;
             });
             const totalVentasComision = ventasComision.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
+            // Pagos de cobros del mes de tipo "propio"
+            const pagosCobroMes = pagosCobro.filter(p => {
+                const fecha = new Date(p.fecha);
+                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && p.tipo === 'propio';
+            });
+            const totalPagosCobroPropios = pagosCobroMes.reduce((acc, p) => acc + (p.monto || 0), 0);
+
+            // Base total para comisión
+            const baseComision = totalVentasComision + totalPagosCobroPropios;
 
             // Todas las ventas del mes (para otros reportes)
             const todasVentasMes = ventas.filter(v => {
@@ -2337,15 +2368,16 @@
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
+                <div id="paginacionInventario" class="paginacion"></div>
 
                 <div class="valorizacion">
                     <span class="comision-item">💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
                     <span class="comision-item">📅 Ventas del mes (total): <span id="ventasMesTotal">${formatoQ(totalVentasMes)}</span></span>
                     <span class="comision-item" style="flex-wrap: wrap;">
-                        Comisión (solo contado + créditos pagados): 
+                        Comisión (contado + créditos pagados + cobros propios): 
                         <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
                         = <span id="montoComision">Q0.00</span>
-                        (Base: <span id="baseComision">${formatoQ(totalVentasComision)}</span>)
+                        (Base: <span id="baseComision">${formatoQ(baseComision)}</span>)
                     </span>
                 </div>
 
@@ -2382,6 +2414,9 @@
             const baseComisionSpan = document.getElementById('baseComision');
             const porcentajeInput = document.getElementById('porcentajeComision');
             const montoComisionSpan = document.getElementById('montoComision');
+            const paginacionDiv = document.getElementById('paginacionInventario');
+            let paginaActual = 0;
+            const itemsPorPagina = 5;
 
             function actualizarComision() {
                 const base = parseFloat(baseComisionSpan.innerText.replace('Q', '')) || 0;
@@ -2391,9 +2426,14 @@
             }
 
             function renderInventarioTabla() {
+                const inicio = paginaActual * itemsPorPagina;
+                const fin = inicio + itemsPorPagina;
+                const inventarioPagina = inventario.slice(inicio, fin);
+
                 inventarioBody.innerHTML = '';
                 let totalValorVenta = 0;
-                inventario.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(item => {
+                inventario.sort((a,b) => a.nombre.localeCompare(b.nombre));
+                inventarioPagina.forEach(item => {
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
                     const valorVenta = item.stock * item.precioUnitario;
                     totalValorVenta += valorVenta;
@@ -2411,6 +2451,23 @@
                 });
                 valorInventarioSpan.innerText = formatoQ(totalValorVenta);
                 actualizarComision();
+
+                // Paginación
+                const totalPaginas = Math.ceil(inventario.length / itemsPorPagina);
+                let paginacionHtml = '';
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaInventarioAnterior" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaInventarioSiguiente" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
+
+                document.getElementById('paginaInventarioAnterior')?.addEventListener('click', () => {
+                    if (paginaActual > 0) { paginaActual--; renderInventarioTabla(); }
+                });
+                document.getElementById('paginaInventarioSiguiente')?.addEventListener('click', () => {
+                    if (paginaActual < totalPaginas-1) { paginaActual++; renderInventarioTabla(); }
+                });
 
                 document.querySelectorAll('.ajustarBtn').forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -2608,7 +2665,6 @@
                     </tr>`;
                 });
                 html += '</tbody></table></div>';
-                // Agregar botón para exportar PDF
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
 
@@ -2697,7 +2753,7 @@
             });
         }
 
-        // ========== PESTAÑA COBROS (nueva) ==========
+        // ========== PESTAÑA COBROS (con botón eliminar individual) ==========
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
@@ -2742,7 +2798,7 @@
             `;
             contentEl.innerHTML = html;
 
-            // --- Botón para eliminar todos los cobros ---
+            // Botón eliminar todos
             document.getElementById('eliminarTodosCobrosBtn').addEventListener('click', () => {
                 if (cobros.length === 0) {
                     alert('No hay cobros para eliminar.');
@@ -2752,7 +2808,7 @@
                     cobros = [];
                     pagosCobro = [];
                     saveData();
-                    renderCobros(); // Recargar la pestaña
+                    renderCobros();
                     alert('Todos los cobros han sido eliminados.');
                 }
             });
@@ -2918,7 +2974,7 @@
                 // Ordenar por fecha descendente
                 const cobrosOrdenados = [...cobros].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let paginaCobros = 0;
-                const itemsPorPaginaCobros = 10;
+                const itemsPorPaginaCobros = 5; // Cambiado de 10 a 5
 
                 function mostrarPaginaCobros() {
                     const inicio = paginaCobros * itemsPorPaginaCobros;
@@ -2938,6 +2994,7 @@
                             <td>
                                 <button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button>
                                 <button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button>
+                                <button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
@@ -2972,6 +3029,19 @@
                             mostrarEstadoCuentaCobro(cobroId);
                         });
                     });
+
+                    // Botón eliminar cobro individual
+                    document.querySelectorAll('.eliminarCobroBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobroId = btn.dataset.id;
+                            if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
+                                cobros = cobros.filter(c => c.id !== cobroId);
+                                pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
+                                saveData();
+                                renderListaCobros();
+                            }
+                        });
+                    });
                 }
                 mostrarPaginaCobros();
             }
@@ -2979,7 +3049,7 @@
             renderListaCobros();
         }
 
-        // --- Modal de estado de cuenta de cobro ---
+        // --- Modal de estado de cuenta de cobro (con botón eliminar) ---
         function mostrarEstadoCuentaCobro(cobroId) {
             const cobro = cobros.find(c => c.id === cobroId);
             if (!cobro) return;
@@ -2990,6 +3060,9 @@
                 <h3>Estado de cobro: ${cobro.numeroDocumento}</h3>
                 <p>Cliente: ${cliente.razonSocial}</p>
                 <p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p>
+                <div style="margin-bottom: 10px;">
+                    <button id="eliminarCobroDesdeModalBtn" class="danger small">🗑 Eliminar este cobro</button>
+                </div>
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
                     <table>
@@ -3034,6 +3107,19 @@
             modalContent.innerHTML = html;
             modal.style.display = 'flex';
 
+            // Botón eliminar desde el modal
+            document.getElementById('eliminarCobroDesdeModalBtn').addEventListener('click', () => {
+                if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
+                    cobros = cobros.filter(c => c.id !== cobroId);
+                    pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
+                    saveData();
+                    modal.style.display = 'none';
+                    if (document.querySelector('.tab.active').dataset.tab === 'cobros') {
+                        renderCobros();
+                    }
+                }
+            });
+
             const tipoSelect = document.getElementById('pagoTipoCobro');
             const porcentajeDiv = document.getElementById('porcentajeContainerCobro');
             tipoSelect.addEventListener('change', () => {
@@ -3072,7 +3158,6 @@
 
                 alert('Pago registrado');
                 modal.style.display = 'none';
-                // Actualizar lista de cobros si estamos en esa pestaña
                 if (document.querySelector('.tab.active').dataset.tab === 'cobros') {
                     renderCobros();
                 }
