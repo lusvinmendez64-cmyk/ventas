@@ -662,7 +662,7 @@
             reader.readAsText(file);
         }
 
-        // --- Panel de recordatorios ---
+        // --- Panel de recordatorios (modificado para incluir cobros pendientes) ---
         function mostrarRecordatorios() {
             const hoy = new Date();
             hoy.setHours(0,0,0,0);
@@ -704,17 +704,32 @@
                 }
             });
 
+            // 🔹 NUEVO: Cobros pendientes (saldo > 0)
+            const cobrosPendientes = cobros.filter(c => c.saldoPendiente > 0).slice(0, 5); // mostrar máximo 5
+
             let html = '';
-            if (facturasProximas.length > 0 || chequesPendientes.length > 0) {
+            if (facturasProximas.length > 0 || chequesPendientes.length > 0 || cobrosPendientes.length > 0) {
                 html += '<div class="recordatorios">';
                 html += '<strong>⏰ Recordatorios</strong>';
+
                 facturasProximas.forEach(f => {
                     const clase = f.vencida ? 'vencido' : 'proximo';
                     html += `<div class="recordatorio-item ${clase}">📄 Factura ${f.id.substr(0,8)} - ${f.clienteNombre}: ${f.vencida ? 'VENCIDA' : 'Vence en '+f.diasRestantes+' día(s)'} (Q${f.saldoPendiente.toFixed(2)})</div>`;
                 });
+
                 chequesPendientes.forEach(c => {
                     html += `<div class="recordatorio-item proximo">💰 Cheque de Q${c.monto.toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div>`;
                 });
+
+                // Mostrar cobros pendientes
+                if (cobrosPendientes.length > 0) {
+                    html += '<div><strong>💰 Cobros pendientes</strong></div>';
+                    cobrosPendientes.forEach(c => {
+                        const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?' };
+                        html += `<div class="recordatorio-item">📄 ${c.numeroDocumento} - ${cliente.razonSocial}: ${formatoQ(c.saldoPendiente)}</div>`;
+                    });
+                }
+
                 html += '</div>';
             }
             return html;
@@ -735,16 +750,16 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (modificada) ==========
+        // ========== PESTAÑA VENTA (modificada con botones simétricos) ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
 
             let html = `
                 <h2>🧾 Registrar venta (Q)</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-                    <button id="backupBtn" class="secondary small">⬇️ Respaldo</button>
-                    <label for="restoreFile" class="secondary small" style="display: inline-block; padding: 8px 14px; background: #eaf0f6; border-radius: 40px; cursor: pointer;">⬆️ Restaurar</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <button id="backupBtn" class="secondary small" style="flex: 1 1 auto;">⬇️ Respaldo</button>
+                    <label for="restoreFile" class="secondary small" style="flex: 1 1 auto; display: inline-block; padding: 8px 14px; background: #eaf0f6; border-radius: 40px; cursor: pointer; text-align: center; border: 1px solid #a0b9cf;">⬆️ Restaurar</label>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;">
                 </div>
                 ${mostrarRecordatorios()}
