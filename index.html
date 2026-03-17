@@ -408,6 +408,15 @@
                 align-items: stretch;
             }
         }
+        /* NUEVO: Estilo para el saludo personal */
+        #greeting {
+            background: #e8f5e9;
+            padding: 8px 16px;
+            text-align: right;
+            font-size: 0.9rem;
+            color: #075e54;
+            border-bottom: 1px solid #c8e6c9;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -415,6 +424,8 @@
 </head>
 <body>
 <div class="app" id="app">
+    <!-- NUEVO: Saludo personalizado -->
+    <div id="greeting"></div>
     <div class="tabs">
         <div class="tab active" data-tab="venta">🧾 Registrar venta</div>
         <div class="tab" data-tab="ventas">📅 Ventas</div>
@@ -441,6 +452,11 @@
     <div class="modal-content" id="estadoCobroContent"></div>
 </div>
 
+<!-- NUEVO: Modal para resumen de ventas semanal/mensual -->
+<div id="resumenVentasModal" class="modal">
+    <div class="modal-content" id="resumenVentasContent"></div>
+</div>
+
 <script>
     (function() {
         // --- DATOS GLOBALES ---
@@ -450,8 +466,24 @@
         let inventario = [];
         let movimientosInventario = [];
         let abonos = [];
-        let cobros = [];          // Cobros recuperados
-        let pagosCobro = [];      // Pagos de cobros recuperados
+        let cobros = [];
+        let pagosCobro = [];
+
+        // NUEVO: Variable para el nombre del usuario
+        let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
+
+        // Si no hay nombre, preguntar y guardar
+        if (!nombreUsuario) {
+            nombreUsuario = prompt('¡Hola! Por favor, ingresa tu nombre para personalizar la experiencia:');
+            if (nombreUsuario && nombreUsuario.trim() !== '') {
+                localStorage.setItem('nombreUsuario', nombreUsuario.trim());
+            } else {
+                nombreUsuario = 'Usuario'; // valor por defecto
+                localStorage.setItem('nombreUsuario', nombreUsuario);
+            }
+        }
+        // Mostrar saludo en el div correspondiente
+        document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
 
         // Funciones para generar IDs únicos
         function generarIdCliente() { return 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
@@ -656,7 +688,7 @@
                     if (data.cobros) cobros = data.cobros;
                     if (data.pagosCobro) pagosCobro = data.pagosCobro;
                     migrarDatos();
-                    saveData(); // <--- ¡Clave! Guardar los datos importados
+                    saveData();
                     alert('Respaldo importado correctamente');
                     const activeTab = document.querySelector('.tab.active').dataset.tab;
                     showTab(activeTab);
@@ -756,6 +788,7 @@
 
         // ========== PESTAÑA VENTA (botones simétricos) ==========
         function renderVenta() {
+            // ... (código existente sin cambios) ...
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
 
@@ -1404,6 +1437,7 @@
 
         // ========== PESTAÑA VENTAS (historial) con paginación de 5 ==========
         function renderVentasHistorial() {
+            // ... (código existente sin cambios) ...
             let html = `
                 <h2>📅 Historial de ventas</h2>
                 ${mostrarRecordatorios()}
@@ -1461,7 +1495,7 @@
 
             let ventasFiltradas = [];
             let paginaVentas = 0;
-            const itemsPorPaginaVentas = 5; // Cambiado de 10 a 5
+            const itemsPorPaginaVentas = 5;
 
             function aplicarFiltro() {
                 const mes = parseInt(filtroMes.value);
@@ -2102,10 +2136,12 @@
             if (abonosCliente.length === 0) {
                 html += '<p>No hay abonos registrados.</p>';
             } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Fecha</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
+                // MEJORA: Agregar columna "Fecha Factura" con la fecha de la venta original
+                html += `<div class="table-responsive"><table><thead><tr><th>Fecha Abono</th><th>Fecha Factura</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
                 abonosCliente.forEach(a => {
                     const venta = ventas.find(v => v.id === a.ventaId);
-                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${a.estado || 'cobrado'}</td></tr>`;
+                    const fechaFactura = venta ? new Date(venta.fecha).toLocaleDateString() : '—';
+                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${fechaFactura}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${a.estado || 'cobrado'}</td></tr>`;
                 });
                 html += `</tbody></table></div>`;
             }
@@ -2322,7 +2358,7 @@
             });
         }
 
-        // ========== PESTAÑA INVENTARIO (modificada para incluir cobros propios en comisión) ==========
+        // ========== PESTAÑA INVENTARIO (MEJORADA) ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2361,6 +2397,9 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
+                    <!-- NUEVO: Botones para resumen de ventas -->
+                    <button id="resumenSemanalBtn" class="secondary">📅 Resumen Semanal</button>
+                    <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -2431,12 +2470,16 @@
                 const inventarioPagina = inventario.slice(inicio, fin);
 
                 inventarioBody.innerHTML = '';
+                // MEJORA: Calcular valor total de TODO el inventario (no solo la página)
                 let totalValorVenta = 0;
+                inventario.forEach(item => {
+                    totalValorVenta += item.stock * item.precioUnitario;
+                });
+                valorInventarioSpan.innerText = formatoQ(totalValorVenta);
+
                 inventario.sort((a,b) => a.nombre.localeCompare(b.nombre));
                 inventarioPagina.forEach(item => {
                     const stockClass = item.stock < 5 ? 'stock-bajo' : '';
-                    const valorVenta = item.stock * item.precioUnitario;
-                    totalValorVenta += valorVenta;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
@@ -2449,7 +2492,7 @@
                     `;
                     inventarioBody.appendChild(tr);
                 });
-                valorInventarioSpan.innerText = formatoQ(totalValorVenta);
+
                 actualizarComision();
 
                 // Paginación
@@ -2751,6 +2794,97 @@
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(movimientosData), 'Movimientos');
                 XLSX.writeFile(wb, 'inventario.xlsx');
             });
+
+            // NUEVO: Eventos para los botones de resumen
+            document.getElementById('resumenSemanalBtn').addEventListener('click', () => mostrarResumenVentas('semana'));
+            document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
+        }
+
+        // NUEVA FUNCIÓN: Mostrar resumen de ventas semanal o mensual en modal
+        function mostrarResumenVentas(periodo) {
+            const hoy = new Date();
+            let inicio, fin, titulo;
+
+            if (periodo === 'semana') {
+                // Semana actual: de lunes a hoy
+                const diaSemana = hoy.getDay(); // 0 domingo, 1 lunes...
+                const diff = diaSemana === 0 ? 6 : diaSemana - 1; // días restar para llegar a lunes
+                inicio = new Date(hoy);
+                inicio.setDate(hoy.getDate() - diff);
+                inicio.setHours(0,0,0,0);
+                fin = new Date(hoy);
+                fin.setHours(23,59,59,999);
+                titulo = `Resumen de Ventas - Semana del ${inicio.toLocaleDateString()} al ${fin.toLocaleDateString()}`;
+            } else {
+                // Mes actual
+                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                inicio.setHours(0,0,0,0);
+                fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59, 999); // último día del mes
+                titulo = `Resumen de Ventas - ${hoy.toLocaleString('default', { month: 'long' })} ${hoy.getFullYear()}`;
+            }
+
+            // Filtrar ventas en el período
+            const ventasPeriodo = ventas.filter(v => {
+                const fecha = new Date(v.fecha);
+                return fecha >= inicio && fecha <= fin;
+            });
+
+            if (ventasPeriodo.length === 0) {
+                alert('No hay ventas en este período.');
+                return;
+            }
+
+            // Calcular total de unidades vendidas por producto
+            const unidadesPorProducto = {};
+            ventasPeriodo.forEach(v => {
+                v.productos.forEach(p => {
+                    if (!unidadesPorProducto[p.producto]) {
+                        unidadesPorProducto[p.producto] = 0;
+                    }
+                    unidadesPorProducto[p.producto] += p.unidades;
+                });
+            });
+
+            // Obtener lista de clientes únicos
+            const clientesSet = new Set();
+            ventasPeriodo.forEach(v => {
+                const cliente = clientes.find(c => c.id === v.clienteId);
+                if (cliente) clientesSet.add(cliente.razonSocial);
+            });
+            const clientesLista = Array.from(clientesSet).join(', ');
+
+            // Total monetario
+            const totalVentas = ventasPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
+            // Construir HTML del modal
+            let html = `
+                <h3>${titulo}</h3>
+                <p><strong>Total de ventas:</strong> ${formatoQ(totalVentas)}</p>
+                <p><strong>Clientes:</strong> ${clientesLista}</p>
+                <h4>Unidades vendidas por producto</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Producto</th><th>Unidades</th></tr></thead>
+                        <tbody>
+            `;
+            Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
+                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+            html += `<div style="margin-top:20px;"><button class="secondary small" id="cerrarResumenBtn">Cerrar</button></div>`;
+
+            const modal = document.getElementById('resumenVentasModal');
+            const content = document.getElementById('resumenVentasContent');
+            content.innerHTML = html;
+            modal.style.display = 'flex';
+
+            document.getElementById('cerrarResumenBtn').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
         }
 
         // ========== PESTAÑA COBROS (con botón eliminar individual) ==========
@@ -2974,7 +3108,7 @@
                 // Ordenar por fecha descendente
                 const cobrosOrdenados = [...cobros].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let paginaCobros = 0;
-                const itemsPorPaginaCobros = 5; // Cambiado de 10 a 5
+                const itemsPorPaginaCobros = 5;
 
                 function mostrarPaginaCobros() {
                     const inicio = paginaCobros * itemsPorPaginaCobros;
