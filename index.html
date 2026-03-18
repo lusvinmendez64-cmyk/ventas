@@ -2800,7 +2800,7 @@
             document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
         }
 
-        // NUEVA FUNCIÓN: Mostrar resumen de ventas semanal o mensual en modal
+        // NUEVA FUNCIÓN: Mostrar resumen de ventas semanal o mensual en modal (con PDF)
         function mostrarResumenVentas(periodo) {
             const hoy = new Date();
             let inicio, fin, titulo;
@@ -2871,7 +2871,10 @@
                 html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
             });
             html += `</tbody></table></div>`;
-            html += `<div style="margin-top:20px;"><button class="secondary small" id="cerrarResumenBtn">Cerrar</button></div>`;
+            html += `<div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="secondary small" id="exportarResumenPDF">📄 Exportar PDF</button>
+                <button class="secondary small" id="cerrarResumenBtn">Cerrar</button>
+            </div>`;
 
             const modal = document.getElementById('resumenVentasModal');
             const content = document.getElementById('resumenVentasContent');
@@ -2882,12 +2885,33 @@
                 modal.style.display = 'none';
             });
 
+            // Botón para exportar PDF
+            document.getElementById('exportarResumenPDF').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text(titulo, 14, 16);
+                doc.setFontSize(11);
+                doc.text(`Total de ventas: ${formatoQ(totalVentas)}`, 14, 24);
+                doc.text(`Clientes: ${clientesLista}`, 14, 32);
+                doc.text('Unidades vendidas por producto:', 14, 40);
+
+                const tableRows = Object.entries(unidadesPorProducto).map(([prod, cant]) => [prod, cant.toString()]);
+                doc.autoTable({
+                    startY: 44,
+                    head: [['Producto', 'Unidades']],
+                    body: tableRows,
+                    margin: { left: 14 },
+                });
+                doc.save('resumen_ventas.pdf');
+            });
+
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.style.display = 'none';
             });
         }
 
-        // ========== PESTAÑA COBROS (con botón eliminar individual) ==========
+        // ========== PESTAÑA COBROS (con botón eliminar individual y visualización de ventas del día) ==========
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
@@ -2920,6 +2944,9 @@
 
                     <button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button>
                 </fieldset>
+
+                <!-- NUEVO: Sección para mostrar ventas del día del cliente seleccionado -->
+                <div id="ventasDelDiaContainer" style="margin-top: 20px;"></div>
 
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
@@ -2961,6 +2988,7 @@
             const fechaCobro = document.getElementById('fechaCobro');
             const montoTotal = document.getElementById('montoTotalCobro');
             const guardarBtn = document.getElementById('guardarCobroBtn');
+            const ventasDelDiaContainer = document.getElementById('ventasDelDiaContainer');
 
             let clienteSeleccionado = null;
             let resultadosFiltrados = [];
@@ -3028,6 +3056,9 @@
                             document.getElementById('quitarSeleccionCobroBtn')?.addEventListener('click', () => limpiarCliente());
                             renderBusqueda('');
                             buscarInput.value = '';
+
+                            // Mostrar ventas del día de este cliente
+                            mostrarVentasDelDia(cliente.id);
                         }
                     });
                 });
@@ -3043,6 +3074,43 @@
                 clienteSeleccionado = null;
                 clienteSelContainer.innerHTML = '';
                 renderBusqueda(buscarInput.value);
+                ventasDelDiaContainer.innerHTML = ''; // Limpiar tabla de ventas
+            }
+
+            // NUEVA FUNCIÓN: Mostrar ventas del día del cliente seleccionado
+            function mostrarVentasDelDia(clienteId) {
+                const hoy = new Date().toDateString();
+                const ventasClienteHoy = ventas.filter(v => {
+                    return v.clienteId === clienteId && new Date(v.fecha).toDateString() === hoy;
+                });
+
+                if (ventasClienteHoy.length === 0) {
+                    ventasDelDiaContainer.innerHTML = '<p>No hay ventas registradas hoy para este cliente.</p>';
+                    return;
+                }
+
+                let html = `
+                    <fieldset>
+                        <legend>Ventas del día de este cliente</legend>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead>
+                                <tbody>
+                `;
+                ventasClienteHoy.forEach(v => {
+                    const docId = v.id.substr(0, 8); // Mostrar primeros 8 caracteres del ID
+                    const saldoOriginal = parseFloat(v.total).toFixed(2);
+                    const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
+                    const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
+                    html += `<tr>
+                        <td>${docId}</td>
+                        <td>${formatoQ(saldoOriginal)}</td>
+                        <td>${formatoQ(saldoPendiente)}</td>
+                        <td>${estado}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div></fieldset>`;
+                ventasDelDiaContainer.innerHTML = html;
             }
 
             buscarInput.addEventListener('input', () => renderBusqueda(buscarInput.value));
