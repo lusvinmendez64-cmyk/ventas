@@ -382,7 +382,7 @@
         .buscador {
             margin-bottom: 15px;
         }
-        /* Mejoras para móviles: tabla más compacta y legible */
+        /* Mejoras para móviles */
         .table-responsive {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -407,7 +407,6 @@
                 flex-direction: column;
                 align-items: stretch;
             }
-            /* Para inventario: hacer celdas más pequeñas */
             #inventarioBody td {
                 font-size: 0.7rem;
                 white-space: nowrap;
@@ -452,6 +451,10 @@
 </div>
 <div id="resumenVentasModal" class="modal">
     <div class="modal-content" id="resumenVentasContent"></div>
+</div>
+<!-- Modal para edición de cliente -->
+<div id="editarClienteModal" class="modal">
+    <div class="modal-content" id="editarClienteContent"></div>
 </div>
 
 <script>
@@ -678,7 +681,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (modificada para incluir cobros en resumen diario) ==========
+        // ========== PESTAÑA VENTA (modificada para incluir cobros en resumen diario y descarga JSON) ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
@@ -1183,7 +1186,7 @@
 
             guardarBtn.addEventListener('click', guardarVenta);
 
-            // --- FUNCIÓN MOSTRAR TOTALES DÍA MEJORADA (incluye cobros creados) ---
+            // --- FUNCIÓN MOSTRAR TOTALES DÍA MEJORADA (incluye cobros creados y descarga JSON) ---
             function mostrarTotalesDia() {
                 const hoy = new Date().toDateString();
                 const ventasHoy = ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
@@ -1197,7 +1200,6 @@
                 const abonosHoy = abonos.filter(a => new Date(a.fecha).toDateString() === hoy);
                 const totalAbonosHoy = abonosHoy.reduce((acc, a) => acc + (a.monto || 0), 0);
 
-                // Cobros creados hoy
                 const cobrosHoy = cobros.filter(c => new Date(c.fecha).toDateString() === hoy);
                 const totalCobrosHoy = cobrosHoy.reduce((acc, c) => acc + (c.montoTotal || 0), 0);
 
@@ -1261,7 +1263,8 @@
                         mensaje += '*COBROS CREADOS HOY*\n';
                         cobrosHoy.forEach((c, i) => {
                             const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?' };
-                            mensaje += `${i+1}. ${cliente.razonSocial} - Documento: ${c.numeroDocumento} - Monto: ${formatoQ(c.montoTotal)}\n`;
+                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} (Cód: ${cliente.codigo || 'N/A'})\n`;
+                            mensaje += `   Documento: ${c.numeroDocumento} | Monto total: ${formatoQ(c.montoTotal)} | Saldo pendiente: ${formatoQ(c.saldoPendiente)}\n`;
                         });
                         mensaje += `Total cobros creados: ${formatoQ(totalCobrosHoy)}\n\n`;
                     }
@@ -1271,7 +1274,7 @@
                         pagosCobroHoy.forEach((p, i) => {
                             const cobro = cobros.find(c => c.id === p.cobroId);
                             const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                            mensaje += `${i+1}. ${cliente.razonSocial} - Monto: ${formatoQ(p.monto)} (${p.tipo})`;
+                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} | Documento: ${cobro ? cobro.numeroDocumento : 'N/A'} | Monto pago: ${formatoQ(p.monto)} (${p.tipo})`;
                             if (p.tipo === 'ajeno') mensaje += ` (${p.porcentaje}% base)`;
                             mensaje += '\n';
                         });
@@ -1288,6 +1291,30 @@
 
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
+
+                    // Descargar JSON con los datos del día
+                    const datosDia = {
+                        fecha: new Date().toISOString().slice(0,10),
+                        ventas: ventasHoy,
+                        abonos: abonosHoy,
+                        cobros: cobrosHoy,
+                        pagosCobro: pagosCobroHoy,
+                        totales: {
+                            ventas: contado+credito,
+                            contado,
+                            credito,
+                            abonos: totalAbonosHoy,
+                            cobrosCreados: totalCobrosHoy,
+                            pagosCobro: totalPagosCobroHoy
+                        }
+                    };
+                    const blob = new Blob([JSON.stringify(datosDia, null, 2)], { type: 'application/json' });
+                    const url2 = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url2;
+                    a.download = `resumen_dia_${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url2);
                 });
             }
             mostrarTotalesDia();
@@ -1732,7 +1759,7 @@
             });
         }
 
-        // ========== PESTAÑA CATÁLOGO (clientes) con numeración ==========
+        // ========== PESTAÑA CATÁLOGO (clientes) con numeración y edición independiente ==========
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
@@ -1796,9 +1823,8 @@
                     contenedor.innerHTML = '<p>No hay clientes en esta categoría.</p>';
                 } else {
                     let out = '';
-                    // Ordenar por código y numerar
                     clientesPagina.sort((a,b) => (a.codigo || '').localeCompare(b.codigo || '')).forEach((cli, idx) => {
-                        const numero = inicio + idx + 1; // número correlativo global
+                        const numero = inicio + idx + 1;
                         const ventasCliente = ventas.filter(v => v.clienteId === cli.id);
                         const totalCliente = ventasCliente.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
                         const saldoPendiente = ventasCliente.reduce((acc, v) => acc + (v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0) : 0), 0);
@@ -1843,6 +1869,7 @@
                     });
                     contenedor.innerHTML = out;
 
+                    // Asignar eventos (asignar código)
                     document.querySelectorAll('.asignarBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
@@ -1858,38 +1885,16 @@
                         });
                     });
 
+                    // Editar cliente (abre modal)
                     document.querySelectorAll('.editarClienteBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
                             const cli = clientes.find(c => c.id === id);
-                            if (cli) {
-                                ventaEditandoId = null;
-                                showTab('venta');
-                                setTimeout(() => {
-                                    const razonInput = document.getElementById('razonSocial');
-                                    if (razonInput) {
-                                        document.getElementById('codigoCliente').value = cli.codigo || '';
-                                        razonInput.value = cli.razonSocial;
-                                        document.getElementById('nit').value = cli.nit || '';
-                                        document.getElementById('direccion').value = cli.direccion || '';
-                                        document.getElementById('telefono').value = cli.telefono || '';
-                                        document.getElementById('correo').value = cli.correo || '';
-                                        const container = document.getElementById('clienteSeleccionadoContainer');
-                                        if (container) {
-                                            container.innerHTML = `
-                                                <div class="badge">✅ Cliente: ${cli.razonSocial} <button id="quitarSeleccionBtn" class="small secondary">✕ Quitar</button></div>
-                                            `;
-                                            document.getElementById('quitarSeleccionBtn')?.addEventListener('click', () => {
-                                                document.getElementById('razonSocial').value = '';
-                                                renderVenta();
-                                            });
-                                        }
-                                    }
-                                }, 100);
-                            }
+                            if (cli) mostrarModalEditarCliente(cli);
                         });
                     });
 
+                    // Editar venta
                     document.querySelectorAll('.editarVentaBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const ventaId = b.dataset.ventaid;
@@ -1901,6 +1906,7 @@
                         });
                     });
 
+                    // Eliminar cliente
                     document.querySelectorAll('.eliminarClienteBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
@@ -1914,6 +1920,7 @@
                         });
                     });
 
+                    // Estado de cuenta
                     document.querySelectorAll('.estadoCuentaBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const clienteId = b.dataset.id;
@@ -2001,6 +2008,48 @@
                     startY: 30,
                 });
                 doc.save(`clientes_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+        }
+
+        // --- Modal para editar cliente directamente ---
+        function mostrarModalEditarCliente(cliente) {
+            const modal = document.getElementById('editarClienteModal');
+            const content = document.getElementById('editarClienteContent');
+            content.innerHTML = `
+                <h3>Editar cliente</h3>
+                <label>Código: <input type="text" id="editCodigo" value="${cliente.codigo || ''}"></label>
+                <label>Razón Social: <input type="text" id="editRazon" value="${cliente.razonSocial}"></label>
+                <label>NIT: <input type="text" id="editNit" value="${cliente.nit || ''}"></label>
+                <label>Dirección: <input type="text" id="editDireccion" value="${cliente.direccion || ''}"></label>
+                <label>Teléfono: <input type="tel" id="editTelefono" value="${cliente.telefono || ''}"></label>
+                <label>Correo: <input type="email" id="editCorreo" value="${cliente.correo || ''}"></label>
+                <label>Encargado: <input type="text" id="editEncargado" value="${cliente.encargado || ''}"></label>
+                <div style="margin-top:20px; display:flex; gap:10px;">
+                    <button id="guardarEdicionCliente" class="secondary">Guardar</button>
+                    <button id="cancelarEdicionCliente" class="secondary small">Cancelar</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+
+            document.getElementById('guardarEdicionCliente').addEventListener('click', () => {
+                cliente.codigo = document.getElementById('editCodigo').value.trim() || null;
+                cliente.razonSocial = document.getElementById('editRazon').value.trim();
+                cliente.nit = document.getElementById('editNit').value.trim() || null;
+                cliente.direccion = document.getElementById('editDireccion').value.trim();
+                cliente.telefono = document.getElementById('editTelefono').value.trim();
+                cliente.correo = document.getElementById('editCorreo').value.trim();
+                cliente.encargado = document.getElementById('editEncargado').value.trim();
+                saveData();
+                modal.style.display = 'none';
+                renderCatalogo(); // recargar vista
+            });
+
+            document.getElementById('cancelarEdicionCliente').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
             });
         }
 
@@ -2259,7 +2308,7 @@
             });
         }
 
-        // ========== PESTAÑA INVENTARIO (con mejoras visuales y PDF con nombre) ==========
+        // ========== PESTAÑA INVENTARIO (sin botón historial, botón ajuste más pequeño) ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2291,10 +2340,10 @@
                 <h2>📊 Inventario y comisiones</h2>
                 ${mostrarRecordatorios()}
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
-                    <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
-                    <button id="resumenSemanalBtn" class="secondary">📅 Resumen Semanal</button>
-                    <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
+                    <button id="ajusteManualBtn" class="secondary small">➕ Ajuste manual</button>
+                    <button id="exportarInventarioBtn" class="secondary small">📥 Exportar Excel</button>
+                    <button id="resumenSemanalBtn" class="secondary small">📅 Resumen Semanal</button>
+                    <button id="resumenMensualBtn" class="secondary small">📊 Resumen Mensual</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -2380,8 +2429,7 @@
                         <td class="${stockClass}">${item.stock}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
                         <td>
-                            <button class="secondary small ajustarBtn" data-id="${item.productoId}">✏️ Ajustar</button>
-                            <button class="secondary small verHistorialBtn" data-id="${item.productoId}">📜 Historial</button>
+                            <button class="secondary small ajustarBtn" data-id="${item.productoId}" style="padding:4px 8px; font-size:0.7rem;">✏️ Ajustar</button>
                         </td>
                     `;
                     inventarioBody.appendChild(tr);
@@ -2433,14 +2481,6 @@
                         saveData();
                         renderInventarioTabla();
                         renderMovimientos();
-                    });
-                });
-
-                document.querySelectorAll('.verHistorialBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const prodId = btn.dataset.id;
-                        selectorProducto.value = prodId;
-                        mostrarHistorialProducto(prodId);
                     });
                 });
             }
@@ -2687,7 +2727,7 @@
             document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
         }
 
-        // ========== FUNCIÓN DE RESUMEN DE VENTAS (MEJORADA: detalle por cliente + resumen) ==========
+        // ========== FUNCIÓN DE RESUMEN DE VENTAS (MEJORADA: detalle por cliente + resumen, con paginación en PDF) ==========
         function mostrarResumenVentas(periodo) {
             const hoy = new Date();
             let inicio, fin, titulo;
@@ -2807,6 +2847,10 @@
                         });
                     });
                     y += 2;
+                    if (y > 270) { // Salto de página si es necesario
+                        doc.addPage();
+                        y = 20;
+                    }
                 });
 
                 doc.addPage();
@@ -2824,7 +2868,7 @@
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
-        // ========== PESTAÑA COBROS (sin cambios) ==========
+        // ========== PESTAÑA COBROS (completa) ==========
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
@@ -3158,7 +3202,7 @@
             renderListaCobros();
         }
 
-        // --- Modal de estado de cuenta de cobro (sin cambios) ---
+        // --- Modal de estado de cuenta de cobro ---
         function mostrarEstadoCuentaCobro(cobroId) {
             const cobro = cobros.find(c => c.id === cobroId);
             if (!cobro) return;
