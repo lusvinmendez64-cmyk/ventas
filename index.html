@@ -704,7 +704,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (con mejora WhatsApp) ==========
+        // ========== PESTAÑA VENTA ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
@@ -754,10 +754,10 @@
                 <fieldset>
                     <legend>🛒 Productos (precio unitario)</legend>
                     <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr></thead>
+                        表
+                            <thead> <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr> </thead>
                             <tbody id="productosBody"></tbody>
-                        </table>
+                         </table>
                     </div>
                     <div class="multi-add">
                         <span>Agregar</span>
@@ -1427,7 +1427,7 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr></thead>
+                        <thead> <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr> </thead>
                         <tbody id="ventasBody"></tbody>
                     </table>
                 </div>
@@ -1893,7 +1893,7 @@
                                 ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
                                 <div class="table-responsive">
                                     <table>
-                                        <thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr></thead>
+                                        <thead> <tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr> </thead>
                                         <tbody>
                                             ${ventasCliente.slice(0,5).map(v => `
                                                 <tr>
@@ -2132,7 +2132,7 @@
                 <h4>Facturas pendientes</h4>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead>
+                        <thead> <tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr> </thead>
                         <tbody>
             `;
             let totalPendiente = 0;
@@ -2281,7 +2281,7 @@
                 <button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr></thead>
+                        <thead> <tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr> </thead>
                         <tbody id="productosCatalogoBody"></tbody>
                     </table>
                 </div>
@@ -2376,17 +2376,26 @@
             });
         }
 
-        // ========== PESTAÑA INVENTARIO (con botón resumen comisiones) ==========
+        // ========== PESTAÑA INVENTARIO (con corrección de comisiones) ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
             const anioActual = hoy.getFullYear();
 
+            // --- CORRECCIÓN: ventas que generan comisión en el mes actual ---
+            // Incluye:
+            // - Ventas al contado realizadas en el mes actual
+            // - Ventas a crédito que fueron canceladas (fechaCancelacion) en el mes actual
             const ventasComision = ventas.filter(v => {
-                const fecha = new Date(v.fecha);
-                if (fecha.getMonth() !== mesActual || fecha.getFullYear() !== anioActual) return false;
+                const fechaVenta = new Date(v.fecha);
+                if (fechaVenta.getMonth() !== mesActual || fechaVenta.getFullYear() !== anioActual) return false;
                 if (v.tipoVenta === 'Contado') return true;
-                if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) return true;
+                if (v.tipoVenta === 'Crédito') {
+                    // Sólo si tiene fechaCancelacion y está en el mes actual
+                    if (!v.fechaCancelacion) return false;
+                    const fechaCancel = new Date(v.fechaCancelacion);
+                    return fechaCancel.getMonth() === mesActual && fechaCancel.getFullYear() === anioActual;
+                }
                 return false;
             });
             const totalVentasComision = ventasComision.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
@@ -2416,7 +2425,7 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr></thead>
+                        <thead> <tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr> </thead>
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
@@ -2426,7 +2435,7 @@
                     <span class="comision-item">💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
                     <span class="comision-item">📅 Ventas del mes (total): <span id="ventasMesTotal">${formatoQ(totalVentasMes)}</span></span>
                     <span class="comision-item" style="flex-wrap: wrap;">
-                        Comisión (contado + créditos pagados + cobros propios): 
+                        Comisión (contado + créditos pagados en el mes + cobros propios): 
                         <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
                         = <span id="montoComision">Q0.00</span>
                         (Base: <span id="baseComision">${formatoQ(baseComision)}</span>)
@@ -2449,7 +2458,7 @@
                     <h3>Últimos movimientos</h3>
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
+                            <thead> <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr> </thead>
                             <tbody id="movimientosBody"></tbody>
                         </table>
                     </div>
@@ -2691,20 +2700,20 @@
                     </div>
                     <div class="table-responsive">
                         表
-                            <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th> </thead>
+                            <thead> <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th> </thead>
                             <tbody>
                 `;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     html += `迭代
-                        <td>${new Date(m.fecha).toLocaleString()} </td>
-                        <td>${m.tipo} </td>
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} </td>
-                        <td>${m.stockResultante} </td>
-                        <td>${m.motivo || ''} </td>
-                     </tr>`;
+                        <td>${new Date(m.fecha).toLocaleString()} 迭代
+                        <td>${m.tipo} 迭代
+                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} 迭代
+                        <td>${m.stockResultante} 迭代
+                        <td>${m.motivo || ''} 迭代
+                      </tr>`;
                 });
-                html += '</tbody> </table> </div>';
+                html += '</tbody> 表 </div>';
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
 
@@ -2724,12 +2733,12 @@
                     const tr = document.createElement('tr');
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     tr.innerHTML = `
-                        <td>${new Date(m.fecha).toLocaleString()} </td>
-                        <td>${m.productoNombre} </td>
-                        <td>${m.tipo} </td>
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} </td>
-                        <td>${m.stockResultante} </td>
-                        <td>${m.motivo || ''} </td>
+                        <td>${new Date(m.fecha).toLocaleString()} 迭代
+                        <td>${m.productoNombre} 迭代
+                        <td>${m.tipo} 迭代
+                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} 迭代
+                        <td>${m.stockResultante} 迭代
+                        <td>${m.motivo || ''} 迭代
                     `;
                     movimientosBody.appendChild(tr);
                 });
@@ -2868,9 +2877,9 @@
             });
 
             html += `<h4>Resumen de productos vendidos</h4>`;
-            html += `<div class="table-responsive"> <table> <thead> <tr> <th>Producto</th> <th>Unidades</th> </tr> </thead> <tbody>`;
+            html += `<div class="table-responsive"> 表 <thead> <tr><th>Producto</th><th>Unidades</th></tr> </thead> <tbody>`;
             Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
-                html += `<tr> <td>${prod}</td> <td>${cant}</td> </tr>`;
+                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
             });
             html += `</tbody> </table> </div>`;
 
@@ -2975,10 +2984,10 @@
 
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
-                    表格
-                        <thead> <tr> <th>Fecha</th> <th>Documento</th> <th>Cliente</th> <th>Monto total</th> <th>Saldo pendiente</th> <th>Acciones</th> </tr> </thead>
+                    <table>
+                        <thead> <tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr> </thead>
                         <tbody id="cobrosBody"></tbody>
-                     </table>
+                    </table>
                 </div>
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
@@ -3115,8 +3124,8 @@
                     <fieldset>
                         <legend>Ventas del día de este cliente</legend>
                         <div class="table-responsive">
-                            表格
-                                <thead> <tr> <th>Documento (ID)</th> <th>Saldo original</th> <th>Saldo pendiente</th> <th>Estado</th> </tr> </thead>
+                            <table>
+                                <thead> <tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr> </thead>
                                 <tbody>
                 `;
                 ventasClienteHoy.forEach(v => {
@@ -3288,7 +3297,7 @@
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
                     <table>
-                        <thead> <tr> <th>Fecha</th> <th>Monto</th> <th>Tipo</th> <th>% base</th> </tr> </thead>
+                        <thead> <tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr> </thead>
                         <tbody>
             `;
             if (pagos.length === 0) {
@@ -3457,7 +3466,7 @@
             }
         }
 
-        // Nueva función para generar resumen de comisiones
+        // Nueva función para generar resumen de comisiones (usando fechaCancelacion)
         function generarResumenComisiones() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
