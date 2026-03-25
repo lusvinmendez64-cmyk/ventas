@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>📱 Gestión ventas + Créditos + Comisiones + Cobros</title>
     <style>
+        /* (El CSS es idéntico al original, sin cambios) */
         * {
             box-sizing: border-box;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1786,6 +1787,10 @@
                 alert('Abono registrado');
                 modal.style.display = 'none';
                 if (document.querySelector('.tab.active').dataset.tab === 'ventas') renderVentasHistorial();
+                // Si la pestaña inventario está activa, refrescarla para que actualice la base de comisión
+                if (document.querySelector('.tab.active').dataset.tab === 'inventario') {
+                    renderInventario();
+                }
             });
 
             document.getElementById('cancelarAbonoBtn').addEventListener('click', () => {
@@ -2280,6 +2285,10 @@
                 alert('Abono registrado');
                 modal.style.display = 'none';
                 if (document.querySelector('.tab.active').dataset.tab === 'catalogo') renderCatalogo();
+                // Si la pestaña inventario está activa, refrescarla
+                if (document.querySelector('.tab.active').dataset.tab === 'inventario') {
+                    renderInventario();
+                }
             });
 
             modal.addEventListener('click', (e) => {
@@ -2400,21 +2409,22 @@
 
             // --- CORRECCIÓN: ventas que generan comisión en el mes actual ---
             // Incluye:
-            // - Ventas al contado realizadas en el mes actual
-            // - Ventas a crédito que fueron canceladas (fechaCancelacion) en el mes actual
-            const ventasComision = ventas.filter(v => {
+            // 1. Ventas al contado realizadas en el mes actual
+            // 2. Créditos cancelados (fechaCancelacion) en el mes actual (independientemente de la fecha de venta)
+            // 3. Pagos de cobros propios realizados en el mes actual
+            const ventasContadoMes = ventas.filter(v => {
                 const fechaVenta = new Date(v.fecha);
-                if (fechaVenta.getMonth() !== mesActual || fechaVenta.getFullYear() !== anioActual) return false;
-                if (v.tipoVenta === 'Contado') return true;
-                if (v.tipoVenta === 'Crédito') {
-                    // Sólo si tiene fechaCancelacion y está en el mes actual
-                    if (!v.fechaCancelacion) return false;
-                    const fechaCancel = new Date(v.fechaCancelacion);
-                    return fechaCancel.getMonth() === mesActual && fechaCancel.getFullYear() === anioActual;
-                }
-                return false;
+                return fechaVenta.getMonth() === mesActual && fechaVenta.getFullYear() === anioActual && v.tipoVenta === 'Contado';
             });
-            const totalVentasComision = ventasComision.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+            const totalContadoMes = ventasContadoMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
+            const creditosCanceladosMes = ventas.filter(v => {
+                if (v.tipoVenta !== 'Crédito') return false;
+                if (!v.fechaCancelacion) return false;
+                const fechaCancel = new Date(v.fechaCancelacion);
+                return fechaCancel.getMonth() === mesActual && fechaCancel.getFullYear() === anioActual;
+            });
+            const totalCreditosCanceladosMes = creditosCanceladosMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
             const pagosCobroMes = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
@@ -2422,7 +2432,8 @@
             });
             const totalPagosCobroPropios = pagosCobroMes.reduce((acc, p) => acc + (p.monto || 0), 0);
 
-            const baseComision = totalVentasComision + totalPagosCobroPropios;
+            const baseComision = totalContadoMes + totalCreditosCanceladosMes + totalPagosCobroPropios;
+
             const todasVentasMes = ventas.filter(v => {
                 const fecha = new Date(v.fecha);
                 return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
@@ -2719,21 +2730,21 @@
                         <strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}
                     </div>
                     <div class="table-responsive">
-                        <table>
+                        表
                             <thead>
-                                <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr>
+                                 <th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th>
                             </thead>
                             <tbody>
                 `;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
-                    html += `<tr>
-                        <td>${new Date(m.fecha).toLocaleString()}</td>
-                        <td>${m.tipo}</td>
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
-                        <td>${m.stockResultante}</td>
-                        <td>${m.motivo || ''}</td>
-                    </tr>`;
+                    html += `实践
+                         <td>${new Date(m.fecha).toLocaleString()}</td>
+                         <td>${m.tipo}</td>
+                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
+                         <td>${m.stockResultante}</td>
+                         <td>${m.motivo || ''}</td>
+                       </tr>`;
                 });
                 html += '</tbody></table></div>';
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
@@ -2755,12 +2766,12 @@
                     const tr = document.createElement('tr');
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     tr.innerHTML = `
-                        <td>${new Date(m.fecha).toLocaleString()} 迭代
-                        <td>${m.productoNombre} 迭代
-                        <td>${m.tipo} 迭代
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} 迭代
-                        <td>${m.stockResultante} 迭代
-                        <td>${m.motivo || ''} 迭代
+                         <td>${new Date(m.fecha).toLocaleString()}</td>
+                         <td>${m.productoNombre}</td>
+                         <td>${m.tipo}</td>
+                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
+                         <td>${m.stockResultante}</td>
+                         <td>${m.motivo || ''}</td>
                     `;
                     movimientosBody.appendChild(tr);
                 });
@@ -2899,11 +2910,11 @@
             });
 
             html += `<h4>Resumen de productos vendidos</h4>`;
-            html += `<div class="table-responsive"> 表 <thead> <tr><th>Producto</th><th>Unidades</th> </thead> <tbody>`;
+            html += `<div class="table-responsive"> <table> <thead> <tr><th>Producto</th><th>Unidades</th></tr> </thead> <tbody>`;
             Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
-                html += `实践   <td>${prod}</td> <td>${cant}</td> 实践`;
+                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
             });
-            html += `</tbody> 表 </div>`;
+            html += `</tbody></table></div>`;
 
             html += `<div style="margin-top:20px; display:flex; gap:10px;">
                 <button class="secondary small" id="exportarResumenPDF">📄 Exportar PDF</button>
@@ -3006,12 +3017,12 @@
 
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
-                    表
+                    <table>
                         <thead>
-                             <th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th>
+                             <tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="cobrosBody"></tbody>
-                    表
+                    </table>
                 </div>
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
@@ -3148,9 +3159,9 @@
                     <fieldset>
                         <legend>Ventas del día de este cliente</legend>
                         <div class="table-responsive">
-                            表
+                            <table>
                                 <thead>
-                                     <th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th>
+                                     <tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr>
                                 </thead>
                                 <tbody>
                 `;
@@ -3159,11 +3170,11 @@
                     const saldoOriginal = parseFloat(v.total).toFixed(2);
                     const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
                     const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
-                    html += `迭代
-                         <td>${docId}</td> <td>${formatoQ(saldoOriginal)}</td> <td>${formatoQ(saldoPendiente)}</td> <td>${estado}</td>
-                      </tr>`;
+                    html += `<tr>
+                          <td>${docId}</td> <td>${formatoQ(saldoOriginal)}</td> <td>${formatoQ(saldoPendiente)}</td> <td>${estado}</td>
+                       </tr>`;
                 });
-                html += `</tbody> 表 </div></fieldset>`;
+                html += `</tbody></table></div></fieldset>`;
                 ventasDelDiaContainer.innerHTML = html;
             }
 
@@ -3250,7 +3261,7 @@
                                 <button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button>
                                 <button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button>
                                 <button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button>
-                             </td>
+                              </td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -3319,9 +3330,9 @@
                 </div>
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
-                    表
+                    <table>
                         <thead>
-                             <th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th>
+                             <tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr>
                         </thead>
                         <tbody>
             `;
@@ -3330,14 +3341,14 @@
             } else {
                 pagos.forEach(p => {
                     html += `<tr>
-                        <td>${new Date(p.fecha).toLocaleDateString()}</td>
-                        <td>${formatoQ(p.monto)}</td>
-                        <td>${p.tipo}</td>
-                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td>
-                    </tr>`;
+                         <td>${new Date(p.fecha).toLocaleDateString()}</td>
+                         <td>${formatoQ(p.monto)}</td>
+                         <td>${p.tipo}</td>
+                         <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td>
+                       </tr>`;
                 });
             }
-            html += '</tbody> 表 </div>';
+            html += '</tbody></table></div>';
 
             html += `
                 <h4>Registrar nuevo pago</h4>
@@ -3579,13 +3590,13 @@
                     const fechaCancel = new Date(v.fechaCancelacion);
                     const diffDias = Math.round((fechaCancel - fechaVenta) / (1000 * 60 * 60 * 24));
                     html += `<tr>
-                        <td>${cliente.codigo || '—'}</td>
-                        <td>${cliente.razonSocial}</td>
-                        <td>${formatoQ(v.total)}</td>
-                        <td>${fechaVenta.toLocaleDateString()}</td>
-                        <td>${fechaCancel.toLocaleDateString()}</td>
-                        <td>${diffDias}</td>
-                    </tr>`;
+                         <td>${cliente.codigo || '—'}</td>
+                         <td>${cliente.razonSocial}</td>
+                         <td>${formatoQ(v.total)}</td>
+                         <td>${fechaVenta.toLocaleDateString()}</td>
+                         <td>${fechaCancel.toLocaleDateString()}</td>
+                         <td>${diffDias}</td>
+                       </tr>`;
                 });
                 html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalCreditos)}</strong></td><td colspan="3"></td></tr>`;
                 html += `</tbody></table></div>`;
