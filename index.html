@@ -382,7 +382,6 @@
         .buscador {
             margin-bottom: 15px;
         }
-        /* Mejoras para móviles */
         .table-responsive {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -420,6 +419,21 @@
             color: #075e54;
             border-bottom: 1px solid #c8e6c9;
         }
+        .calificacion-star {
+            color: #ffc107;
+            font-size: 1rem;
+        }
+        .calificacion-lista {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 8px;
+        }
+        .calificacion-item {
+            border-bottom: 1px solid #dee2e6;
+            padding: 6px 0;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -439,7 +453,7 @@
     <div class="content" id="content"></div>
 </div>
 
-<!-- Modales -->
+<!-- Modales existentes -->
 <div id="estadoCuentaModal" class="modal">
     <div class="modal-content" id="estadoCuentaContent"></div>
 </div>
@@ -452,9 +466,12 @@
 <div id="resumenVentasModal" class="modal">
     <div class="modal-content" id="resumenVentasContent"></div>
 </div>
-<!-- Modal para edición de cliente -->
 <div id="editarClienteModal" class="modal">
     <div class="modal-content" id="editarClienteContent"></div>
+</div>
+<!-- Nuevo modal para calificación -->
+<div id="calificacionModal" class="modal">
+    <div class="modal-content" id="calificacionContent"></div>
 </div>
 
 <script>
@@ -468,6 +485,7 @@
         let abonos = [];
         let cobros = [];
         let pagosCobro = [];
+        let calificacionesClientes = [];
 
         let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
         if (!nombreUsuario) {
@@ -481,7 +499,6 @@
         }
         document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
 
-        // Funciones para generar IDs
         function generarIdCliente() { return 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdVenta() { return 'ven_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdProducto() { return 'prod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
@@ -489,6 +506,7 @@
         function generarIdAbono() { return 'abo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdCobro() { return 'cob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdPagoCobro() { return 'pag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+        function generarIdCalificacion() { return 'cal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
 
         const productosPredefinidos = [
             { nombre: 'AZIREN 500', precio: 18.00 },
@@ -516,12 +534,14 @@
                     if (v.diasCredito === undefined) { v.diasCredito = 30; migrado = true; }
                     if (v.fechaVencimiento === undefined) { const fechaVenta = new Date(v.fecha); fechaVenta.setDate(fechaVenta.getDate() + v.diasCredito); v.fechaVencimiento = fechaVenta.toISOString(); migrado = true; }
                 } else { if (v.saldoPendiente === undefined) v.saldoPendiente = 0; }
+                if (v.fechaCancelacion === undefined) v.fechaCancelacion = null;
             });
             inventario.forEach(i => { if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7; });
             movimientosInventario.forEach(m => { if (m.usuario === undefined) m.usuario = 'admin'; if (m.documento === undefined) m.documento = ''; });
             if (!abonos) abonos = [];
             if (!cobros) cobros = [];
             if (!pagosCobro) pagosCobro = [];
+            if (!calificacionesClientes) calificacionesClientes = [];
 
             if (catalogoProductos.length === 0) {
                 productosPredefinidos.forEach(p => {
@@ -561,6 +581,7 @@
                 abonos = JSON.parse(localStorage.getItem('abonos')) || [];
                 cobros = JSON.parse(localStorage.getItem('cobros')) || [];
                 pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
+                calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
             } catch (e) { console.warn("Error cargando datos", e); }
             migrarDatos();
         }
@@ -573,6 +594,7 @@
             localStorage.setItem('abonos', JSON.stringify(abonos));
             localStorage.setItem('cobros', JSON.stringify(cobros));
             localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
+            localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
         }
         loadData();
         saveData();
@@ -582,7 +604,7 @@
 
         function exportarBackup() {
             const backup = {
-                clientes, ventas, catalogoProductos, inventario, movimientosInventario, abonos, cobros, pagosCobro,
+                clientes, ventas, catalogoProductos, inventario, movimientosInventario, abonos, cobros, pagosCobro, calificacionesClientes,
                 fecha: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -607,6 +629,7 @@
                     if (data.abonos) abonos = data.abonos;
                     if (data.cobros) cobros = data.cobros;
                     if (data.pagosCobro) pagosCobro = data.pagosCobro;
+                    if (data.calificacionesClientes) calificacionesClientes = data.calificacionesClientes;
                     migrarDatos();
                     saveData();
                     alert('Respaldo importado correctamente');
@@ -681,7 +704,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (modificada para incluir cobros en resumen diario y descarga JSON) ==========
+        // ========== PESTAÑA VENTA (con mejora WhatsApp) ==========
         function renderVenta() {
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
@@ -929,7 +952,6 @@
             agregarFila.addEventListener('click', () => agregarFilaProducto());
             agregarMultiples.addEventListener('click', agregarMultiplesFilas);
 
-            // Búsqueda con paginación (clientes)
             let resultadosFiltrados = [];
             let paginaActual = 0;
             const itemsPorPagina = 5;
@@ -1133,7 +1155,8 @@
                             diasCredito: diasCredito,
                             saldoPendiente: tipoVenta === 'Crédito' ? parseFloat(total) : 0,
                             fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
-                            mensaje: ''
+                            mensaje: '',
+                            fechaCancelacion: ventas[index].fechaCancelacion || null
                         };
                         ventaId = ventaEditandoId;
                         alert('Venta actualizada');
@@ -1151,7 +1174,8 @@
                         diasCredito: tipoVenta === 'Crédito' ? diasCredito : null,
                         saldoPendiente: tipoVenta === 'Crédito' ? parseFloat(total) : 0,
                         fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
-                        mensaje: ''
+                        mensaje: '',
+                        fechaCancelacion: null
                     };
                     ventas.push(nuevaVenta);
                     ventaId = nuevaVenta.id;
@@ -1186,7 +1210,6 @@
 
             guardarBtn.addEventListener('click', guardarVenta);
 
-            // --- FUNCIÓN MOSTRAR TOTALES DÍA MEJORADA (incluye cobros creados y descarga JSON) ---
             function mostrarTotalesDia() {
                 const hoy = new Date().toDateString();
                 const ventasHoy = ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
@@ -1263,7 +1286,7 @@
                         mensaje += '*COBROS CREADOS HOY*\n';
                         cobrosHoy.forEach((c, i) => {
                             const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?' };
-                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} (Cód: ${cliente.codigo || 'N/A'})\n`;
+                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} (Cód: ${cliente.codigo || 'N/A'}) | Responsable: ${cliente.encargado || '—'}\n`;
                             mensaje += `   Documento: ${c.numeroDocumento} | Monto total: ${formatoQ(c.montoTotal)} | Saldo pendiente: ${formatoQ(c.saldoPendiente)}\n`;
                         });
                         mensaje += `Total cobros creados: ${formatoQ(totalCobrosHoy)}\n\n`;
@@ -1274,9 +1297,9 @@
                         pagosCobroHoy.forEach((p, i) => {
                             const cobro = cobros.find(c => c.id === p.cobroId);
                             const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} | Documento: ${cobro ? cobro.numeroDocumento : 'N/A'} | Monto pago: ${formatoQ(p.monto)} (${p.tipo})`;
-                            if (p.tipo === 'ajeno') mensaje += ` (${p.porcentaje}% base)`;
-                            mensaje += '\n';
+                            mensaje += `${i+1}. Cliente: ${cliente.razonSocial} (Cód: ${cliente.codigo || 'N/A'}) | Responsable: ${cliente.encargado || '—'}\n`;
+                            mensaje += `   Documento: ${cobro ? cobro.numeroDocumento : 'N/A'} | Monto pago: ${formatoQ(p.monto)} (${p.tipo})\n`;
+                            mensaje += `   Monto del crédito: ${formatoQ(cobro ? cobro.montoTotal : 0)} | Saldo pendiente actual: ${formatoQ(cobro ? cobro.saldoPendiente : 0)}\n`;
                         });
                         mensaje += `Total pagado en cobros: ${formatoQ(totalPagosCobroHoy)}\n\n`;
                     }
@@ -1292,7 +1315,6 @@
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
 
-                    // Descargar JSON con los datos del día
                     const datosDia = {
                         fecha: new Date().toISOString().slice(0,10),
                         ventas: ventasHoy,
@@ -1650,7 +1672,7 @@
             });
         }
 
-        // --- Función para mostrar formulario de abono en modal (desde ventas) ---
+        // Función para mostrar formulario de abono (con fechaCancelacion)
         function mostrarFormularioAbono(ventaId) {
             const venta = ventas.find(v => v.id === ventaId);
             if (!venta) return;
@@ -1741,8 +1763,14 @@
                 };
                 abonos.push(nuevoAbono);
 
+                const saldoAnterior = venta.saldoPendiente;
                 venta.saldoPendiente -= monto;
                 if (venta.saldoPendiente < 0) venta.saldoPendiente = 0;
+
+                // Si el saldo queda en cero y aún no tiene fechaCancelacion, asignarla
+                if (venta.saldoPendiente === 0 && !venta.fechaCancelacion) {
+                    venta.fechaCancelacion = new Date().toISOString();
+                }
 
                 saveData();
                 alert('Abono registrado');
@@ -1759,7 +1787,7 @@
             });
         }
 
-        // ========== PESTAÑA CATÁLOGO (clientes) con numeración y edición independiente ==========
+        // ========== PESTAÑA CATÁLOGO (clientes) con calificaciones ==========
         function renderCatalogo() {
             let html = `
                 <h2>📇 Clientes y ventas</h2>
@@ -1796,6 +1824,14 @@
                 return ventas.some(v => v.clienteId === clienteId && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0);
             }
 
+            function obtenerPromedioCalificaciones(clienteId) {
+                const califs = calificacionesClientes.filter(c => c.clienteId === clienteId);
+                if (califs.length === 0) return null;
+                let sumContado = 0, sumCredito = 0;
+                califs.forEach(c => { sumContado += c.calificacionContado; sumCredito += c.calificacionCredito; });
+                return { contado: sumContado / califs.length, credito: sumCredito / califs.length, total: califs.length };
+            }
+
             function filtrarClientes() {
                 const termino = buscarInput.value.toLowerCase().trim();
                 let base = clientes;
@@ -1828,14 +1864,32 @@
                         const ventasCliente = ventas.filter(v => v.clienteId === cli.id);
                         const totalCliente = ventasCliente.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
                         const saldoPendiente = ventasCliente.reduce((acc, v) => acc + (v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0) : 0), 0);
+                        // Calificaciones
+                        const promedio = obtenerPromedioCalificaciones(cli.id);
+                        const califsCliente = calificacionesClientes.filter(c => c.clienteId === cli.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                         out += `
                             <fieldset style="margin-bottom:20px;">
                                 <legend>${numero}. ${cli.razonSocial} ${cli.codigo ? '· '+cli.codigo : '(sin código)'}</legend>
                                 <div>NIT: ${cli.nit || 'C/F'}</div>
                                 <div>Dirección: ${cli.direccion || '—'}</div>
                                 <div>Tel/Correo: ${cli.telefono || '—'} / ${cli.correo || '—'}</div>
+                                <div>Encargado: ${cli.encargado || '—'}</div>
                                 <div class="cliente-total">💰 Total comprado: ${formatoQ(totalCliente)}</div>
                                 <div class="cliente-saldo">💳 Saldo pendiente: ${formatoQ(saldoPendiente)}</div>
+                                <div class="calificacion-lista">
+                                    <strong>⭐ Calificaciones:</strong>
+                                    ${promedio ? `<span>Promedio contado: ${promedio.contado.toFixed(1)} ★ | Crédito: ${promedio.credito.toFixed(1)} ★ (${promedio.total} calificaciones)</span>` : '<span>Sin calificaciones</span>'}
+                                    <button class="secondary small calificarClienteBtn" data-id="${cli.id}" style="margin-left: 8px;">⭐ Calificar</button>
+                                    <div style="margin-top: 5px;">
+                                        ${califsCliente.map(cal => `
+                                            <div class="calificacion-item">
+                                                <strong>${new Date(cal.fecha).toLocaleDateString()} (${cal.usuario}):</strong> Contado: ${cal.calificacionContado}★, Crédito: ${cal.calificacionCredito}★
+                                                <br><em>${cal.comentario || 'Sin comentario'}</em>
+                                                <button class="small danger eliminarCalificacionBtn" data-id="${cal.id}" style="font-size: 0.7rem; margin-left: 8px;">🗑</button>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
                                 ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
                                 <div class="table-responsive">
                                     <table>
@@ -1869,7 +1923,7 @@
                     });
                     contenedor.innerHTML = out;
 
-                    // Asignar eventos (asignar código)
+                    // Asignar eventos
                     document.querySelectorAll('.asignarBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
@@ -1885,7 +1939,6 @@
                         });
                     });
 
-                    // Editar cliente (abre modal)
                     document.querySelectorAll('.editarClienteBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
@@ -1894,7 +1947,6 @@
                         });
                     });
 
-                    // Editar venta
                     document.querySelectorAll('.editarVentaBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const ventaId = b.dataset.ventaid;
@@ -1906,7 +1958,6 @@
                         });
                     });
 
-                    // Eliminar cliente
                     document.querySelectorAll('.eliminarClienteBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const id = b.dataset.id;
@@ -1920,11 +1971,25 @@
                         });
                     });
 
-                    // Estado de cuenta
                     document.querySelectorAll('.estadoCuentaBtn').forEach(b => {
                         b.addEventListener('click', () => {
                             const clienteId = b.dataset.id;
                             mostrarEstadoCuenta(clienteId);
+                        });
+                    });
+
+                    document.querySelectorAll('.calificarClienteBtn').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const clienteId = b.dataset.id;
+                            mostrarModalCalificacion(clienteId);
+                        });
+                    });
+
+                    document.querySelectorAll('.eliminarCalificacionBtn').forEach(b => {
+                        b.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const calId = b.dataset.id;
+                            eliminarCalificacion(calId);
                         });
                     });
                 }
@@ -1958,7 +2023,7 @@
                 const clientesData = clientes.map(c => ({
                     ID: c.id,
                     Código: c.codigo || '', 'Razón Social': c.razonSocial, NIT: c.nit || 'C/F', Dirección: c.direccion || '',
-                    Teléfono: c.telefono || '', Correo: c.correo || '', 'Fecha creación': c.fechaCreacion ? new Date(c.fechaCreacion).toLocaleString() : ''
+                    Teléfono: c.telefono || '', Correo: c.correo || '', Encargado: c.encargado || '', 'Fecha creación': c.fechaCreacion ? new Date(c.fechaCreacion).toLocaleString() : ''
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientesData), 'Clientes');
                 const ventasData = ventas.map(v => {
@@ -1979,7 +2044,6 @@
                 XLSX.writeFile(wb, 'clientes_ventas.xlsx');
             });
 
-            // --- PDF DE CLIENTES CON NUMERACIÓN Y NOMBRE DEL VENDEDOR ---
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -1988,7 +2052,7 @@
                 doc.setFontSize(10);
                 doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
                 doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 28);
-                const tableColumn = ['No.', 'Código', 'Razón Social', 'NIT', 'Dirección', 'Teléfono', 'Saldo Pendiente'];
+                const tableColumn = ['No.', 'Código', 'Razón Social', 'NIT', 'Dirección', 'Teléfono', 'Encargado', 'Saldo Pendiente'];
                 const tableRows = [];
                 clientesFiltrados.forEach((c, index) => {
                     const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
@@ -1999,6 +2063,7 @@
                         c.nit || 'C/F',
                         c.direccion || '—',
                         c.telefono || '—',
+                        c.encargado || '—',
                         'Q' + saldo.toFixed(2)
                     ]);
                 });
@@ -2011,7 +2076,7 @@
             });
         }
 
-        // --- Modal para editar cliente directamente ---
+        // Modal para editar cliente
         function mostrarModalEditarCliente(cliente) {
             const modal = document.getElementById('editarClienteModal');
             const content = document.getElementById('editarClienteContent');
@@ -2041,7 +2106,7 @@
                 cliente.encargado = document.getElementById('editEncargado').value.trim();
                 saveData();
                 modal.style.display = 'none';
-                renderCatalogo(); // recargar vista
+                renderCatalogo();
             });
 
             document.getElementById('cancelarEdicionCliente').addEventListener('click', () => {
@@ -2053,7 +2118,7 @@
             });
         }
 
-        // --- Función para mostrar estado de cuenta en modal (créditos) ---
+        // Estado de cuenta créditos (con abonos)
         function mostrarEstadoCuenta(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (!cliente) return;
@@ -2193,6 +2258,9 @@
 
                 venta.saldoPendiente -= monto;
                 if (venta.saldoPendiente < 0) venta.saldoPendiente = 0;
+                if (venta.saldoPendiente === 0 && !venta.fechaCancelacion) {
+                    venta.fechaCancelacion = new Date().toISOString();
+                }
 
                 saveData();
                 alert('Abono registrado');
@@ -2205,7 +2273,7 @@
             });
         }
 
-        // ========== PESTAÑA PRODUCTOS (sin cambios) ==========
+        // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
             let html = `
                 <h2>📦 Catálogo de productos</h2>
@@ -2308,7 +2376,7 @@
             });
         }
 
-        // ========== PESTAÑA INVENTARIO (sin botón historial, botón ajuste más pequeño) ==========
+        // ========== PESTAÑA INVENTARIO (con botón resumen comisiones) ==========
         function renderInventario() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -2344,6 +2412,7 @@
                     <button id="exportarInventarioBtn" class="secondary small">📥 Exportar Excel</button>
                     <button id="resumenSemanalBtn" class="secondary small">📅 Resumen Semanal</button>
                     <button id="resumenMensualBtn" class="secondary small">📊 Resumen Mensual</button>
+                    <button id="resumenComisionesBtn" class="secondary small">📊 Resumen comisiones</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -2621,21 +2690,21 @@
                         <strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}
                     </div>
                     <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
+                        表
+                            <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th> </thead>
                             <tbody>
                 `;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
-                    html += `<tr>
-                        <td>${new Date(m.fecha).toLocaleString()}</td>
-                        <td>${m.tipo}</td>
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
-                        <td>${m.stockResultante}</td>
-                        <td>${m.motivo || ''}</td>
-                    </tr>`;
+                    html += `迭代
+                        <td>${new Date(m.fecha).toLocaleString()} </td>
+                        <td>${m.tipo} </td>
+                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} </td>
+                        <td>${m.stockResultante} </td>
+                        <td>${m.motivo || ''} </td>
+                     </tr>`;
                 });
-                html += '</tbody></table></div>';
+                html += '</tbody> </table> </div>';
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
 
@@ -2655,12 +2724,12 @@
                     const tr = document.createElement('tr');
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     tr.innerHTML = `
-                        <td>${new Date(m.fecha).toLocaleString()}</td>
-                        <td>${m.productoNombre}</td>
-                        <td>${m.tipo}</td>
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
-                        <td>${m.stockResultante}</td>
-                        <td>${m.motivo || ''}</td>
+                        <td>${new Date(m.fecha).toLocaleString()} </td>
+                        <td>${m.productoNombre} </td>
+                        <td>${m.tipo} </td>
+                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} </td>
+                        <td>${m.stockResultante} </td>
+                        <td>${m.motivo || ''} </td>
                     `;
                     movimientosBody.appendChild(tr);
                 });
@@ -2725,9 +2794,12 @@
 
             document.getElementById('resumenSemanalBtn').addEventListener('click', () => mostrarResumenVentas('semana'));
             document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
+
+            // Nuevo botón resumen comisiones
+            document.getElementById('resumenComisionesBtn').addEventListener('click', () => generarResumenComisiones());
         }
 
-        // ========== FUNCIÓN DE RESUMEN DE VENTAS (MEJORADA: detalle por cliente + resumen, con paginación en PDF) ==========
+        // Función de resumen de ventas (semanal/mensual)
         function mostrarResumenVentas(periodo) {
             const hoy = new Date();
             let inicio, fin, titulo;
@@ -2758,7 +2830,6 @@
                 return;
             }
 
-            // Agrupar ventas por cliente
             const ventasPorCliente = {};
             ventasPeriodo.forEach(v => {
                 const clienteId = v.clienteId;
@@ -2766,7 +2837,6 @@
                 ventasPorCliente[clienteId].push(v);
             });
 
-            // Resumen de productos
             const unidadesPorProducto = {};
             ventasPeriodo.forEach(v => {
                 v.productos.forEach(p => {
@@ -2777,7 +2847,6 @@
 
             const totalVentas = ventasPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-            // Construir HTML del modal
             let html = `<h3>${titulo}</h3>`;
             html += `<p><strong>Total de ventas:</strong> ${formatoQ(totalVentas)}</p>`;
             html += `<p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
@@ -2799,11 +2868,11 @@
             });
 
             html += `<h4>Resumen de productos vendidos</h4>`;
-            html += `<div class="table-responsive"><table><thead><tr><th>Producto</th><th>Unidades</th></tr></thead><tbody>`;
+            html += `<div class="table-responsive"> <table> <thead> <tr> <th>Producto</th> <th>Unidades</th> </tr> </thead> <tbody>`;
             Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
-                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
+                html += `<tr> <td>${prod}</td> <td>${cant}</td> </tr>`;
             });
-            html += `</tbody></table></div>`;
+            html += `</tbody> </table> </div>`;
 
             html += `<div style="margin-top:20px; display:flex; gap:10px;">
                 <button class="secondary small" id="exportarResumenPDF">📄 Exportar PDF</button>
@@ -2847,7 +2916,7 @@
                         });
                     });
                     y += 2;
-                    if (y > 270) { // Salto de página si es necesario
+                    if (y > 270) {
                         doc.addPage();
                         y = 20;
                     }
@@ -2868,7 +2937,7 @@
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
-        // ========== PESTAÑA COBROS (completa) ==========
+        // ========== PESTAÑA COBROS ==========
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
@@ -2906,10 +2975,10 @@
 
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
+                    表格
+                        <thead> <tr> <th>Fecha</th> <th>Documento</th> <th>Cliente</th> <th>Monto total</th> <th>Saldo pendiente</th> <th>Acciones</th> </tr> </thead>
                         <tbody id="cobrosBody"></tbody>
-                    </table>
+                     </table>
                 </div>
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
@@ -3046,8 +3115,8 @@
                     <fieldset>
                         <legend>Ventas del día de este cliente</legend>
                         <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead>
+                            表格
+                                <thead> <tr> <th>Documento (ID)</th> <th>Saldo original</th> <th>Saldo pendiente</th> <th>Estado</th> </tr> </thead>
                                 <tbody>
                 `;
                 ventasClienteHoy.forEach(v => {
@@ -3062,7 +3131,7 @@
                         <td>${estado}</td>
                     </tr>`;
                 });
-                html += `</tbody></table></div></fieldset>`;
+                html += `</tbody> </table> </div></fieldset>`;
                 ventasDelDiaContainer.innerHTML = html;
             }
 
@@ -3202,7 +3271,7 @@
             renderListaCobros();
         }
 
-        // --- Modal de estado de cuenta de cobro ---
+        // Modal de estado de cuenta de cobro
         function mostrarEstadoCuentaCobro(cobroId) {
             const cobro = cobros.find(c => c.id === cobroId);
             if (!cobro) return;
@@ -3219,7 +3288,7 @@
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr></thead>
+                        <thead> <tr> <th>Fecha</th> <th>Monto</th> <th>Tipo</th> <th>% base</th> </tr> </thead>
                         <tbody>
             `;
             if (pagos.length === 0) {
@@ -3234,7 +3303,7 @@
                     </tr>`;
                 });
             }
-            html += '</tbody></table></div>';
+            html += '</tbody> </table> </div>';
 
             html += `
                 <h4>Registrar nuevo pago</h4>
@@ -3321,6 +3390,261 @@
 
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        // ========== FUNCIONES PARA CALIFICACIONES ==========
+        function mostrarModalCalificacion(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+            const modal = document.getElementById('calificacionModal');
+            const content = document.getElementById('calificacionContent');
+            content.innerHTML = `
+                <h3>Calificar a ${cliente.razonSocial}</h3>
+                <label>Calificación pagos al contado (1-5): 
+                    <input type="number" id="califContado" min="1" max="5" step="1" value="5">
+                </label>
+                <label>Calificación pagos al crédito (1-5): 
+                    <input type="number" id="califCredito" min="1" max="5" step="1" value="5">
+                </label>
+                <label>Comentario:
+                    <textarea id="califComentario" rows="3" placeholder="Observaciones sobre el comportamiento de pago..."></textarea>
+                </label>
+                <div style="margin-top:20px; display:flex; gap:10px;">
+                    <button id="guardarCalificacionBtn" class="secondary">Guardar</button>
+                    <button id="cancelarCalificacionBtn" class="secondary small">Cancelar</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+
+            document.getElementById('guardarCalificacionBtn').addEventListener('click', () => {
+                const califContado = parseInt(document.getElementById('califContado').value);
+                const califCredito = parseInt(document.getElementById('califCredito').value);
+                const comentario = document.getElementById('califComentario').value.trim();
+                if (isNaN(califContado) || califContado < 1 || califContado > 5 ||
+                    isNaN(califCredito) || califCredito < 1 || califCredito > 5) {
+                    alert('Las calificaciones deben ser números entre 1 y 5');
+                    return;
+                }
+                const nuevaCalificacion = {
+                    id: generarIdCalificacion(),
+                    clienteId: cliente.id,
+                    calificacionContado: califContado,
+                    calificacionCredito: califCredito,
+                    comentario: comentario,
+                    fecha: new Date().toISOString(),
+                    usuario: nombreUsuario
+                };
+                calificacionesClientes.push(nuevaCalificacion);
+                saveData();
+                modal.style.display = 'none';
+                renderCatalogo();
+            });
+
+            document.getElementById('cancelarCalificacionBtn').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        function eliminarCalificacion(calificacionId) {
+            if (confirm('¿Eliminar esta calificación?')) {
+                calificacionesClientes = calificacionesClientes.filter(c => c.id !== calificacionId);
+                saveData();
+                renderCatalogo();
+            }
+        }
+
+        // Nueva función para generar resumen de comisiones
+        function generarResumenComisiones() {
+            const hoy = new Date();
+            const mesActual = hoy.getMonth();
+            const anioActual = hoy.getFullYear();
+
+            // 1. Ventas al contado del mes
+            const ventasContadoMes = ventas.filter(v => {
+                const fecha = new Date(v.fecha);
+                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && v.tipoVenta === 'Contado';
+            });
+            // 2. Pagos de cobros propios del mes (agrupar por cliente)
+            const pagosCobroMes = pagosCobro.filter(p => {
+                const fecha = new Date(p.fecha);
+                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && p.tipo === 'propio';
+            });
+            const pagosPorCliente = {};
+            pagosCobroMes.forEach(p => {
+                const cobro = cobros.find(c => c.id === p.cobroId);
+                if (cobro) {
+                    const cliente = clientes.find(c => c.id === cobro.clienteId);
+                    if (cliente) {
+                        if (!pagosPorCliente[cliente.id]) {
+                            pagosPorCliente[cliente.id] = { razonSocial: cliente.razonSocial, total: 0 };
+                        }
+                        pagosPorCliente[cliente.id].total += p.monto;
+                    }
+                }
+            });
+            // 3. Créditos cancelados en el mes (fechaCancelacion dentro del mes)
+            const creditosCanceladosMes = ventas.filter(v => {
+                if (v.tipoVenta !== 'Crédito') return false;
+                if (!v.fechaCancelacion) return false;
+                const fechaCancel = new Date(v.fechaCancelacion);
+                return fechaCancel.getMonth() === mesActual && fechaCancel.getFullYear() === anioActual;
+            });
+
+            // Construir modal
+            let html = `<h3>📊 Resumen de comisiones - ${hoy.toLocaleString('default', { month: 'long' })} ${anioActual}</h3>`;
+            html += `<p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
+
+            // Ventas contado
+            html += `<h4>💵 Ventas al contado del mes</h4>`;
+            if (ventasContadoMes.length === 0) {
+                html += '<p>No hay ventas al contado en el mes.</p>';
+            } else {
+                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total</th></tr></thead><tbody>`;
+                ventasContadoMes.forEach(v => {
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
+                    html += `<tr><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td></tr>`;
+                });
+                const totalContado = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+                html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td></tr>`;
+                html += `</tbody></table></div>`;
+            }
+
+            // Pagos de cobros
+            html += `<h4>💰 Pagos de cobros (propios) del mes</h4>`;
+            if (Object.keys(pagosPorCliente).length === 0) {
+                html += '<p>No hay pagos de cobros propios en el mes.</p>';
+            } else {
+                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total pagado</th></tr></thead><tbody>`;
+                let totalPagos = 0;
+                for (let id in pagosPorCliente) {
+                    const p = pagosPorCliente[id];
+                    html += `<tr><td>${p.razonSocial}</td><td>${formatoQ(p.total)}</td></tr>`;
+                    totalPagos += p.total;
+                }
+                html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalPagos)}</strong></td></tr>`;
+                html += `</tbody></table></div>`;
+            }
+
+            // Créditos cancelados
+            html += `<h4>📄 Créditos cancelados en el mes</h4>`;
+            if (creditosCanceladosMes.length === 0) {
+                html += '<p>No hay créditos cancelados en el mes.</p>';
+            } else {
+                html += `<div class="table-responsive"><table><thead><tr><th>Código Cliente</th><th>Cliente</th><th>Monto total</th><th>Fecha venta</th><th>Fecha cancelación</th><th>Días para pago</th></tr></thead><tbody>`;
+                creditosCanceladosMes.forEach(v => {
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido', codigo: '' };
+                    const fechaVenta = new Date(v.fecha);
+                    const fechaCancel = new Date(v.fechaCancelacion);
+                    const diffDias = Math.round((fechaCancel - fechaVenta) / (1000 * 60 * 60 * 24));
+                    html += `<tr>
+                        <td>${cliente.codigo || '—'}</td>
+                        <td>${cliente.razonSocial}</td>
+                        <td>${formatoQ(v.total)}</td>
+                        <td>${fechaVenta.toLocaleDateString()}</td>
+                        <td>${fechaCancel.toLocaleDateString()}</td>
+                        <td>${diffDias}</td>
+                    </tr>`;
+                });
+                const totalCreditos = creditosCanceladosMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalCreditos)}</strong></td><td colspan="3"></td></tr>`;
+                html += `</tbody></table></div>`;
+            }
+
+            html += `<div style="margin-top:20px;"><button id="exportarResumenComisionesPDF" class="secondary">📄 Exportar PDF</button> <button id="cerrarResumenComisionesBtn" class="secondary small">Cerrar</button></div>`;
+
+            const modal = document.getElementById('resumenVentasModal');
+            const modalContent = document.getElementById('resumenVentasContent');
+            modalContent.innerHTML = html;
+            modal.style.display = 'flex';
+
+            document.getElementById('cerrarResumenComisionesBtn').addEventListener('click', () => modal.style.display = 'none');
+            document.getElementById('exportarResumenComisionesPDF').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text(`Resumen de comisiones - ${hoy.toLocaleString('default', { month: 'long' })} ${anioActual}`, 14, 16);
+                doc.setFontSize(10);
+                doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
+                let y = 30;
+
+                // Ventas contado
+                doc.setFontSize(12);
+                doc.text('Ventas al contado', 14, y);
+                y += 6;
+                if (ventasContadoMes.length > 0) {
+                    const contadoRows = ventasContadoMes.map(v => {
+                        const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                        return [cli.razonSocial, formatoQ(v.total)];
+                    });
+                    const totalCont = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+                    contadoRows.push(['Total', formatoQ(totalCont)]);
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Cliente', 'Total']],
+                        body: contadoRows,
+                        margin: { left: 14 },
+                        styles: { fontSize: 8 }
+                    });
+                    y = doc.lastAutoTable.finalY + 6;
+                } else {
+                    doc.text('No hay ventas al contado en el mes.', 14, y);
+                    y += 6;
+                }
+
+                // Pagos de cobros
+                doc.text('Pagos de cobros (propios)', 14, y);
+                y += 6;
+                if (Object.keys(pagosPorCliente).length > 0) {
+                    const pagosRows = [];
+                    let totalPagos = 0;
+                    for (let id in pagosPorCliente) {
+                        const p = pagosPorCliente[id];
+                        pagosRows.push([p.razonSocial, formatoQ(p.total)]);
+                        totalPagos += p.total;
+                    }
+                    pagosRows.push(['Total', formatoQ(totalPagos)]);
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Cliente', 'Total']],
+                        body: pagosRows,
+                        margin: { left: 14 },
+                        styles: { fontSize: 8 }
+                    });
+                    y = doc.lastAutoTable.finalY + 6;
+                } else {
+                    doc.text('No hay pagos de cobros propios en el mes.', 14, y);
+                    y += 6;
+                }
+
+                // Créditos cancelados
+                doc.text('Créditos cancelados en el mes', 14, y);
+                y += 6;
+                if (creditosCanceladosMes.length > 0) {
+                    const creditosRows = creditosCanceladosMes.map(v => {
+                        const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '' };
+                        const fechaVenta = new Date(v.fecha);
+                        const fechaCancel = new Date(v.fechaCancelacion);
+                        const diffDias = Math.round((fechaCancel - fechaVenta) / (1000 * 60 * 60 * 24));
+                        return [cli.codigo || '—', cli.razonSocial, formatoQ(v.total), fechaVenta.toLocaleDateString(), fechaCancel.toLocaleDateString(), diffDias.toString()];
+                    });
+                    const totalCred = creditosCanceladosMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+                    creditosRows.push(['', 'Total', formatoQ(totalCred), '', '', '']);
+                    doc.autoTable({
+                        startY: y,
+                        head: [['Código', 'Cliente', 'Monto', 'Fecha venta', 'Fecha cancelación', 'Días']],
+                        body: creditosRows,
+                        margin: { left: 14 },
+                        styles: { fontSize: 7 }
+                    });
+                } else {
+                    doc.text('No hay créditos cancelados en el mes.', 14, y);
+                }
+
+                doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
         }
 
