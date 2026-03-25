@@ -704,8 +704,14 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA ==========
+        // ========== PESTAÑA VENTA (con corrección para asegurar productos) ==========
         function renderVenta() {
+            // Asegurar que hay productos cargados
+            if (catalogoProductos.length === 0) {
+                migrarDatos();
+                saveData();
+            }
+
             const nitOptions = [...new Set(clientes.map(c => c.nit).filter(n => n))].map(n => `<option value="${n}">`).join('');
             const codigoOptions = [...new Set(clientes.map(c => c.codigo).filter(c => c))].map(c => `<option value="${c}">`).join('');
 
@@ -754,10 +760,10 @@
                 <fieldset>
                     <legend>🛒 Productos (precio unitario)</legend>
                     <div class="table-responsive">
-                        表
+                        <table>
                             <thead> <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr> </thead>
                             <tbody id="productosBody"></tbody>
-                         </table>
+                        </table>
                     </div>
                     <div class="multi-add">
                         <span>Agregar</span>
@@ -2711,7 +2717,7 @@
                         <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} 迭代
                         <td>${m.stockResultante} 迭代
                         <td>${m.motivo || ''} 迭代
-                      </tr>`;
+                      表`;
                 });
                 html += '</tbody> 表 </div>';
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
@@ -2877,11 +2883,11 @@
             });
 
             html += `<h4>Resumen de productos vendidos</h4>`;
-            html += `<div class="table-responsive"> 表 <thead> <tr><th>Producto</th><th>Unidades</th></tr> </thead> <tbody>`;
+            html += `<div class="table-responsive"> 表 <thead> <tr><th>Producto</th><th>Unidades</th> </thead> <tbody>`;
             Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
-                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
+                html += `迭代  <td>${prod}</td> <td>${cant}</td> 迭代`;
             });
-            html += `</tbody> </table> </div>`;
+            html += `</tbody> 表 </div>`;
 
             html += `<div style="margin-top:20px; display:flex; gap:10px;">
                 <button class="secondary small" id="exportarResumenPDF">📄 Exportar PDF</button>
@@ -2984,10 +2990,10 @@
 
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
-                    <table>
-                        <thead> <tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr> </thead>
+                    表
+                        <thead> <tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th> </thead>
                         <tbody id="cobrosBody"></tbody>
-                    </table>
+                    表
                 </div>
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
@@ -3124,8 +3130,8 @@
                     <fieldset>
                         <legend>Ventas del día de este cliente</legend>
                         <div class="table-responsive">
-                            <table>
-                                <thead> <tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr> </thead>
+                            表
+                                <thead> <tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th> </thead>
                                 <tbody>
                 `;
                 ventasClienteHoy.forEach(v => {
@@ -3133,14 +3139,14 @@
                     const saldoOriginal = parseFloat(v.total).toFixed(2);
                     const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
                     const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
-                    html += `<tr>
-                        <td>${docId}</td>
-                        <td>${formatoQ(saldoOriginal)}</td>
-                        <td>${formatoQ(saldoPendiente)}</td>
-                        <td>${estado}</td>
-                    </tr>`;
+                    html += `迭代
+                        <td>${docId} 迭代
+                        <td>${formatoQ(saldoOriginal)} 迭代
+                        <td>${formatoQ(saldoPendiente)} 迭代
+                        <td>${estado} 迭代
+                    表`;
                 });
-                html += `</tbody> </table> </div></fieldset>`;
+                html += `</tbody> 表 </div></fieldset>`;
                 ventasDelDiaContainer.innerHTML = html;
             }
 
@@ -3218,16 +3224,16 @@
                         const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: 'Desconocido' };
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${new Date(c.fecha).toLocaleDateString()}</td>
-                            <td>${c.numeroDocumento}</td>
-                            <td>${cliente.razonSocial}</td>
-                            <td>${formatoQ(c.montoTotal)}</td>
-                            <td>${formatoQ(c.saldoPendiente)}</td>
+                            <td>${new Date(c.fecha).toLocaleDateString()} 迭代
+                            <td>${c.numeroDocumento} 迭代
+                            <td>${cliente.razonSocial} 迭代
+                            <td>${formatoQ(c.montoTotal)} 迭代
+                            <td>${formatoQ(c.saldoPendiente)} 迭代
                             <td>
                                 <button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button>
                                 <button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button>
                                 <button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button>
-                            </td>
+                             </td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -3296,23 +3302,23 @@
                 </div>
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
-                    <table>
-                        <thead> <tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr> </thead>
+                    表
+                        <thead> <tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th> </thead>
                         <tbody>
             `;
             if (pagos.length === 0) {
                 html += '<tr><td colspan="4">No hay pagos registrados.</td></tr>';
             } else {
                 pagos.forEach(p => {
-                    html += `<tr>
-                        <td>${new Date(p.fecha).toLocaleDateString()}</td>
-                        <td>${formatoQ(p.monto)}</td>
-                        <td>${p.tipo}</td>
-                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td>
-                    </tr>`;
+                    html += `迭代
+                        <td>${new Date(p.fecha).toLocaleDateString()} 迭代
+                        <td>${formatoQ(p.monto)} 迭代
+                        <td>${p.tipo} 迭代
+                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'} 迭代
+                    表`;
                 });
             }
-            html += '</tbody> </table> </div>';
+            html += '</tbody> 表 </div>';
 
             html += `
                 <h4>Registrar nuevo pago</h4>
@@ -3466,7 +3472,7 @@
             }
         }
 
-        // Nueva función para generar resumen de comisiones (usando fechaCancelacion)
+        // Nueva función para generar resumen de comisiones (con total general)
         function generarResumenComisiones() {
             const hoy = new Date();
             const mesActual = hoy.getMonth();
@@ -3503,6 +3509,13 @@
                 return fechaCancel.getMonth() === mesActual && fechaCancel.getFullYear() === anioActual;
             });
 
+            // Totales parciales
+            const totalContado = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+            let totalPagos = 0;
+            for (let id in pagosPorCliente) totalPagos += pagosPorCliente[id].total;
+            const totalCreditos = creditosCanceladosMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
+            const granTotal = totalContado + totalPagos + totalCreditos;
+
             // Construir modal
             let html = `<h3>📊 Resumen de comisiones - ${hoy.toLocaleString('default', { month: 'long' })} ${anioActual}</h3>`;
             html += `<p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
@@ -3512,14 +3525,13 @@
             if (ventasContadoMes.length === 0) {
                 html += '<p>No hay ventas al contado en el mes.</p>';
             } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total</th></tr></thead><tbody>`;
+                html += `<div class="table-responsive">表<thead> <tr><th>Cliente</th><th>Total</th> </thead><tbody>`;
                 ventasContadoMes.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
                     html += `<tr><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td></tr>`;
                 });
-                const totalContado = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
                 html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td></tr>`;
-                html += `</tbody></table></div>`;
+                html += `</tbody>表</div>`;
             }
 
             // Pagos de cobros
@@ -3527,15 +3539,13 @@
             if (Object.keys(pagosPorCliente).length === 0) {
                 html += '<p>No hay pagos de cobros propios en el mes.</p>';
             } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total pagado</th></tr></thead><tbody>`;
-                let totalPagos = 0;
+                html += `<div class="table-responsive">表<thead> <tr><th>Cliente</th><th>Total pagado</th> </thead><tbody>`;
                 for (let id in pagosPorCliente) {
                     const p = pagosPorCliente[id];
                     html += `<tr><td>${p.razonSocial}</td><td>${formatoQ(p.total)}</td></tr>`;
-                    totalPagos += p.total;
                 }
                 html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalPagos)}</strong></td></tr>`;
-                html += `</tbody></table></div>`;
+                html += `</tbody>表</div>`;
             }
 
             // Créditos cancelados
@@ -3543,7 +3553,7 @@
             if (creditosCanceladosMes.length === 0) {
                 html += '<p>No hay créditos cancelados en el mes.</p>';
             } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Código Cliente</th><th>Cliente</th><th>Monto total</th><th>Fecha venta</th><th>Fecha cancelación</th><th>Días para pago</th></tr></thead><tbody>`;
+                html += `<div class="table-responsive">表<thead> <tr><th>Código Cliente</th><th>Cliente</th><th>Monto total</th><th>Fecha venta</th><th>Fecha cancelación</th><th>Días para pago</th> </thead><tbody>`;
                 creditosCanceladosMes.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido', codigo: '' };
                     const fechaVenta = new Date(v.fecha);
@@ -3558,10 +3568,14 @@
                         <td>${diffDias}</td>
                     </tr>`;
                 });
-                const totalCreditos = creditosCanceladosMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
                 html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalCreditos)}</strong></td><td colspan="3"></td></tr>`;
-                html += `</tbody></table></div>`;
+                html += `</tbody>表</div>`;
             }
+
+            // Total general
+            html += `<div style="margin-top:20px; padding:12px; background:#e0f2e9; border-radius:24px; text-align:center;">
+                        <strong>TOTAL BASE DE COMISIÓN:</strong> ${formatoQ(granTotal)}
+                     </div>`;
 
             html += `<div style="margin-top:20px;"><button id="exportarResumenComisionesPDF" class="secondary">📄 Exportar PDF</button> <button id="cerrarResumenComisionesBtn" class="secondary small">Cerrar</button></div>`;
 
@@ -3589,8 +3603,7 @@
                         const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
                         return [cli.razonSocial, formatoQ(v.total)];
                     });
-                    const totalCont = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
-                    contadoRows.push(['Total', formatoQ(totalCont)]);
+                    contadoRows.push(['Total', formatoQ(totalContado)]);
                     doc.autoTable({
                         startY: y,
                         head: [['Cliente', 'Total']],
@@ -3609,11 +3622,9 @@
                 y += 6;
                 if (Object.keys(pagosPorCliente).length > 0) {
                     const pagosRows = [];
-                    let totalPagos = 0;
                     for (let id in pagosPorCliente) {
                         const p = pagosPorCliente[id];
                         pagosRows.push([p.razonSocial, formatoQ(p.total)]);
-                        totalPagos += p.total;
                     }
                     pagosRows.push(['Total', formatoQ(totalPagos)]);
                     doc.autoTable({
@@ -3640,8 +3651,7 @@
                         const diffDias = Math.round((fechaCancel - fechaVenta) / (1000 * 60 * 60 * 24));
                         return [cli.codigo || '—', cli.razonSocial, formatoQ(v.total), fechaVenta.toLocaleDateString(), fechaCancel.toLocaleDateString(), diffDias.toString()];
                     });
-                    const totalCred = creditosCanceladosMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
-                    creditosRows.push(['', 'Total', formatoQ(totalCred), '', '', '']);
+                    creditosRows.push(['', 'Total', formatoQ(totalCreditos), '', '', '']);
                     doc.autoTable({
                         startY: y,
                         head: [['Código', 'Cliente', 'Monto', 'Fecha venta', 'Fecha cancelación', 'Días']],
@@ -3649,9 +3659,15 @@
                         margin: { left: 14 },
                         styles: { fontSize: 7 }
                     });
+                    y = doc.lastAutoTable.finalY + 6;
                 } else {
                     doc.text('No hay créditos cancelados en el mes.', 14, y);
+                    y += 6;
                 }
+
+                // Total general
+                doc.setFontSize(12);
+                doc.text(`TOTAL BASE DE COMISIÓN: ${formatoQ(granTotal)}`, 14, y);
 
                 doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
