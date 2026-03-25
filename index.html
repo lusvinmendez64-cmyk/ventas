@@ -704,7 +704,7 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== PESTAÑA VENTA (con corrección para asegurar productos) ==========
+        // ========== PESTAÑA VENTA ==========
         function renderVenta() {
             // Asegurar que hay productos cargados
             if (catalogoProductos.length === 0) {
@@ -761,7 +761,9 @@
                     <legend>🛒 Productos (precio unitario)</legend>
                     <div class="table-responsive">
                         <table>
-                            <thead> <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr> </thead>
+                            <thead>
+                                <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr>
+                            </thead>
                             <tbody id="productosBody"></tbody>
                         </table>
                     </div>
@@ -1433,7 +1435,9 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead> <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr> </thead>
+                        <thead>
+                            <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Acciones</th></tr>
+                        </thead>
                         <tbody id="ventasBody"></tbody>
                     </table>
                 </div>
@@ -1899,7 +1903,9 @@
                                 ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
                                 <div class="table-responsive">
                                     <table>
-                                        <thead> <tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr> </thead>
+                                        <thead>
+                                            <tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr>
+                                        </thead>
                                         <tbody>
                                             ${ventasCliente.slice(0,5).map(v => `
                                                 <tr>
@@ -2138,7 +2144,9 @@
                 <h4>Facturas pendientes</h4>
                 <div class="table-responsive">
                     <table>
-                        <thead> <tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr> </thead>
+                        <thead>
+                            <tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr>
+                        </thead>
                         <tbody>
             `;
             let totalPendiente = 0;
@@ -2287,7 +2295,9 @@
                 <button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button>
                 <div class="table-responsive">
                     <table>
-                        <thead> <tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr> </thead>
+                        <thead>
+                            <tr><th>Nombre</th><th>Precio (Q)</th><th></th></tr>
+                        </thead>
                         <tbody id="productosCatalogoBody"></tbody>
                     </table>
                 </div>
@@ -2431,7 +2441,9 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead> <tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr> </thead>
+                        <thead>
+                            <tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Acciones</th></tr>
+                        </thead>
                         <tbody id="inventarioBody"></tbody>
                     </table>
                 </div>
@@ -2464,7 +2476,9 @@
                     <h3>Últimos movimientos</h3>
                     <div class="table-responsive">
                         <table>
-                            <thead> <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr> </thead>
+                            <thead>
+                                <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr>
+                            </thead>
                             <tbody id="movimientosBody"></tbody>
                         </table>
                     </div>
@@ -2705,21 +2719,23 @@
                         <strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}
                     </div>
                     <div class="table-responsive">
-                        表
-                            <thead> <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th> </thead>
+                        <table>
+                            <thead>
+                                <tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr>
+                            </thead>
                             <tbody>
                 `;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
-                    html += `迭代
-                        <td>${new Date(m.fecha).toLocaleString()} 迭代
-                        <td>${m.tipo} 迭代
-                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad} 迭代
-                        <td>${m.stockResultante} 迭代
-                        <td>${m.motivo || ''} 迭代
-                      表`;
+                    html += `<tr>
+                        <td>${new Date(m.fecha).toLocaleString()}</td>
+                        <td>${m.tipo}</td>
+                        <td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td>
+                        <td>${m.stockResultante}</td>
+                        <td>${m.motivo || ''}</td>
+                    </tr>`;
                 });
-                html += '</tbody> 表 </div>';
+                html += '</tbody></table></div>';
                 html += `<div style="margin-top: 10px;"><button class="secondary small" id="exportarHistorialPDF">📄 Exportar PDF</button></div>`;
                 historialContainer.innerHTML = html;
 
@@ -2885,7 +2901,7 @@
             html += `<h4>Resumen de productos vendidos</h4>`;
             html += `<div class="table-responsive"> 表 <thead> <tr><th>Producto</th><th>Unidades</th> </thead> <tbody>`;
             Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
-                html += `迭代  <td>${prod}</td> <td>${cant}</td> 迭代`;
+                html += `实践   <td>${prod}</td> <td>${cant}</td> 实践`;
             });
             html += `</tbody> 表 </div>`;
 
@@ -2991,7 +3007,9 @@
                 <h3>Lista de cobros</h3>
                 <div class="table-responsive">
                     表
-                        <thead> <tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th> </thead>
+                        <thead>
+                             <th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th>
+                        </thead>
                         <tbody id="cobrosBody"></tbody>
                     表
                 </div>
@@ -3131,7 +3149,9 @@
                         <legend>Ventas del día de este cliente</legend>
                         <div class="table-responsive">
                             表
-                                <thead> <tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th> </thead>
+                                <thead>
+                                     <th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th>
+                                </thead>
                                 <tbody>
                 `;
                 ventasClienteHoy.forEach(v => {
@@ -3140,11 +3160,8 @@
                     const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
                     const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
                     html += `迭代
-                        <td>${docId} 迭代
-                        <td>${formatoQ(saldoOriginal)} 迭代
-                        <td>${formatoQ(saldoPendiente)} 迭代
-                        <td>${estado} 迭代
-                    表`;
+                         <td>${docId}</td> <td>${formatoQ(saldoOriginal)}</td> <td>${formatoQ(saldoPendiente)}</td> <td>${estado}</td>
+                      </tr>`;
                 });
                 html += `</tbody> 表 </div></fieldset>`;
                 ventasDelDiaContainer.innerHTML = html;
@@ -3224,12 +3241,12 @@
                         const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: 'Desconocido' };
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${new Date(c.fecha).toLocaleDateString()} 迭代
-                            <td>${c.numeroDocumento} 迭代
-                            <td>${cliente.razonSocial} 迭代
-                            <td>${formatoQ(c.montoTotal)} 迭代
-                            <td>${formatoQ(c.saldoPendiente)} 迭代
-                            <td>
+                             <td>${new Date(c.fecha).toLocaleDateString()}</td>
+                             <td>${c.numeroDocumento}</td>
+                             <td>${cliente.razonSocial}</td>
+                             <td>${formatoQ(c.montoTotal)}</td>
+                             <td>${formatoQ(c.saldoPendiente)}</td>
+                             <td>
                                 <button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button>
                                 <button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button>
                                 <button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button>
@@ -3303,19 +3320,21 @@
                 <h4>Pagos realizados</h4>
                 <div class="table-responsive">
                     表
-                        <thead> <tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th> </thead>
+                        <thead>
+                             <th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th>
+                        </thead>
                         <tbody>
             `;
             if (pagos.length === 0) {
                 html += '<tr><td colspan="4">No hay pagos registrados.</td></tr>';
             } else {
                 pagos.forEach(p => {
-                    html += `迭代
-                        <td>${new Date(p.fecha).toLocaleDateString()} 迭代
-                        <td>${formatoQ(p.monto)} 迭代
-                        <td>${p.tipo} 迭代
-                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'} 迭代
-                    表`;
+                    html += `<tr>
+                        <td>${new Date(p.fecha).toLocaleDateString()}</td>
+                        <td>${formatoQ(p.monto)}</td>
+                        <td>${p.tipo}</td>
+                        <td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td>
+                    </tr>`;
                 });
             }
             html += '</tbody> 表 </div>';
@@ -3525,13 +3544,13 @@
             if (ventasContadoMes.length === 0) {
                 html += '<p>No hay ventas al contado en el mes.</p>';
             } else {
-                html += `<div class="table-responsive">表<thead> <tr><th>Cliente</th><th>Total</th> </thead><tbody>`;
+                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total</th></tr></thead><tbody>`;
                 ventasContadoMes.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
                     html += `<tr><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td></tr>`;
                 });
                 html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td></tr>`;
-                html += `</tbody>表</div>`;
+                html += `</tbody></table></div>`;
             }
 
             // Pagos de cobros
@@ -3539,13 +3558,13 @@
             if (Object.keys(pagosPorCliente).length === 0) {
                 html += '<p>No hay pagos de cobros propios en el mes.</p>';
             } else {
-                html += `<div class="table-responsive">表<thead> <tr><th>Cliente</th><th>Total pagado</th> </thead><tbody>`;
+                html += `<div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Total pagado</th></tr></thead><tbody>`;
                 for (let id in pagosPorCliente) {
                     const p = pagosPorCliente[id];
                     html += `<tr><td>${p.razonSocial}</td><td>${formatoQ(p.total)}</td></tr>`;
                 }
                 html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalPagos)}</strong></td></tr>`;
-                html += `</tbody>表</div>`;
+                html += `</tbody></table></div>`;
             }
 
             // Créditos cancelados
@@ -3553,7 +3572,7 @@
             if (creditosCanceladosMes.length === 0) {
                 html += '<p>No hay créditos cancelados en el mes.</p>';
             } else {
-                html += `<div class="table-responsive">表<thead> <tr><th>Código Cliente</th><th>Cliente</th><th>Monto total</th><th>Fecha venta</th><th>Fecha cancelación</th><th>Días para pago</th> </thead><tbody>`;
+                html += `<div class="table-responsive"><table><thead><tr><th>Código Cliente</th><th>Cliente</th><th>Monto total</th><th>Fecha venta</th><th>Fecha cancelación</th><th>Días para pago</th></tr></thead><tbody>`;
                 creditosCanceladosMes.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido', codigo: '' };
                     const fechaVenta = new Date(v.fecha);
@@ -3569,7 +3588,7 @@
                     </tr>`;
                 });
                 html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalCreditos)}</strong></td><td colspan="3"></td></tr>`;
-                html += `</tbody>表</div>`;
+                html += `</tbody></table></div>`;
             }
 
             // Total general
