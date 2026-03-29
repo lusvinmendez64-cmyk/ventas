@@ -485,24 +485,23 @@
 </div>
 <!-- Nuevo modal para calificación -->
 <div id="calificacionModal" class="modal">
-    <div class="modal-content" id="calificacionContent"></div>
-</div>
-<div id="trimestralModal" class="modal">
+    <div class="modal-content" id="calificacionContent"></div>
+</div> <div id="trimestralModal" class="modal">
     <div class="modal-content">
-        <h3>📈 Análisis Analítico Trimestral</h3>
-        <label>Seleccionar Trimestre (Ciclo Fiscal):
+        <h3 style="color: #075e54; margin-bottom: 15px;">📈 Generar Reporte Trimestral</h3>
+        <label>Ciclo Fiscal:
             <select id="selectTrimestre">
-                <option value="Q1">Q1: Nov - Ene</option>
-                <option value="Q2">Q2: Feb - Abr</option>
-                <option value="Q3">Q3: May - Jul</option>
-                <option value="Q4">Q4: Ago - Oct</option>
+                <option value="Q1">Q1 (Nov - Ene)</option>
+                <option value="Q2">Q2 (Feb - Abr)</option>
+                <option value="Q3">Q3 (May - Jul)</option>
+                <option value="Q4">Q4 (Ago - Oct)</option>
             </select>
         </label>
-        <label>Año de cierre:
+        <label>Año (del cierre del ciclo):
             <input type="number" id="anioTrimestre" value="2026">
         </label>
         <div style="margin-top:20px; display:flex; gap:10px;">
-            <button id="generarReporteTrimestralBtn">Generar Reporte Gerencial</button>
+            <button id="generarReporteTrimestralBtn" class="secondary">Generar PDF</button>
             <button id="cerrarTrimestralBtn" class="secondary small">Cancelar</button>
         </div>
     </div>
@@ -3241,36 +3240,37 @@
             // Cálculos de Totales
             let totalGeneral = 0, totalContado = 0, totalCredito = 0;
 
-            const tableRows = ventasPeriodo.map(v => {
-                const cli = clientes.find(c => c.id === v.clienteId) || {};
-                const t = parseFloat(v.total) || 0;
-                totalGeneral += t;
-                if (v.tipoVenta === 'Contado') totalContado += t; else totalCredito += t;
+           const tableRows = ventasPeriodo.map(v => {
+                const cli = clientes.find(c => c.id === v.clienteId) || {};
+                const t = parseFloat(v.total) || 0;
+                totalGeneral += t;
+                if (v.tipoVenta === 'Contado') totalContado += t; else totalCredito += t;
 
-                return [
-                    v.id.substring(0, 8),
-                    new Date(v.fecha).toLocaleDateString(),
-                    cli.razonSocial || 'N/A',
-                    cli.nit || 'C/F',
-                    cli.direccion || 'Ciudad',
-                    v.tipoVenta,
-                    `Q${t.toFixed(2)}`
-                ];
-            });
+                return [
+                    new Date(v.fecha).toLocaleDateString(),
+                    cli.codigo || 'S/C',
+                    cli.razonSocial || 'N/A',
+                    cli.nit || 'C/F',
+                    cli.direccion || 'N/A',
+                    cli.telefono || 'N/A',
+                    v.tipoVenta,
+                    `Q${t.toFixed(2)}`
+                ];
+            });
 
-            doc.setFontSize(14);
-            doc.text(titulo, 14, 15);
-            doc.setFontSize(9);
-            doc.text(`Generado por: ${nombreUsuario} | ID: ${obtenerCorrelativoReporte()}`, 14, 22);
+            doc.setFontSize(14);
+            doc.text(titulo, 14, 15);
+            doc.setFontSize(9);
+            doc.text(`Generado por: ${nombreUsuario} | ID Interno: ${obtenerCorrelativoReporte()}`, 14, 22);
 
-            doc.autoTable({
-                startY: 30,
-                head: [['Factura', 'Fecha', 'Razón Social', 'NIT', 'Dirección', 'Tipo', 'Total']],
-                body: tableRows,
-                theme: 'striped', // Estilo Cebra
-                headStyles: { fillColor: [44, 62, 80] },
-                styles: { fontSize: 8 }
-            });
+            doc.autoTable({
+                startY: 30,
+                head: [['Fecha', 'Código', 'Cliente', 'NIT', 'Dirección', 'Teléfono', 'Tipo', 'Total']],
+                body: tableRows,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80] },
+                styles: { fontSize: 7 }
+            });
 
             const finalY = doc.lastAutoTable.finalY + 15;
             doc.setFont('helvetica', 'bold');
@@ -3991,31 +3991,15 @@
 
                 doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
-            <div id="trimestralModal" class="modal">
-    <div class="modal-content">
-        <h3>📈 Análisis Analítico Trimestral</h3>
-        <label>Seleccionar Trimestre (Ciclo Fiscal):
-            <select id="selectTrimestre">
-                <option value="Q1">Q1: Nov - Ene</option>
-                <option value="Q2">Q2: Feb - Abr</option>
-                <option value="Q3">Q3: May - Jul</option>
-                <option value="Q4">Q4: Ago - Oct</option>
-            </select>
-        </label>
-        <label>Año de cierre:
-            <input type="number" id="anioTrimestre" value="2026">
-        </label>
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button id="generarReporteTrimestralBtn">Generar Reporte Gerencial</button>
-            <button id="cerrarTrimestralBtn" class="secondary small">Cancelar</button>
-        </div>
-    </div>
+        }
+           
 </div>
         }
 
        } // Cierre de mostrarResumenVentas
 
         // --- FUNCIÓN ANALÍTICA (MÓDULO 3) ---
+       // --- FUNCIÓN ANALÍTICA (MÓDULO 3) ---
         function generarAnalisisTrimestral(trimestre, anio) {
             const config = {
                 'Q1': { inicioMes: 10, finMes: 0, anioOffset: -1 }, 
@@ -4043,22 +4027,34 @@
             const clientesRecurrentes = Object.values(conteoCompras).filter(c => c >= 2).length;
 
             let fugaTotal = 0;
+            const descuentosProductos = {}; 
+            const rotacion = {}; 
+
             ventasQ.forEach(v => {
                 v.productos.forEach(p => {
+                    // Contabilizar rotación
+                    rotacion[p.producto] = (rotacion[p.producto] || 0) + p.unidades;
+
+                    // Contabilizar fuga
                     const prodOriginal = catalogoProductos.find(cp => cp.id === p.productoId);
                     if (prodOriginal) {
                         const dif = prodOriginal.precioSugerido - p.precioUnitario;
-                        if (dif > 0) fugaTotal += (dif * p.unidades);
+                        if (dif > 0) {
+                            fugaTotal += (dif * p.unidades);
+                            descuentosProductos[p.producto] = (descuentosProductos[p.producto] || 0) + (dif * p.unidades);
+                        }
                     }
                 });
             });
 
-            const rotacion = {};
-            ventasQ.forEach(v => {
-                v.productos.forEach(p => {
-                    rotacion[p.producto] = (rotacion[p.producto] || 0) + p.unidades;
-                });
-            });
+            // Raking de los más descontados
+            const topDescuentos = Object.entries(descuentosProductos).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => [x[0], formatoQ(x[1])]);
+
+            // Indicadores de Fase 2
+            const facturasTotal = ventasQ.length;
+            const ticketPromedio = facturasTotal > 0 ? (vContado + vCredito) / facturasTotal : 0;
+            const cuentasPorCobrar = ventasQ.filter(v => v.tipoVenta === 'Crédito').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+
             const ranking = Object.entries(rotacion).sort((a, b) => b[1] - a[1]);
             const top5 = ranking.slice(0, 5);
             const bottom5 = ranking.slice(-5).reverse();
@@ -4066,21 +4062,33 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             doc.setFont('helvetica', 'bold');
-            doc.text(`REPORTE DE ALTO NIVEL - ${trimestre} ${anio}`, 105, 15, { align: 'center' });
+            doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, 105, 15, { align: 'center' });
             
             doc.autoTable({
                 startY: 25,
-                head: [['KPI / Indicador', 'Valor']],
+                head: [['KPI / Indicador Financiero', 'Valor']],
                 body: [
-                    ['Volumen Monetario Contado', formatoQ(vContado)],
-                    ['Volumen Monetario Crédito', formatoQ(vCredito)],
-                    ['Total Ingresos Q', formatoQ(vContado + vCredito)],
-                    ['Clientes Recurrentes (2+ compras)', clientesRecurrentes],
-                    ['Fuga estimada por descuentos', formatoQ(fugaTotal)]
+                    ['Volumen de Ventas (Contado)', formatoQ(vContado)],
+                    ['Volumen de Ventas (Crédito)', formatoQ(vCredito)],
+                    ['Total de Ingresos Generados', formatoQ(vContado + vCredito)],
+                    ['Ticket Promedio de Venta', formatoQ(ticketPromedio)],
+                    ['Capital "en la calle" (Saldo de Créditos)', formatoQ(cuentasPorCobrar)],
+                    ['Tasa de Recurrencia (Clientes con 2+ compras)', clientesRecurrentes],
+                    ['Impacto Financiero (Fuga total por descuentos)', formatoQ(fugaTotal)]
                 ],
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80] }
             });
+
+            if (topDescuentos.length > 0) {
+                doc.text("Top Productos con Mayor Descuento Otorgado", 14, doc.lastAutoTable.finalY + 15);
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 20,
+                    head: [['Producto', 'Monto Cedido en Descuento']],
+                    body: topDescuentos,
+                    headStyles: { fillColor: [243, 156, 18] } // Amarillo oscuro
+                });
+            }
 
             doc.text("Top 5 Productos Más Vendidos", 14, doc.lastAutoTable.finalY + 15);
             doc.autoTable({
@@ -4098,7 +4106,7 @@
                 headStyles: { fillColor: [220, 53, 69] }
             });
 
-            doc.save(`ANÁLISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
+            doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
         }
 
         // Iniciar con la pestaña venta
