@@ -3991,15 +3991,9 @@
 
                 doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
-        }
-           
-</div>
-        }
-
-       } // Cierre de mostrarResumenVentas
+        } // <--- CIERRE CORRECTO DE generarResumenComisiones()
 
         // --- FUNCIÓN ANALÍTICA (MÓDULO 3) ---
-       // --- FUNCIÓN ANALÍTICA (MÓDULO 3) ---
         function generarAnalisisTrimestral(trimestre, anio) {
             const config = {
                 'Q1': { inicioMes: 10, finMes: 0, anioOffset: -1 }, 
