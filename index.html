@@ -485,29 +485,10 @@
 </div>
 <!-- Nuevo modal para calificación -->
 <div id="calificacionModal" class="modal">
-    <div class="modal-content" id="calificacionContent"></div>
-</div> <div id="trimestralModal" class="modal">
-    <div class="modal-content">
-        <h3 style="color: #075e54; margin-bottom: 15px;">📈 Generar Reporte Trimestral</h3>
-        <label>Ciclo Fiscal:
-            <select id="selectTrimestre">
-                <option value="Q1">Q1 (Nov - Ene)</option>
-                <option value="Q2">Q2 (Feb - Abr)</option>
-                <option value="Q3">Q3 (May - Jul)</option>
-                <option value="Q4">Q4 (Ago - Oct)</option>
-            </select>
-        </label>
-        <label>Año (del cierre del ciclo):
-            <input type="number" id="anioTrimestre" value="2026">
-        </label>
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button id="generarReporteTrimestralBtn" class="secondary">Generar PDF</button>
-            <button id="cerrarTrimestralBtn" class="secondary small">Cancelar</button>
-        </div>
-    </div>
+    <div class="modal-content" id="calificacionContent"></div>
 </div>
+
 <script>
-    
     (function() {
         // --- DATOS GLOBALES ---
         let clientes = [];
@@ -540,18 +521,7 @@
         function generarIdCobro() { return 'cob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdPagoCobro() { return 'pag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdCalificacion() { return 'cal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
-// --- NUEVAS FUNCIONES DE AUDITORÍA (MÓDULO 1) ---
-        function obtenerCorrelativoReporte() {
-            let correlativo = localStorage.getItem('correlativoReporte');
-            if (!correlativo) {
-                correlativo = 1;
-            } else {
-                correlativo = parseInt(correlativo) + 1;
-            }
-            localStorage.setItem('correlativoReporte', correlativo);
-            const anio = new Date().getFullYear();
-            return `REP-${anio}-${correlativo.toString().padStart(4, '0')}`;
-        }
+
         // Redondeo preciso
         function redondearDinero(valor) {
             return Math.round((parseFloat(valor) || 0) * 100) / 100;
@@ -791,78 +761,76 @@
             localStorage.removeItem('borradorVenta');
         }
 
-       function generarReciboVentaContado(venta, cliente, correlativo) {
+        // ========== RECIBO PARA VENTA AL CONTADO ==========
+        function generarReciboVentaContado(venta, cliente, correlativo) {
             const { jsPDF } = window.jspdf;
-            // Formato A5 (148 x 210 mm)
-            const doc = new jsPDF({ format: 'a5', orientation: 'portrait' });
-            
+            const doc = new jsPDF();
             const fechaEmision = new Date().toLocaleString();
-            const idReporte = obtenerCorrelativoReporte();
+            const fechaVenta = new Date(venta.fecha).toLocaleDateString();
 
-            // --- Encabezado Corporativo ---
+            // Encabezado empresa
+            doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.setTextColor(7, 94, 84); // Color institucional
-            doc.text('DROGUERÍA MARIJOSE JHIRE', 74, 15, { align: 'center' });
-            
-            doc.setFontSize(8);
+            doc.text('Comprobante de Pago', 105, 20, { align: 'center' });
+            doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100);
-            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 74, 20, { align: 'center' });
-            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 74, 24, { align: 'center' });
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 105, 28, { align: 'center' });
+            doc.text('Whatsapp: 5015-9647 | PBX: 2250-0859', 105, 34, { align: 'center' });
+            doc.text('drogueria@marijosejhire.com', 105, 40, { align: 'center' });
+            doc.text('https://www.marijosejhire.com/', 105, 46, { align: 'center' });
 
-            // --- Info de Auditoría ---
-            doc.setDrawColor(200);
-            doc.line(10, 30, 138, 30);
+            // Información del comprobante
+            doc.setFontSize(9);
+            doc.text(`No. Comprobante: ${correlativo}`, 14, 56);
+            doc.text(`Fecha: ${fechaEmision}`, 14, 62);
+            doc.text(`Vendedor: ${nombreUsuario}`, 14, 68);
+
+            // Datos del cliente
             doc.setFont('helvetica', 'bold');
-            doc.text(`COMPROBANTE: ${correlativo}`, 10, 38);
-            doc.text(`AUDITORÍA: ${idReporte}`, 138, 38, { align: 'right' });
-            
+            doc.text('DATOS DEL CLIENTE', 14, 78);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Fecha/Hora: ${fechaEmision}`, 10, 43);
-            doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
+            doc.text(`Razón Social: ${cliente.razonSocial}`, 14, 84);
+            doc.text(`Código: ${cliente.codigo || '—'}`, 14, 90);
+            doc.text(`NIT: ${cliente.nit || 'C/F'}`, 14, 96);
+            if (cliente.direccion) doc.text(`Dirección: ${cliente.direccion}`, 14, 102);
+            if (cliente.telefono) doc.text(`Teléfono: ${cliente.telefono}`, 14, 108);
 
-            // --- Datos del Cliente ---
-            doc.setFillColor(240, 247, 252);
-            doc.rect(10, 52, 128, 25, 'F');
+            // Detalle de la venta
+            let y = 116;
             doc.setFont('helvetica', 'bold');
-            doc.text('DATOS DEL CLIENTE:', 12, 57);
+            doc.text('DETALLE DE LA VENTA', 14, y);
+            y += 6;
             doc.setFont('helvetica', 'normal');
-            doc.text(`Razón Social: ${cliente.razonSocial}`, 12, 62);
-            doc.text(`NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || 'N/A'}`, 12, 67);
-            doc.text(`Dirección: ${cliente.direccion || 'Ciudad'}`, 12, 72);
+            doc.text(`Fecha de venta: ${fechaVenta}`, 14, y);
+            y += 6;
+            doc.text(`Número de factura: ${venta.id.substr(0,8)}...`, 14, y);
+            y += 10;
 
-            // --- Tabla de Productos (jsPDF-autoTable) ---
-            const body = venta.productos.map(p => [
-                p.unidades,
+            // Tabla de productos
+            const productosRows = venta.productos.map(p => [
                 p.producto,
-                `Q${parseFloat(p.precioUnitario).toFixed(2)}`,
-                `Q${parseFloat(p.monto).toFixed(2)}`
+                p.unidades,
+                `Q${redondearDinero(p.precioUnitario).toFixed(2)}`,
+                `Q${redondearDinero(p.monto).toFixed(2)}`
             ]);
-
             doc.autoTable({
-                startY: 82,
-                head: [['Cant', 'Descripción', 'P/Unit', 'Subtotal']],
-                body: body,
-                theme: 'grid',
-                styles: { fontSize: 7, font: 'helvetica' },
-                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
-                columnStyles: {
-                    0: { cellWidth: 15 },
-                    1: { cellWidth: 'auto' },
-                    2: { cellWidth: 25, halign: 'right' },
-                    3: { cellWidth: 25, halign: 'right' }
-                },
-                didDrawPage: function(data) {
-                    // Total al final de la tabla
-                    let finalY = data.cursor.y + 10;
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(10);
-                    doc.text(`TOTAL A PAGAR: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
-                }
+                startY: y,
+                head: [['Producto', 'Cantidad', 'Precio unitario', 'Subtotal']],
+                body: productosRows,
+                margin: { left: 14, right: 14 },
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [37, 211, 102] }
             });
+            y = doc.lastAutoTable.finalY + 6;
 
-            doc.save(`RECIBO_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
+            // Totales
+            doc.text(`Total venta: ${formatoQ(venta.total)}`, 14, y);
+            y += 10;
+
+            // Disclaimer
+            doc.setFont('helvetica', 'italic');
+            doc.text('* Este comprobante debe ser confrontado con la boleta de depósito por parte del ejecutivo de ventas.', 14, y);
+            doc.save(`recibo_${correlativo}_${cliente.razonSocial.replace(/\s/g,'_')}.pdf`);
         }
 
         // ========== PESTAÑA VENTA ==========
@@ -2799,7 +2767,6 @@
                     <button id="resumenSemanalBtn" class="secondary small">📅 Resumen Semanal</button>
                     <button id="resumenMensualBtn" class="secondary small">📊 Resumen Mensual</button>
                     <button id="resumenComisionesBtn" class="secondary small">📊 Resumen comisiones</button>
-                    <button id="abrirModalTrimestralBtn" class="secondary small">📈 Reporte Trimestral</button>
                 </div>
                 <div class="table-responsive">
                      <table>
@@ -3189,24 +3156,10 @@
             document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
 
             document.getElementById('resumenComisionesBtn').addEventListener('click', () => generarResumenComisiones());
-            // --- CONEXIÓN MÓDULO ANALÍTICO ---
-            document.getElementById('abrirModalTrimestralBtn').addEventListener('click', () => {
-                document.getElementById('trimestralModal').style.display = 'flex';
-            });
+        }
 
-            document.getElementById('cerrarTrimestralBtn').addEventListener('click', () => {
-                document.getElementById('trimestralModal').style.display = 'none';
-            });
-
-            document.getElementById('generarReporteTrimestralBtn').addEventListener('click', () => {
-                const q = document.getElementById('selectTrimestre').value;
-                const a = parseInt(document.getElementById('anioTrimestre').value);
-                if(!a || a < 2000) { alert("Año no válido"); return; }
-                generarAnalisisTrimestral(q, a);
-                document.getElementById('trimestralModal').style.display = 'none';
-            });
-            
-       function mostrarResumenVentas(periodo) {
+        // Función de resumen de ventas (semanal/mensual)
+        function mostrarResumenVentas(periodo) {
             const hoy = new Date();
             let inicio, fin, titulo;
 
@@ -3218,72 +3171,132 @@
                 inicio.setHours(0,0,0,0);
                 fin = new Date(hoy);
                 fin.setHours(23,59,59,999);
-                titulo = `REPORTE SEMANAL: ${inicio.toLocaleDateString()} - ${fin.toLocaleDateString()}`;
+                titulo = `Resumen de Ventas - Semana del ${inicio.toLocaleDateString()} al ${fin.toLocaleDateString()}`;
             } else {
                 inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
                 inicio.setHours(0,0,0,0);
                 fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59, 999);
-                titulo = `REPORTE MENSUAL: ${hoy.toLocaleString('default', { month: 'long' }).toUpperCase()} ${hoy.getFullYear()}`;
+                titulo = `Resumen de Ventas - ${hoy.toLocaleString('default', { month: 'long' })} ${hoy.getFullYear()}`;
             }
 
             const ventasPeriodo = ventas.filter(v => {
                 if (v.estado !== 'normal') return false;
-                const f = new Date(v.fecha);
-                return f >= inicio && f <= fin;
+                const fecha = new Date(v.fecha);
+                return fecha >= inicio && fecha <= fin;
             });
 
-            if (ventasPeriodo.length === 0) { alert('No hay datos en este período'); return; }
+            if (ventasPeriodo.length === 0) {
+                alert('No hay ventas en este período.');
+                return;
+            }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape' }); // Horizontal para que quepan las columnas
-            
-            // Cálculos de Totales
-            let totalGeneral = 0, totalContado = 0, totalCredito = 0;
+            const ventasPorCliente = {};
+            ventasPeriodo.forEach(v => {
+                const clienteId = v.clienteId;
+                if (!ventasPorCliente[clienteId]) ventasPorCliente[clienteId] = [];
+                ventasPorCliente[clienteId].push(v);
+            });
 
-           const tableRows = ventasPeriodo.map(v => {
-                const cli = clientes.find(c => c.id === v.clienteId) || {};
-                const t = parseFloat(v.total) || 0;
-                totalGeneral += t;
-                if (v.tipoVenta === 'Contado') totalContado += t; else totalCredito += t;
+            const unidadesPorProducto = {};
+            ventasPeriodo.forEach(v => {
+                v.productos.forEach(p => {
+                    if (!unidadesPorProducto[p.producto]) unidadesPorProducto[p.producto] = 0;
+                    unidadesPorProducto[p.producto] += p.unidades;
+                });
+            });
 
-                return [
-                    new Date(v.fecha).toLocaleDateString(),
-                    cli.codigo || 'S/C',
-                    cli.razonSocial || 'N/A',
-                    cli.nit || 'C/F',
-                    cli.direccion || 'N/A',
-                    cli.telefono || 'N/A',
-                    v.tipoVenta,
-                    `Q${t.toFixed(2)}`
-                ];
-            });
+            const totalVentas = ventasPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-            doc.setFontSize(14);
-            doc.text(titulo, 14, 15);
-            doc.setFontSize(9);
-            doc.text(`Generado por: ${nombreUsuario} | ID Interno: ${obtenerCorrelativoReporte()}`, 14, 22);
+            let html = `<h3>${titulo}</h3>`;
+            html += `<p><strong>Total de ventas:</strong> ${formatoQ(totalVentas)}</p>`;
+            html += `<p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
+            html += `<h4>Detalle por cliente</h4>`;
 
-            doc.autoTable({
-                startY: 30,
-                head: [['Fecha', 'Código', 'Cliente', 'NIT', 'Dirección', 'Teléfono', 'Tipo', 'Total']],
-                body: tableRows,
-                theme: 'striped',
-                headStyles: { fillColor: [44, 62, 80] },
-                styles: { fontSize: 7 }
-            });
+            Object.keys(ventasPorCliente).forEach(clienteId => {
+                const cliente = clientes.find(c => c.id === clienteId) || { razonSocial: 'Cliente desconocido' };
+                const ventasCliente = ventasPorCliente[clienteId];
+                html += `<fieldset style="margin-bottom:15px;"><legend>${cliente.razonSocial}</legend>`;
+                ventasCliente.forEach(v => {
+                    html += `<p><strong>${new Date(v.fecha).toLocaleDateString()}</strong> - Total: ${formatoQ(v.total)}</p>`;
+                    html += '<ul>';
+                    v.productos.forEach(p => {
+                        html += `<li>${p.unidades} x ${p.producto} (${formatoQ(p.precioUnitario)} c/u) = ${formatoQ(p.monto)}</li>`;
+                    });
+                    html += '</ul>';
+                });
+                html += '</fieldset>';
+            });
 
-            const finalY = doc.lastAutoTable.finalY + 15;
-            doc.setFont('helvetica', 'bold');
-            doc.text(`RESUMEN FINANCIERO:`, 14, finalY);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Total en Contado: Q${totalContado.toFixed(2)}`, 14, finalY + 7);
-            doc.text(`Total en Crédito: Q${totalCredito.toFixed(2)}`, 14, finalY + 12);
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`TOTAL GENERAL DEL PERIODO: Q${totalGeneral.toFixed(2)}`, 14, finalY + 20);
+            html += `<h4>Resumen de productos vendidos</h4>`;
+            html += `<div class="table-responsive"> <table> <thead> <tr><th>Producto</th><th>Unidades</th></tr> </thead> <tbody>`;
+            Object.entries(unidadesPorProducto).forEach(([prod, cant]) => {
+                html += `<tr><td>${prod}</td><td>${cant}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
 
-            doc.save(`REPORTE_${periodo.toUpperCase()}_${Date.now()}.pdf`);
+            html += `<div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="secondary small" id="exportarResumenPDF">📄 Exportar PDF</button>
+                <button class="secondary small" id="cerrarResumenBtn">Cerrar</button>
+            </div>`;
+
+            const modal = document.getElementById('resumenVentasModal');
+            const content = document.getElementById('resumenVentasContent');
+            content.innerHTML = html;
+            modal.style.display = 'flex';
+
+            document.getElementById('cerrarResumenBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+
+            document.getElementById('exportarResumenPDF').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text(titulo, 14, 16);
+                doc.setFontSize(10);
+                doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
+                doc.text(`Total de ventas: ${formatoQ(totalVentas)}`, 14, 28);
+
+                let y = 34;
+                doc.setFontSize(12);
+                doc.text('Detalle por cliente:', 14, y);
+                y += 6;
+
+                Object.keys(ventasPorCliente).forEach(clienteId => {
+                    const cliente = clientes.find(c => c.id === clienteId) || { razonSocial: 'Cliente desconocido' };
+                    const ventasCliente = ventasPorCliente[clienteId];
+                    doc.setFontSize(11);
+                    doc.text(cliente.razonSocial, 14, y);
+                    y += 4;
+                    ventasCliente.forEach(v => {
+                        doc.setFontSize(9);
+                        doc.text(`${new Date(v.fecha).toLocaleDateString()} - Total: ${formatoQ(v.total)}`, 18, y);
+                        y += 4;
+                        v.productos.forEach(p => {
+                            doc.text(`  ${p.unidades} x ${p.producto} = ${formatoQ(p.monto)}`, 22, y);
+                            y += 4;
+                        });
+                    });
+                    y += 2;
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.text('Resumen de productos vendidos', 14, 16);
+                const tableRows = Object.entries(unidadesPorProducto).map(([prod, cant]) => [prod, cant.toString()]);
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Producto', 'Unidades']],
+                    body: tableRows,
+                });
+                doc.save(`resumen_${periodo}_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
+
         // ========== PESTAÑA COBROS ==========
         function renderCobros() {
             let html = `
@@ -3991,121 +4004,11 @@
 
                 doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
-        } // <--- CIERRE CORRECTO DE generarResumenComisiones()
-
-        // --- FUNCIÓN ANALÍTICA (MÓDULO 3) ---
-        function generarAnalisisTrimestral(trimestre, anio) {
-            const config = {
-                'Q1': { inicioMes: 10, finMes: 0, anioOffset: -1 }, 
-                'Q2': { inicioMes: 1, finMes: 3, anioOffset: 0 },  
-                'Q3': { inicioMes: 4, finMes: 6, anioOffset: 0 },  
-                'Q4': { inicioMes: 7, finMes: 9, anioOffset: 0 }   
-            };
-
-            const sel = config[trimestre];
-            const fechaInicio = new Date(anio + sel.anioOffset, sel.inicioMes, 1);
-            const fechaFin = new Date(anio, sel.finMes + 1, 0, 23, 59, 59);
-
-            const ventasQ = ventas.filter(v => {
-                const f = new Date(v.fecha);
-                return f >= fechaInicio && f <= fechaFin && v.estado === 'normal';
-            });
-
-            if (ventasQ.length === 0) { alert("No hay datos para este periodo"); return; }
-
-            const vContado = ventasQ.filter(v => v.tipoVenta === 'Contado').reduce((acc, v) => acc + v.total, 0);
-            const vCredito = ventasQ.filter(v => v.tipoVenta === 'Crédito').reduce((acc, v) => acc + v.total, 0);
-
-            const conteoCompras = {};
-            ventasQ.forEach(v => { conteoCompras[v.clienteId] = (conteoCompras[v.clienteId] || 0) + 1; });
-            const clientesRecurrentes = Object.values(conteoCompras).filter(c => c >= 2).length;
-
-            let fugaTotal = 0;
-            const descuentosProductos = {}; 
-            const rotacion = {}; 
-
-            ventasQ.forEach(v => {
-                v.productos.forEach(p => {
-                    // Contabilizar rotación
-                    rotacion[p.producto] = (rotacion[p.producto] || 0) + p.unidades;
-
-                    // Contabilizar fuga
-                    const prodOriginal = catalogoProductos.find(cp => cp.id === p.productoId);
-                    if (prodOriginal) {
-                        const dif = prodOriginal.precioSugerido - p.precioUnitario;
-                        if (dif > 0) {
-                            fugaTotal += (dif * p.unidades);
-                            descuentosProductos[p.producto] = (descuentosProductos[p.producto] || 0) + (dif * p.unidades);
-                        }
-                    }
-                });
-            });
-
-            // Raking de los más descontados
-            const topDescuentos = Object.entries(descuentosProductos).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => [x[0], formatoQ(x[1])]);
-
-            // Indicadores de Fase 2
-            const facturasTotal = ventasQ.length;
-            const ticketPromedio = facturasTotal > 0 ? (vContado + vCredito) / facturasTotal : 0;
-            const cuentasPorCobrar = ventasQ.filter(v => v.tipoVenta === 'Crédito').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-
-            const ranking = Object.entries(rotacion).sort((a, b) => b[1] - a[1]);
-            const top5 = ranking.slice(0, 5);
-            const bottom5 = ranking.slice(-5).reverse();
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFont('helvetica', 'bold');
-            doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, 105, 15, { align: 'center' });
-            
-            doc.autoTable({
-                startY: 25,
-                head: [['KPI / Indicador Financiero', 'Valor']],
-                body: [
-                    ['Volumen de Ventas (Contado)', formatoQ(vContado)],
-                    ['Volumen de Ventas (Crédito)', formatoQ(vCredito)],
-                    ['Total de Ingresos Generados', formatoQ(vContado + vCredito)],
-                    ['Ticket Promedio de Venta', formatoQ(ticketPromedio)],
-                    ['Capital "en la calle" (Saldo de Créditos)', formatoQ(cuentasPorCobrar)],
-                    ['Tasa de Recurrencia (Clientes con 2+ compras)', clientesRecurrentes],
-                    ['Impacto Financiero (Fuga total por descuentos)', formatoQ(fugaTotal)]
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [44, 62, 80] }
-            });
-
-            if (topDescuentos.length > 0) {
-                doc.text("Top Productos con Mayor Descuento Otorgado", 14, doc.lastAutoTable.finalY + 15);
-                doc.autoTable({
-                    startY: doc.lastAutoTable.finalY + 20,
-                    head: [['Producto', 'Monto Cedido en Descuento']],
-                    body: topDescuentos,
-                    headStyles: { fillColor: [243, 156, 18] } // Amarillo oscuro
-                });
-            }
-
-            doc.text("Top 5 Productos Más Vendidos", 14, doc.lastAutoTable.finalY + 15);
-            doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 20,
-                head: [['Producto', 'Unidades']],
-                body: top5,
-                headStyles: { fillColor: [37, 211, 102] }
-            });
-
-            doc.text("Bottom 5 Productos Menos Vendidos", 14, doc.lastAutoTable.finalY + 15);
-            doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 20,
-                head: [['Producto', 'Unidades']],
-                body: bottom5,
-                headStyles: { fillColor: [220, 53, 69] }
-            });
-
-            doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
         }
 
         // Iniciar con la pestaña venta
         showTab('venta');
-    })(); // Cierre de la cápsula IIFE
+    })();
 </script>
 </body>
 </html>
