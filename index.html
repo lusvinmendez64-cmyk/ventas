@@ -3179,6 +3179,7 @@
             doc.setFont('helvetica', 'bold');
             doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, 105, 15, { align: 'center' });
             doc.autoTable({
+            doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
                 startY: 25,
                 head: [['KPI / Indicador Financiero', 'Valor']],
                 body: [
