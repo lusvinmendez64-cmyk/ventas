@@ -17,10 +17,11 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 8px;
+            padding: 12px;
         }
+        /* Aumentamos el tamaño máximo para que todas las pestañas se vean uniformes y quepan las tablas */
         .app {
-            max-width: 600px;
+            max-width: 950px;
             width: 100%;
             background: white;
             border-radius: 28px;
@@ -38,7 +39,7 @@
             flex: 1 1 auto;
             padding: 14px 8px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             text-align: center;
             color: #1e3b4f;
             cursor: pointer;
@@ -55,7 +56,7 @@
             background: #ffffff;
         }
         .content {
-            padding: 20px 16px;
+            padding: 20px 24px;
             background: #ffffff;
         }
         h2 {
@@ -87,7 +88,7 @@
             margin-bottom: 14px;
             font-weight: 500;
             color: #1e3b4f;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
         input, select, textarea {
             width: 100%;
@@ -103,6 +104,7 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(37,211,102,0.2);
         }
+        /* Ajuste para que los botones sean simétricos */
         button {
             background: #25d366;
             border: none;
@@ -116,6 +118,11 @@
             border: 1px solid #1a8a4a;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             margin: 4px 4px 4px 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-width: 150px; 
         }
         button.secondary {
             background: #eaf0f6;
@@ -125,11 +132,18 @@
         button.small {
             padding: 8px 14px;
             font-size: 0.85rem;
+            min-width: auto; /* Los botones pequeños dentro de tablas se ajustan a su texto */
         }
         button.danger {
             background: #dc3545;
             color: white;
             border-color: #a71d2a;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
         .search-section {
             background: #e3f0fa;
@@ -179,16 +193,16 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         th {
             background: #c9ecdc;
             color: #075e54;
-            padding: 10px 4px;
+            padding: 12px 8px;
             text-align: left;
         }
         td {
-            padding: 6px 4px;
+            padding: 8px 8px;
             border-bottom: 1px solid #dae6f0;
             vertical-align: middle;
         }
@@ -196,6 +210,7 @@
             padding: 8px 8px;
             font-size: 0.85rem;
             margin: 0;
+            min-width: unset;
         }
         .total-dia {
             background: #e1f5fe;
@@ -340,11 +355,11 @@
         }
         .modal-content {
             background: white;
-            padding: 20px;
+            padding: 24px;
             border-radius: 30px;
-            max-width: 500px;
+            max-width: 550px;
             width: 90%;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
         .flex-row {
@@ -370,10 +385,10 @@
         .sub-tab {
             flex: 1;
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             border-radius: 40px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
         }
         .sub-tab.active {
             background: #25d366;
@@ -386,38 +401,26 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             margin-bottom: 16px;
+            border: 1px solid #e1f5fe;
+            border-radius: 12px;
         }
         .table-responsive table {
-            min-width: 500px;
+            min-width: 600px;
         }
-        @media (max-width: 480px) {
-            .tab { font-size: 0.75rem; padding: 10px 4px; }
+        @media (max-width: 600px) {
+            .tab { font-size: 0.8rem; padding: 10px 4px; }
             button { width: 100%; margin: 6px 0; }
-            th, td { font-size: 0.7rem; padding: 4px 2px; }
+            th, td { font-size: 0.8rem; padding: 6px 4px; }
             .total-item { flex: 1 1 100%; }
-            .table-responsive table {
-                min-width: 400px;
-            }
-            .comision-item {
-                width: 100%;
-                justify-content: center;
-            }
-            .valorizacion {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            #inventarioBody td {
-                font-size: 0.7rem;
-                white-space: nowrap;
-            }
         }
         #greeting {
             background: #e8f5e9;
-            padding: 8px 16px;
+            padding: 10px 20px;
             text-align: right;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #075e54;
             border-bottom: 1px solid #c8e6c9;
+            font-weight: 500;
         }
         .calificacion-star {
             color: #ffc107;
@@ -425,14 +428,14 @@
         }
         .calificacion-lista {
             margin-top: 8px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             background: #f8f9fa;
             border-radius: 20px;
-            padding: 8px;
+            padding: 12px;
         }
         .calificacion-item {
             border-bottom: 1px solid #dee2e6;
-            padding: 6px 0;
+            padding: 8px 0;
         }
         .anulada {
             text-decoration: line-through;
@@ -440,22 +443,40 @@
             background-color: #fff5f5;
         }
         .estado-badge {
-            font-size: 0.7rem;
-            padding: 2px 6px;
+            font-size: 0.75rem;
+            padding: 4px 8px;
             border-radius: 20px;
             background: #dc3545;
             color: white;
             display: inline-block;
+            font-weight: bold;
         }
-        /* Colores para vencimiento inventario */
         .vencimiento-rojo { background-color: #ffebee !important; color: #c62828; }
         .vencimiento-naranja { background-color: #fff3e0 !important; color: #ef6c00; }
         .vencimiento-verde { background-color: #e8f5e9 !important; color: #2e7d32; }
-        /* Clasificación de clientes */
-        .clasificacion-excelente { color: #2e7d32; background-color: #e8f5e9; display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .clasificacion-buena { color: #1976d2; background-color: #e3f2fd; display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .clasificacion-regular { color: #ff9800; background-color: #fff3e0; display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .clasificacion-mala { color: #c62828; background-color: #ffebee; display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .comportamiento-al-dia { color: #2e7d32; background-color: #e8f5e9; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .comportamiento-con-mora { color: #c62828; background-color: #ffebee; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .comportamiento-contado { color: #1976d2; background-color: #e3f2fd; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        
+        .clientes-ejecutivos-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .clientes-ejecutivos-table th, .clientes-ejecutivos-table td {
+            border: 1px solid #cde0ed;
+            padding: 10px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .clientes-ejecutivos-table th {
+            background: #075e54;
+            color: white;
+            font-weight: 600;
+        }
+        .clientes-ejecutivos-table tr:nth-child(even) {
+            background-color: #f5faff;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -475,13 +496,42 @@
     <div class="content" id="content"></div>
 </div>
 
-<!-- Modales existentes -->
 <div id="estadoCuentaModal" class="modal"><div class="modal-content" id="estadoCuentaContent"></div></div>
 <div id="abonoModal" class="modal"><div class="modal-content" id="abonoContent"></div></div>
 <div id="estadoCobroModal" class="modal"><div class="modal-content" id="estadoCobroContent"></div></div>
 <div id="resumenVentasModal" class="modal"><div class="modal-content" id="resumenVentasContent"></div></div>
 <div id="editarClienteModal" class="modal"><div class="modal-content" id="editarClienteContent"></div></div>
 <div id="calificacionModal" class="modal"><div class="modal-content" id="calificacionContent"></div></div>
+
+<div id="selectorMesModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: #075e54; margin-bottom: 15px;">📊 Generar Resumen Mensual</h3>
+        <label>Mes:
+            <select id="selectMesResumen">
+                <option value="0">Enero</option>
+                <option value="1">Febrero</option>
+                <option value="2">Marzo</option>
+                <option value="3">Abril</option>
+                <option value="4">Mayo</option>
+                <option value="5">Junio</option>
+                <option value="6">Julio</option>
+                <option value="7">Agosto</option>
+                <option value="8">Septiembre</option>
+                <option value="9">Octubre</option>
+                <option value="10">Noviembre</option>
+                <option value="11">Diciembre</option>
+            </select>
+        </label>
+        <label>Año:
+            <input type="number" id="inputAnioResumen" value="2026">
+        </label>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button id="generarResumenSeleccionadoBtn" class="secondary">Generar PDF</button>
+            <button id="cerrarSelectorMesBtn" class="secondary small">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <div id="trimestralModal" class="modal">
     <div class="modal-content">
         <h3 style="color: #075e54; margin-bottom: 15px;">📈 Generar Reporte Trimestral</h3>
@@ -502,6 +552,7 @@
         </div>
     </div>
 </div>
+
 <script>
     (function() {
         // ========== DATOS GLOBALES ==========
@@ -783,6 +834,24 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
+        // ========== EVENTOS GLOBALES DE MODALES ==========
+        document.getElementById('cerrarSelectorMesBtn').onclick = () => {
+            document.getElementById('selectorMesModal').style.display = 'none';
+        };
+
+        document.getElementById('generarResumenSeleccionadoBtn').onclick = () => {
+            const mes = parseInt(document.getElementById('selectMesResumen').value);
+            const anio = parseInt(document.getElementById('inputAnioResumen').value);
+            if(!anio || anio < 2000) { alert("Año no válido"); return; }
+            
+            const inicio = new Date(anio, mes, 1);
+            inicio.setHours(0,0,0,0);
+            const fin = new Date(anio, mes + 1, 0, 23, 59, 59, 999);
+            
+            generarReporteDetalladoPDF('mes', inicio, fin);
+            document.getElementById('selectorMesModal').style.display = 'none';
+        };
+
         // ========== FUNCIONES DE BORRADOR ==========
         function guardarBorradorVenta(estado) {
             localStorage.setItem('borradorVenta', JSON.stringify(estado));
@@ -790,9 +859,7 @@
         function cargarBorradorVenta() {
             const borrador = localStorage.getItem('borradorVenta');
             if (borrador) {
-                try {
-                    return JSON.parse(borrador);
-                } catch(e) { return null; }
+                try { return JSON.parse(borrador); } catch(e) { return null; }
             }
             return null;
         }
@@ -874,9 +941,9 @@
 
             let html = `
                 <h2>🧾 Registrar venta (Q)</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <button id="backupBtn" class="secondary small" style="flex: 1 1 auto;">⬇️ Respaldo</button>
-                    <label for="restoreFile" class="secondary small" style="flex: 1 1 auto; display: inline-block; padding: 8px 14px; background: #eaf0f6; border-radius: 40px; cursor: pointer; text-align: center; border: 1px solid #a0b9cf;">⬆️ Restaurar</label>
+                <div class="action-buttons">
+                    <button id="backupBtn" class="secondary">⬇️ Respaldo Manual</button>
+                    <label for="restoreFile" class="secondary" style="padding: 12px 20px; background: #eaf0f6; border-radius: 40px; cursor: pointer; text-align: center; border: 1px solid #a0b9cf; font-weight:600; display:inline-flex; justify-content:center; align-items:center; min-width:150px;">⬆️ Restaurar</label>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;">
                 </div>
                 ${mostrarRecordatorios()}
@@ -887,7 +954,7 @@
                 <div class="search-section">
                     <label>🔍 Buscar cliente</label>
                     <input type="text" id="buscarClienteInput" placeholder="Nombre, NIT o código">
-                    <button class="secondary small" id="limpiarBusquedaBtn">Limpiar</button>
+                    <button class="secondary small" id="limpiarBusquedaBtn" style="align-self:flex-start;">Limpiar</button>
                 </div>
                 <div id="clienteSeleccionadoContainer"></div>
                 <div id="listaClientesResultado" class="client-list"></div>
@@ -910,14 +977,29 @@
 
                 <fieldset>
                     <legend>🛒 Productos (precio unitario)</legend>
-                    <div class="table-responsive">\n                      <table>\n                        <thead>\n                          <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr>\n                        </thead>\n                        <tbody id="productosBody"></tbody>\n                      </table>\n                    </div>
-                    <div class="multi-add"><span>Agregar</span><input type="number" id="cantidadFilas" value="1" min="1" max="20" style="width:70px;"><button type="button" id="agregarMultiplesFilas" class="secondary small">➕ Agregar filas</button><button type="button" id="agregarFilaProducto" class="secondary small">➕ Agregar una fila</button></div>
+                    <div class="table-responsive">
+                      <table>
+                        <thead>
+                          <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr>
+                        </thead>
+                        <tbody id="productosBody"></tbody>
+                      </table>
+                    </div>
+                    <div class="multi-add">
+                        <span>Agregar</span>
+                        <input type="number" id="cantidadFilas" value="1" min="1" max="20" style="width:70px;">
+                        <button type="button" id="agregarMultiplesFilas" class="secondary small">➕ Agregar filas</button>
+                        <button type="button" id="agregarFilaProducto" class="secondary small">➕ Agregar una fila</button>
+                    </div>
                     <div style="margin:16px 0 8px; font-size:1.4rem;"><strong>Total venta: <span id="totalVentaCalc">Q0.00</span></strong></div>
                 </fieldset>
 
                 <fieldset><legend>📌 Tipo de venta</legend><label style="display:inline-block; margin-right:20px;"><input type="radio" name="tipoVenta" value="Crédito" checked> Crédito</label><label style="display:inline-block;"><input type="radio" name="tipoVenta" value="Contado"> Contado</label></fieldset>
                 <div id="diasCreditoContainer" style="margin-bottom:16px;"><label>Días de crédito: <input type="number" id="diasCredito" value="30" min="1" max="365" step="1"></label></div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;"><button id="guardarVentaBtn" class="secondary">💾 Guardar venta</button><button id="nuevoClienteBtn" class="secondary">➕ Nuevo cliente</button></div>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="guardarVentaBtn" class="secondary">💾 Guardar venta</button>
+                    <button id="nuevoClienteBtn" class="secondary">➕ Nuevo cliente</button>
+                </div>
                 <div class="total-dia" id="totalesDiaContainer"></div>
             `;
             contentEl.innerHTML = html;
@@ -967,7 +1049,12 @@
 
             if (ventaEditandoId) {
                 const venta = ventas.find(v => v.id === ventaEditandoId);
-                if (venta) {
+                const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
+                if (tieneAbonos) {
+                    alert('No se puede editar esta venta porque ya tiene abonos registrados. Para modificarla, anule la venta y cree una nueva.');
+                    ventaEditandoId = null;
+                    editIndicator.style.display = 'none';
+                } else if (venta) {
                     editIndicator.style.display = 'flex';
                     editVentaIdSpan.textContent = venta.id.substr(0, 8) + '...';
                 } else {
@@ -1361,7 +1448,13 @@
                 }
 
                 let ventaId;
+                const correlativo = obtenerCorrelativoRecibo(); // Siempre generamos el correlativo para usarlo en comprobantes
                 if (ventaEditandoId) {
+                    const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
+                    if (tieneAbonos) {
+                        alert('No se puede editar porque ya tiene abonos registrados.');
+                        return;
+                    }
                     const ventaAnterior = ventas.find(v => v.id === ventaEditandoId);
                     if (ventaAnterior) {
                         ventaAnterior.productos.forEach(p => {
@@ -1448,12 +1541,15 @@
                 if (tipoVenta === 'Contado') {
                     const ventaFinal = ventas.find(v => v.id === ventaId);
                     if (ventaFinal) {
-                        const correlativo = obtenerCorrelativoRecibo();
                         generarReciboVentaContado(ventaFinal, clienteFinal, correlativo);
-                        const confirmarWhatsApp = confirm(`¿Deseas enviar el comprobante de venta por WhatsApp?`);
+                        const confirmarWhatsApp = confirm(`¿Deseas enviar un mensaje de WhatsApp al cliente?`);
                         if (confirmarWhatsApp) {
-                            const mensaje = `¡Gracias por su compra! Adjunto comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} en ${clienteFinal.razonSocial}.`;
-                            const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+                            let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
+                            let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+                            
+                            const mensaje = `*Droguería Marijose Jhire le saluda cordialmente.*\n\n¡Gracias por su preferencia!\n\nLe adjuntamos/compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\nEstamos para servirle.`;
+                            
+                            const url = baseUrl + encodeURIComponent(mensaje);
                             window.open(url, '_blank');
                         }
                     }
@@ -1499,6 +1595,9 @@
                 `;
 
                 document.getElementById('enviarResumenDiaBtn')?.addEventListener('click', () => {
+                    // Creado de Respaldo automático
+                    exportarBackup();
+
                     let mensaje = `📋 *RESUMEN DEL DÍA* (${new Date().toLocaleDateString()})\n\n`;
                     if (ventasHoy.length === 0) {
                         mensaje += 'No hay ventas registradas hoy.';
@@ -1553,7 +1652,7 @@
                             const cobro = cobros.find(c => c.id === p.cobroId);
                             const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
                             mensaje += `${i+1}. Cliente: ${cliente.razonSocial} (Cód: ${cliente.codigo || 'N/A'}) | Responsable: ${cliente.encargado || '—'}\n`;
-                            mensaje += `   Documento: ${cobro ? cobro.numeroDocumento : 'N/A'} | Monto pago: ${formatoQ(p.monto)} (${p.tipo})\n`;
+                            mensaje += `   Documento: ${cobro ? cobro.numeroDocumento : 'N/A'} | Monto pago: ${formatoQ(p.monto)} (${p.metodoPago})\n`;
                             mensaje += `   Monto del crédito: ${formatoQ(cobro ? cobro.montoTotal : 0)} | Saldo pendiente actual: ${formatoQ(cobro ? cobro.saldoPendiente : 0)}\n`;
                         });
                         mensaje += `Total pagado en cobros: ${formatoQ(totalPagosCobroHoy)}\n\n`;
@@ -1569,78 +1668,10 @@
 
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
-
-                    const datosDia = {
-                        fecha: new Date().toISOString().slice(0,10),
-                        ventas: ventasHoy,
-                        abonos: abonosHoy,
-                        cobros: cobrosHoy,
-                        pagosCobro: pagosCobroHoy,
-                        totales: {
-                            ventas: contado+credito,
-                            contado,
-                            credito,
-                            abonos: totalAbonosHoy,
-                            cobrosCreados: totalCobrosHoy,
-                            pagosCobro: totalPagosCobroHoy
-                        }
-                    };
-                    const blob = new Blob([JSON.stringify(datosDia, null, 2)], { type: 'application/json' });
-                    const url2 = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url2;
-                    a.download = `resumen_dia_${new Date().toISOString().slice(0,10)}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url2);
                 });
             }
             mostrarTotalesDia();
             renderBusqueda('');
-
-            if (ventaEditandoId) {
-                const venta = ventas.find(v => v.id === ventaEditandoId);
-                if (venta) {
-                    const cliente = clientes.find(c => c.id === venta.clienteId);
-                    if (cliente) {
-                        clienteSeleccionado = cliente;
-                        codigoCliente.value = cliente.codigo || '';
-                        razonSocial.value = cliente.razonSocial;
-                        nit.value = cliente.nit || '';
-                        direccion.value = cliente.direccion || '';
-                        telefono.value = cliente.telefono || '';
-                        correo.value = cliente.correo || '';
-                        categoria.value = cliente.categoria || '';
-                        ruta.value = cliente.ruta || '';
-                        limiteCredito.value = cliente.limiteCredito !== null ? cliente.limiteCredito : '';
-                        clienteSelContainer.innerHTML = `<div class="badge">✅ Cliente: ${cliente.razonSocial} ${cliente.codigo ? '('+cliente.codigo+')' : ''}<button id="quitarSeleccionBtn" class="small secondary">✕ Quitar</button></div>`;
-                        document.getElementById('quitarSeleccionBtn')?.addEventListener('click', () => limpiarCliente());
-                    }
-                    if (venta.fecha) {
-                        const fechaObj = new Date(venta.fecha);
-                        if (!isNaN(fechaObj)) {
-                            fechaVenta.value = fechaObj.toISOString().slice(0,10);
-                        }
-                    }
-                    productosBody.innerHTML = '';
-                    if (venta.productos && venta.productos.length) {
-                        venta.productos.forEach(p => {
-                            agregarFilaProducto(p.unidades, p.productoId, p.precioUnitario, p.monto);
-                        });
-                    } else {
-                        agregarFilaProducto();
-                    }
-                    actualizarTotal();
-                    const radio = document.querySelector(`input[name="tipoVenta"][value="${venta.tipoVenta}"]`);
-                    if (radio) radio.checked = true;
-                    if (venta.tipoVenta === 'Crédito' && venta.diasCredito) {
-                        document.getElementById('diasCredito').value = venta.diasCredito;
-                    }
-                    toggleDias();
-                } else {
-                    ventaEditandoId = null;
-                    editIndicator.style.display = 'none';
-                }
-            }
         }
 
         // ========== PESTAÑA VENTAS (Historial) ==========
@@ -1648,9 +1679,10 @@
             let html = `
                 <h2>📅 Historial de ventas</h2>
                 ${mostrarRecordatorios()}
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="exportarVentasBtn" class="secondary">📥 Exportar Excel</button>
-                    <button id="enviarResumenMensualBtn" class="secondary">📲 Resumen del mes por WhatsApp</button>
+                    <button id="exportarVentasPdfBtn" class="secondary">📄 Exportar PDF</button>
+                    <button id="enviarResumenMensualBtn" class="secondary">📲 WhatsApp Mensual</button>
                 </div>
                 <div class="filtros-ventas">
                     <select id="filtroMes"><option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option></select>
@@ -1666,7 +1698,14 @@
                 <div id="resumenFiltro" style="background: #e3f0fa; border-radius: 24px; padding: 12px; margin-bottom: 20px; font-weight: 600;">
                     Total período: <span id="totalPeriodo">Q0.00</span> (Contado: <span id="totalContadoPeriodo">Q0.00</span> | Crédito: <span id="totalCreditoPeriodo">Q0.00</span>)
                 </div>
-                <div class="table-responsive"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="ventasBody"></tbody></table></div>
+                <div class="table-responsive">
+                        <table>
+                        <thead>
+                            <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Estado</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="ventasBody"></tbody>
+                       </table>
+                </div>
                 <div id="paginacionVentas" class="paginacion" style="margin-top: 20px;"></div>
             `;
             contentEl.innerHTML = html;
@@ -1723,7 +1762,7 @@
                     );
                 }
 
-                ventasFiltradas = base;
+                ventasFiltradas = base.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 paginaVentas = 0;
                 mostrarVentas();
                 actualizarResumen();
@@ -1741,12 +1780,19 @@
                     const productosStr = v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ');
                     const saldo = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '—';
                     const vcto = v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '—';
-                    const estado = v.estado === 'anulada' ? '<span class="estado-badge">ANULADA</span>' : 'Normal';
+                    let estadoTexto = 'Normal';
+                    if (v.estado === 'anulada') estadoTexto = 'ANULADA';
+                    else if (v.tipoVenta === 'Crédito') {
+                        if (v.saldoPendiente === 0) estadoTexto = 'Cancelado';
+                        else estadoTexto = 'Crédito Pendiente';
+                    } else {
+                        estadoTexto = 'Liquidado';
+                    }
                     const tr = document.createElement('tr');
                     if (v.estado === 'anulada') tr.classList.add('anulada');
                     tr.innerHTML = `
-                        <td>${fecha}</td><td>${cliente.razonSocial}</td><td>${productosStr}</td><td>${formatoQ(v.total)}</td><td>${v.tipoVenta}</td><td>${saldo !== '—' ? 'Q' + saldo : '—'}</td><td>${vcto}</td><td>${estado}</td>
-                        <td>${v.estado !== 'anulada' ? `<button class="secondary small editarVentaBtn" data-id="${v.id}">✏️</button><button class="danger small anularVentaBtn" data-id="${v.id}">🚫 Anular</button><button class="secondary small whatsappVentaBtn" data-id="${v.id}">📲</button>${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? `<button class="secondary small abonoVentaBtn" data-id="${v.id}">💰 Abono</button>` : ''}` : '—'}</td>
+                        <td>${fecha}</td><td>${cliente.razonSocial}</td><td>${productosStr}</td><td>${formatoQ(v.total)}</td><td>${v.tipoVenta}</td><td>${saldo !== '—' ? 'Q' + saldo : '—'}</td><td>${vcto}</td><td><span class="estado-badge" style="background: ${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? '#ff9800' : '#2e7d32'}">${estadoTexto}</span></td>
+                        <td>${v.estado !== 'anulada' ? `<button class="secondary small editarVentaBtn" data-id="${v.id}">✏️</button><button class="danger small anularVentaBtn" data-id="${v.id}">🚫</button><button class="secondary small whatsappVentaBtn" data-id="${v.id}">📲</button>${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? `<button class="secondary small abonoVentaBtn" data-id="${v.id}">💰 Abono</button>` : ''}` : '—'}</td>
                     `;
                     ventasBody.appendChild(tr);
                 });
@@ -1829,8 +1875,9 @@
                             mensaje += `\nSaldo pendiente: Q${(venta.saldoPendiente || 0).toFixed(2)}`;
                             mensaje += `\nVence: ${new Date(venta.fechaVencimiento).toLocaleDateString()}`;
                         }
-                        const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-                        window.open(url, '_blank');
+                        let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
+                        let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+                        window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
                     });
                 });
 
@@ -1889,7 +1936,6 @@
                     };
                 });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ventasData), 'Ventas');
-                // Metadata
                 const metadata = [
                     { Campo: 'Vendedor', Valor: nombreUsuario },
                     { Campo: 'Fecha de exportación', Valor: new Date().toLocaleString() },
@@ -1897,6 +1943,77 @@
                 ];
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metadata), 'Metadata');
                 XLSX.writeFile(wb, `ventas_${new Date().toISOString().slice(0,10)}.xlsx`);
+            });
+
+            document.getElementById('exportarVentasPdfBtn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+                const correlativo = obtenerCorrelativoReporte();
+                const fechaHora = new Date().toLocaleString();
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(7, 94, 84);
+                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(60, 60, 60);
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+                doc.setDrawColor(37, 211, 102);
+                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+                doc.setFontSize(14);
+                doc.setTextColor(7, 94, 84);
+                doc.text(`REPORTE DE VENTAS (FILTRADO)`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+
+                const tableBody = ventasFiltradas.map(v => {
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                    const prods = v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ');
+                    let estado = 'Liquidado';
+                    if (v.estado === 'anulada') estado = 'ANULADA';
+                    else if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) estado = 'Pendiente';
+                    else if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) estado = 'Cancelado';
+
+                    return [
+                        new Date(v.fecha).toLocaleDateString(),
+                        cliente.razonSocial,
+                        prods,
+                        formatoQ(v.total),
+                        v.tipoVenta,
+                        v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente) : '—',
+                        v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '—',
+                        estado
+                    ];
+                });
+
+                doc.autoTable({
+                    startY: 48,
+                    head: [['Fecha', 'Cliente', 'Productos', 'Total', 'Tipo', 'Saldo', 'Vencimiento', 'Estado']],
+                    body: tableBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8 }
+                });
+
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total período: ${document.getElementById('totalPeriodo').innerText}`, 14, finalY);
+                doc.text(`Contado: ${document.getElementById('totalContadoPeriodo').innerText}`, 14, finalY + 6);
+                doc.text(`Crédito: ${document.getElementById('totalCreditoPeriodo').innerText}`, 14, finalY + 12);
+
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
+                doc.save(`Ventas_Filtradas_${new Date().toISOString().slice(0,10)}.pdf`);
             });
 
             document.getElementById('enviarResumenMensualBtn').addEventListener('click', () => {
@@ -2010,20 +2127,40 @@
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
-        // ========== PESTAÑA CATÁLOGO (Clientes) ==========
+        // ========== PESTAÑA CATÁLOGO (Clientes Ejecutivo + Calificaciones) ==========
         function renderCatalogo() {
             let html = `
-                <h2>📇 Clientes y ventas</h2>
+                <h2>📇 Directorio Ejecutivo de Clientes</h2>
                 ${mostrarRecordatorios()}
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;"><button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button><button id="exportarPdfBtn" class="secondary">📄 Exportar PDF</button></div>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button>
+                    <button id="exportarPdfBtn" class="secondary">📄 Exportar PDF</button>
+                </div>
                 <div class="buscador"><input type="text" id="buscarClienteCatalogo" placeholder="Buscar por nombre o código..."></div>
                 <div class="sub-tabs"><div class="sub-tab active" data-vista="todos">Todos</div><div class="sub-tab" data-vista="credito">Crédito</div><div class="sub-tab" data-vista="contado">Contado</div></div>
                 <div style="display: flex; gap: 10px; margin: 15px 0;"><input type="text" id="filtroCategoria" placeholder="Filtrar por categoría"><input type="text" id="filtroRuta" placeholder="Filtrar por ruta/zona"><button id="aplicarFiltrosCat" class="secondary small">Aplicar filtros</button></div>
-                <div id="contenedorClientes"></div><div id="paginacionClientesCatalogo" class="paginacion" style="margin-top:20px;"></div>
+                <div class="table-responsive">
+                    <table class="clientes-ejecutivos-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%">Cliente</th>
+                                <th style="width: 8%">Código</th>
+                                <th style="width: 10%">NIT</th>
+                                <th style="width: 15%">Dirección</th>
+                                <th style="width: 12%">Teléfono</th>
+                                <th style="width: 12%">Estado Venta</th>
+                                <th style="width: 13%">Comportamiento</th>
+                                <th style="width: 10%">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientesTablaBody"></tbody>
+                    </table>
+                </div>
+                <div id="paginacionClientesCatalogo" class="paginacion" style="margin-top:20px;"></div>
             `;
             contentEl.innerHTML = html;
 
-            const contenedor = document.getElementById('contenedorClientes');
+            const tbody = document.getElementById('clientesTablaBody');
             const paginacionDiv = document.getElementById('paginacionClientesCatalogo');
             const buscarInput = document.getElementById('buscarClienteCatalogo');
             const subTabs = document.querySelectorAll('.sub-tab');
@@ -2034,35 +2171,25 @@
 
             let vistaActual = 'todos';
             let paginaActual = 0;
-            const itemsPorPagina = 5;
+            const itemsPorPagina = 10;
             let clientesFiltrados = [];
 
-            // Función para obtener la clasificación de un cliente basada en sus saldos vencidos
-            function obtenerClasificacionCliente(clienteId) {
-                const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal' && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0);
-                let maxDiasVencidos = 0;
+            function obtenerComportamiento(clienteId) {
+                const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal');
+                const tieneCreditoPendiente = ventasCliente.some(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0);
+                if (!tieneCreditoPendiente) return { texto: 'Contado', clase: 'comportamiento-contado' };
+                
                 const hoy = new Date();
+                let maxDiasMora = 0;
                 ventasCliente.forEach(v => {
-                    const venc = new Date(v.fechaVencimiento);
-                    const dias = Math.ceil((hoy - venc) / (1000*60*60*24));
-                    if (dias > maxDiasVencidos) maxDiasVencidos = dias;
+                    if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 && v.fechaVencimiento) {
+                        const venc = new Date(v.fechaVencimiento);
+                        const diasMora = Math.ceil((hoy - venc) / (1000*60*60*24));
+                        if (diasMora > maxDiasMora) maxDiasMora = diasMora;
+                    }
                 });
-                if (maxDiasVencidos <= 0) return { texto: 'Excelente', clase: 'clasificacion-excelente' };
-                if (maxDiasVencidos <= 30) return { texto: 'Buena', clase: 'clasificacion-buena' };
-                if (maxDiasVencidos <= 60) return { texto: 'Regular', clase: 'clasificacion-regular' };
-                return { texto: 'Mala', clase: 'clasificacion-mala' };
-            }
-
-            function tieneSaldoPendiente(clienteId) {
-                return ventas.some(v => v.clienteId === clienteId && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 && v.estado === 'normal');
-            }
-
-            function obtenerPromedioCalificaciones(clienteId) {
-                const califs = calificacionesClientes.filter(c => c.clienteId === clienteId);
-                if (califs.length === 0) return null;
-                let sumContado = 0, sumCredito = 0;
-                califs.forEach(c => { sumContado += c.calificacionContado; sumCredito += c.calificacionCredito; });
-                return { contado: sumContado / califs.length, credito: sumCredito / califs.length, total: califs.length };
+                if (maxDiasMora > 0) return { texto: 'Con mora', clase: 'comportamiento-con-mora' };
+                return { texto: 'Al día', clase: 'comportamiento-al-dia' };
             }
 
             function filtrarClientes() {
@@ -2070,8 +2197,12 @@
                 const catFiltro = filtroCategoria.value.toLowerCase().trim();
                 const rutaFiltro = filtroRuta.value.toLowerCase().trim();
                 let base = clientes;
-                if (vistaActual === 'credito') base = clientes.filter(c => tieneSaldoPendiente(c.id));
-                else if (vistaActual === 'contado') base = clientes.filter(c => !tieneSaldoPendiente(c.id));
+                if (vistaActual === 'credito') base = clientes.filter(c => {
+                    return ventas.some(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 && v.estado === 'normal');
+                });
+                else if (vistaActual === 'contado') base = clientes.filter(c => {
+                    return !ventas.some(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 && v.estado === 'normal');
+                });
 
                 if (termino) {
                     base = base.filter(c => c.razonSocial.toLowerCase().includes(termino) || (c.codigo && c.codigo.toLowerCase().includes(termino)));
@@ -2084,112 +2215,43 @@
                 }
                 clientesFiltrados = [...base];
                 paginaActual = 0;
-                render();
+                renderTabla();
             }
 
-            function render() {
+            function renderTabla() {
                 const inicio = paginaActual * itemsPorPagina;
                 const fin = inicio + itemsPorPagina;
                 const clientesPagina = clientesFiltrados.slice(inicio, fin);
 
-                if (clientesPagina.length === 0) {
-                    contenedor.innerHTML = '<p>No hay clientes en esta categoría.</p>';
-                } else {
-                    let out = '';
-                    clientesPagina.sort((a,b) => (a.codigo || '').localeCompare(b.codigo || '')).forEach((cli, idx) => {
-                        const numero = inicio + idx + 1;
-                        const ventasCliente = ventas.filter(v => v.clienteId === cli.id && v.estado === 'normal');
-                        const totalCliente = ventasCliente.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
-                        const saldoPendiente = ventasCliente.reduce((acc, v) => acc + (v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0) : 0), 0);
-                        const promedio = obtenerPromedioCalificaciones(cli.id);
-                        const califsCliente = calificacionesClientes.filter(c => c.clienteId === cli.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                        const clasificacion = obtenerClasificacionCliente(cli.id);
-                        out += `
-                            <fieldset style="margin-bottom:20px;">
-                                <legend>${numero}. ${cli.razonSocial} ${cli.codigo ? '· '+cli.codigo : '(sin código)'} <span class="${clasificacion.clase}" style="float:right;">${clasificacion.texto}</span></legend>
-                                <div>NIT: ${cli.nit || 'C/F'}</div>
-                                <div>Dirección: ${cli.direccion || '—'}</div>
-                                <div>Tel/Correo: ${cli.telefono || '—'} / ${cli.correo || '—'}</div>
-                                <div>Encargado: ${cli.encargado || '—'}</div>
-                                <div>Categoría: ${cli.categoria || '—'}</div>
-                                <div>Ruta/Zona: ${cli.ruta || '—'}</div>
-                                <div>Límite de crédito: ${cli.limiteCredito !== null ? formatoQ(cli.limiteCredito) : 'Sin límite'}</div>
-                                <div class="cliente-total">💰 Total comprado: ${formatoQ(totalCliente)}</div>
-                                <div class="cliente-saldo">💳 Saldo pendiente: ${formatoQ(saldoPendiente)}</div>
-                                <div class="calificacion-lista"><strong>⭐ Calificaciones:</strong>${promedio ? `<span>Promedio contado: ${promedio.contado.toFixed(1)} ★ | Crédito: ${promedio.credito.toFixed(1)} ★ (${promedio.total} calificaciones)</span>` : '<span>Sin calificaciones</span>'}<button class="secondary small calificarClienteBtn" data-id="${cli.id}" style="margin-left: 8px;">⭐ Calificar</button>
-                                    <div style="margin-top: 5px;">${califsCliente.map(cal => `<div class="calificacion-item"><strong>${new Date(cal.fecha).toLocaleDateString()} (${cal.usuario}):</strong> Contado: ${cal.calificacionContado}★, Crédito: ${cal.calificacionCredito}★<br><em>${cal.comentario || 'Sin comentario'}</em><button class="small danger eliminarCalificacionBtn" data-id="${cal.id}" style="font-size: 0.7rem; margin-left: 8px;">🗑</button></div>`).join('')}</div>
-                                </div>
-                                ${ventasCliente.length === 0 ? '<p>Sin compras</p>' : ''}
-                                <div class="table-responsive"><table><thead><tr><th>Fecha</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th></th></tr></thead><tbody>${ventasCliente.slice(0,5).map(v => `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${v.productos.map(p => `${p.unidades||0} ${p.producto||'—'}`).join(', ')}</td><td>${formatoQ(v.total)}</td><td>${v.tipoVenta}</td><td>${v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente || 0) : '—'}</td><td><button class="secondary small editarVentaBtn" data-ventaid="${v.id}">✏️</button></td></tr>`).join('')}${ventasCliente.length > 5 ? '<tr><td colspan="6">... y más ventas</td></tr>' : ''}</tbody></table></div>
-                                <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;">${!cli.codigo ? `<input type="text" id="cod_${cli.id}" placeholder="Nuevo código" style="width:130px;"><button class="secondary small asignarBtn" data-id="${cli.id}">Asignar</button>` : ''}<button class="secondary small editarClienteBtn" data-id="${cli.id}">✏️ Editar cliente</button><button class="secondary small estadoCuentaBtn" data-id="${cli.id}">📊 Estado de cuenta</button><button class="delete-btn small eliminarClienteBtn" data-id="${cli.id}">🗑 Eliminar</button></div>
-                            </fieldset>
-                        `;
-                    });
-                    contenedor.innerHTML = out;
+                tbody.innerHTML = '';
+                clientesPagina.forEach(cli => {
+                    const comportamiento = obtenerComportamiento(cli.id);
+                    const promedio = obtenerPromedioCalificaciones(cli.id);
+                    const estrellas = promedio ? `<br><span style="font-size:0.75rem; color:#ffc107;">⭐ ${promedio.contado.toFixed(1)}</span>` : '<br><span style="font-size:0.7rem; color:#888;">Sin calif.</span>';
 
-                    document.querySelectorAll('.asignarBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const id = b.dataset.id;
-                            const input = document.getElementById('cod_'+id);
-                            const nuevo = input.value.trim();
-                            if (!nuevo) return;
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli && !clientes.some(c => c.codigo === nuevo && c.id !== id)) {
-                                cli.codigo = nuevo;
-                                saveData();
-                                filtrarClientes();
-                            } else alert('Código ya existe o cliente no válido');
-                        });
-                    });
-                    document.querySelectorAll('.editarClienteBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const id = b.dataset.id;
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli) mostrarModalEditarCliente(cli);
-                        });
-                    });
-                    document.querySelectorAll('.editarVentaBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const ventaId = b.dataset.ventaid;
-                            const venta = ventas.find(v => v.id === ventaId);
-                            if (venta) {
-                                ventaEditandoId = venta.id;
-                                showTab('venta');
-                            }
-                        });
-                    });
-                    document.querySelectorAll('.eliminarClienteBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const id = b.dataset.id;
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli && confirm(`¿Eliminar cliente ${cli.razonSocial} y sus ventas?`)) {
-                                ventas = ventas.filter(v => v.clienteId !== cli.id);
-                                clientes = clientes.filter(c => c.id !== id);
-                                saveData();
-                                filtrarClientes();
-                            }
-                        });
-                    });
-                    document.querySelectorAll('.estadoCuentaBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const clienteId = b.dataset.id;
-                            mostrarEstadoCuenta(clienteId);
-                        });
-                    });
-                    document.querySelectorAll('.calificarClienteBtn').forEach(b => {
-                        b.addEventListener('click', () => {
-                            const clienteId = b.dataset.id;
-                            mostrarModalCalificacion(clienteId);
-                        });
-                    });
-                    document.querySelectorAll('.eliminarCalificacionBtn').forEach(b => {
-                        b.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const calId = b.dataset.id;
-                            eliminarCalificacion(calId);
-                        });
-                    });
-                }
+                    const saldoTotalCliente = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+                    const estadoVenta = saldoTotalCliente > 0 
+                        ? `<span style="color: #c62828; font-weight: 600;">Pendiente<br>(Q${saldoTotalCliente.toFixed(2)})</span>` 
+                        : `<span style="color: #2e7d32; font-weight: 600;">Liquidado</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${cli.razonSocial} ${estrellas}</td>
+                        <td>${cli.codigo || '—'}</td>
+                        <td>${cli.nit || 'C/F'}</td>
+                        <td>${cli.direccion || '—'}</td>
+                        <td>${cli.telefono || '—'}</td>
+                        <td>${estadoVenta}</td>
+                        <td><span class="${comportamiento.clase}">${comportamiento.texto}</span></td>
+                        <td>
+                            <button class="secondary small calificarClienteBtn" data-id="${cli.id}" title="Calificar" style="margin-bottom:2px; min-width:35px;">⭐</button>
+                            <button class="secondary small editarClienteBtn" data-id="${cli.id}" title="Editar" style="margin-bottom:2px; min-width:35px;">✏️</button> 
+                            <button class="secondary small estadoCuentaBtn" data-id="${cli.id}" title="Estado de Cuenta" style="margin-bottom:2px; min-width:35px;">📊</button> 
+                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin-bottom:2px; min-width:35px;">🗑</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
 
                 const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
                 let paginacionHtml = '';
@@ -2200,8 +2262,39 @@
                 }
                 paginacionDiv.innerHTML = paginacionHtml;
 
-                document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; render(); } });
-                document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; render(); } });
+                document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
+                document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
+
+                document.querySelectorAll('.calificarClienteBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        mostrarModalCalificacion(btn.dataset.id);
+                    });
+                });
+                document.querySelectorAll('.editarClienteBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const cli = clientes.find(c => c.id === id);
+                        if (cli) mostrarModalEditarCliente(cli);
+                    });
+                });
+                document.querySelectorAll('.estadoCuentaBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const clienteId = btn.dataset.id;
+                        mostrarEstadoCuenta(clienteId);
+                    });
+                });
+                document.querySelectorAll('.eliminarClienteBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const cli = clientes.find(c => c.id === id);
+                        if (cli && confirm(`¿Eliminar cliente ${cli.razonSocial} y sus ventas?`)) {
+                            ventas = ventas.filter(v => v.clienteId !== cli.id);
+                            clientes = clientes.filter(c => c.id !== id);
+                            saveData();
+                            filtrarClientes();
+                        }
+                    });
+                });
             }
 
             subTabs.forEach(tab => {
@@ -2218,64 +2311,76 @@
 
             document.getElementById('exportarExcelBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
-                const clientesData = clientes.map(c => ({
-                    ID: c.id, Código: c.codigo || '', 'Razón Social': c.razonSocial, NIT: c.nit || 'C/F', Dirección: c.direccion || '',
-                    Teléfono: c.telefono || '', Correo: c.correo || '', Encargado: c.encargado || '', 'Fecha creación': c.fechaCreacion ? new Date(c.fechaCreacion).toLocaleString() : '',
-                    Categoría: c.categoria || '', Ruta: c.ruta || '', 'Límite crédito': c.limiteCredito !== null ? c.limiteCredito : ''
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientesData), 'Clientes');
-                const ventasData = ventas.map(v => {
-                    const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                const clientesData = clientes.map(c => {
+                    const comportamiento = obtenerComportamiento(c.id);
+                    const saldoTotalCliente = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+                    
                     return {
-                        'ID Venta': v.id, 'ID Cliente': v.clienteId, Cliente: cli.razonSocial, Fecha: new Date(v.fecha).toLocaleString(),
-                        Total: v.total, Tipo: v.tipoVenta, Saldo: v.saldoPendiente || 0, Vencimiento: v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '',
-                        Productos: v.productos.map(p => `${p.unidades} ${p.producto} (Q${p.precioUnitario} c/u)`).join('; '), Estado: v.estado || 'normal'
+                        'Razón Social': c.razonSocial,
+                        Código: c.codigo || '',
+                        NIT: c.nit || 'C/F',
+                        Dirección: c.direccion || '',
+                        Teléfono: c.telefono || '',
+                        'Estado': saldoTotalCliente > 0 ? 'Pendiente' : 'Liquidado',
+                        'Saldo Pendiente (Q)': saldoTotalCliente,
+                        Comportamiento: comportamiento.texto,
+                        Categoría: c.categoria || '',
+                        Ruta: c.ruta || ''
                     };
                 });
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ventasData), 'Ventas');
-                // Metadata
-                const metadata = [
-                    { Campo: 'Vendedor', Valor: nombreUsuario },
-                    { Campo: 'Fecha de exportación', Valor: new Date().toLocaleString() },
-                    { Campo: 'ID de reporte', Valor: obtenerCorrelativoReporte() }
-                ];
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metadata), 'Metadata');
-                XLSX.writeFile(wb, 'clientes_ventas.xlsx');
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientesData), 'Clientes');
+                XLSX.writeFile(wb, `clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
             });
 
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                doc.setFontSize(16);
-                doc.text('Listado de Clientes', 14, 16);
-                doc.setFontSize(10);
-                doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
-                doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 28);
-                doc.text(`ID Reporte: ${obtenerCorrelativoReporte()}`, 14, 34);
-                const tableColumn = ['No.', 'Código', 'Razón Social', 'NIT', 'Dirección', 'Teléfono', 'Encargado', 'Saldo Pendiente', 'Categoría', 'Ruta', 'Clasificación'];
-                const tableRows = [];
-                clientesFiltrados.forEach((c, index) => {
+                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+                const correlativo = obtenerCorrelativoReporte();
+                const fechaHora = new Date().toLocaleString();
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(7, 94, 84);
+                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+                doc.setDrawColor(37, 211, 102);
+                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+                const tableColumn = ['Cliente', 'Código', 'NIT', 'Dirección', 'Teléfono', 'Estado Venta', 'Comportamiento'];
+                const tableRows = clientesFiltrados.map(c => {
                     const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-                    const clasif = obtenerClasificacionCliente(c.id).texto;
-                    tableRows.push([
-                        (index + 1).toString(),
-                        c.codigo || '',
+                    return [
                         c.razonSocial,
+                        c.codigo || '',
                         c.nit || 'C/F',
                         c.direccion || '—',
                         c.telefono || '—',
-                        c.encargado || '—',
-                        'Q' + redondearDinero(saldo).toFixed(2),
-                        c.categoria || '',
-                        c.ruta || '',
-                        clasif
-                    ]);
+                        saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
+                        obtenerComportamiento(c.id).texto
+                    ];
                 });
+                
                 doc.autoTable({
+                    startY: 38,
                     head: [tableColumn],
                     body: tableRows,
-                    startY: 40,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8 }
                 });
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
                 doc.save(`clientes_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
         }
@@ -2436,9 +2541,93 @@
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
+        // FUNCIONES DE CALIFICACIÓN RECUPERADAS
+        function mostrarModalCalificacion(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+            const modal = document.getElementById('calificacionModal');
+            const content = document.getElementById('calificacionContent');
+            
+            const califsCliente = calificacionesClientes.filter(c => c.clienteId === cliente.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            let historialHtml = '';
+            if(califsCliente.length > 0) {
+                historialHtml = `<div class="calificacion-lista" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"><strong>Historial de Calificaciones:</strong>`;
+                califsCliente.forEach(cal => {
+                    historialHtml += `<div class="calificacion-item"><strong>${new Date(cal.fecha).toLocaleDateString()} (${cal.usuario}):</strong> Contado: ${cal.calificacionContado}★, Crédito: ${cal.calificacionCredito}★<br><em>${cal.comentario || 'Sin comentario'}</em><button class="small danger eliminarCalificacionBtn" data-id="${cal.id}" style="font-size: 0.7rem; margin-left: 8px;">🗑 Eliminar</button></div>`;
+                });
+                historialHtml += `</div>`;
+            }
+
+            content.innerHTML = `
+                <h3>Calificar a ${cliente.razonSocial}</h3>
+                <label>Calificación pagos al contado (1-5): <input type="number" id="califContado" min="1" max="5" step="1" value="5"></label>
+                <label>Calificación pagos al crédito (1-5): <input type="number" id="califCredito" min="1" max="5" step="1" value="5"></label>
+                <label>Comentario: <textarea id="califComentario" rows="3" placeholder="Observaciones sobre el comportamiento de pago..."></textarea></label>
+                <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarCalificacionBtn" class="secondary">Guardar Calificación</button><button id="cancelarCalificacionBtn" class="secondary small">Cancelar</button></div>
+                ${historialHtml}
+            `;
+            modal.style.display = 'flex';
+
+            document.getElementById('guardarCalificacionBtn').addEventListener('click', () => {
+                const califContado = parseInt(document.getElementById('califContado').value);
+                const califCredito = parseInt(document.getElementById('califCredito').value);
+                const comentario = document.getElementById('califComentario').value.trim();
+                if (isNaN(califContado) || califContado < 1 || califContado > 5 || isNaN(califCredito) || califCredito < 1 || califCredito > 5) {
+                    alert('Las calificaciones deben ser números entre 1 y 5');
+                    return;
+                }
+                const nuevaCalificacion = {
+                    id: generarIdCalificacion(),
+                    clienteId: cliente.id,
+                    calificacionContado: califContado,
+                    calificacionCredito: califCredito,
+                    comentario: comentario,
+                    fecha: new Date().toISOString(),
+                    usuario: nombreUsuario
+                };
+                calificacionesClientes.push(nuevaCalificacion);
+                saveData();
+                modal.style.display = 'none';
+                renderCatalogo();
+            });
+            
+            document.querySelectorAll('.eliminarCalificacionBtn').forEach(b => {
+                b.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const calId = b.dataset.id;
+                    eliminarCalificacion(calId);
+                    modal.style.display = 'none';
+                });
+            });
+
+            document.getElementById('cancelarCalificacionBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
+
+        function eliminarCalificacion(calificacionId) {
+            if (confirm('¿Eliminar esta calificación?')) {
+                calificacionesClientes = calificacionesClientes.filter(c => c.id !== calificacionId);
+                saveData();
+                renderCatalogo();
+            }
+        }
+        
+        function obtenerPromedioCalificaciones(clienteId) {
+            const califs = calificacionesClientes.filter(c => c.clienteId === clienteId);
+            if (califs.length === 0) return null;
+            let sumContado = 0, sumCredito = 0;
+            califs.forEach(c => { sumContado += c.calificacionContado; sumCredito += c.calificacionCredito; });
+            return { contado: sumContado / califs.length, credito: sumCredito / califs.length, total: califs.length };
+        }
+
         // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
-            let html = `<h2>📦 Catálogo de productos</h2>${mostrarRecordatorios()}<button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button><div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Nombre</th><th>Precio (Q)</th><th>Activo</th><th></th></tr></thead>\n                        <tbody id="productosCatalogoBody"></tbody>\n                      </table>\n                    </div><div id="paginacionProductos" class="paginacion"></div>`;
+            let html = `<h2>📦 Catálogo de productos</h2>${mostrarRecordatorios()}<button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button><div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Nombre</th><th>Precio (Q)</th><th>Activo</th><th></th></tr></thead>
+                        <tbody id="productosCatalogoBody"></tbody>
+                      </table>
+                    </div><div id="paginacionProductos" class="paginacion"></div>`;
             contentEl.innerHTML = html;
 
             const tbody = document.getElementById('productosCatalogoBody');
@@ -2519,44 +2708,69 @@
         // ========== PESTAÑA INVENTARIO ==========
         function renderInventario() {
             const hoy = new Date();
-            const mesActual = hoy.getMonth();
-            const anioActual = hoy.getFullYear();
-
-            const ventasContadoMes = ventas.filter(v => {
-                const fechaVenta = new Date(v.fecha);
-                return fechaVenta.getMonth() === mesActual && fechaVenta.getFullYear() === anioActual && v.tipoVenta === 'Contado' && v.estado === 'normal';
-            });
-            const totalContadoMes = ventasContadoMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
-            const abonosMes = abonos.filter(a => {
-                const fecha = new Date(a.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
-            });
-            const totalAbonosMes = abonosMes.reduce((acc, a) => acc + (a.monto || 0), 0);
-            const pagosCobroPropiosMes = pagosCobro.filter(p => {
-                const fecha = new Date(p.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && p.tipo === 'propio';
-            });
-            const totalPagosCobroPropios = pagosCobroPropiosMes.reduce((acc, p) => acc + (p.monto || 0), 0);
-            const baseComision = totalContadoMes + totalAbonosMes + totalPagosCobroPropios;
-
-            const todasVentasMes = ventas.filter(v => {
-                const fecha = new Date(v.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && v.estado === 'normal';
-            });
-            const totalVentasMes = todasVentasMes.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+            const fechaInicioPorDefecto = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+            const fechaFinPorDefecto = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().slice(0,10);
 
             let html = `
                 <h2>📊 Inventario y comisiones</h2>
                 ${mostrarRecordatorios()}
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <button id="ajusteManualBtn" class="secondary small">➕ Ajuste manual</button>
-                    <button id="exportarInventarioBtn" class="secondary small">📥 Exportar Excel</button>
-                    <button id="resumenSemanalBtn" class="secondary small">📅 Resumen Semanal</button>
-                    <button id="resumenMensualBtn" class="secondary small">📊 Resumen Mensual</button>
-                    <button id="resumenComisionesBtn" class="secondary small">📊 Resumen comisiones</button>
-                    <button id="abrirModalTrimestralBtn" class="secondary small">📈 Reporte Trimestral</button>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
+                    <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
+                    <button id="resumenSemanalBtn" class="secondary">📅 Resumen Semanal</button>
+                    <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
+                    <button id="resumenComisionesBtn" class="secondary">📊 Resumen comisiones</button>
+                    <button id="abrirModalTrimestralBtn" class="secondary">📈 Reporte Trimestral</button>
                 </div>
-                <div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Fecha Vencimiento</th><th>Estado</th><th>Acciones</th></tr></thead>\n                        <tbody id="inventarioBody"></tbody>\n                      </table>\n                </div>\n                <div id="paginacionInventario" class="paginacion"></div>\n\n                <div class="valorizacion">\n                    <span class="comision-item">💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>\n                    <span class="comision-item">📅 Ventas del mes (total): <span id="ventasMesTotal">${formatoQ(totalVentasMes)}</span></span>\n                    <span class="comision-item" style="flex-wrap: wrap;">\n                        Comisión (contado + abonos del mes + cobros propios): \n                        <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %\n                        = <span id="montoComision">Q0.00</span>\n                        (Base: <span id="baseComision">${formatoQ(baseComision)}</span>)\n                    </span>\n                </div>\n\n                <div class="trazabilidad-panel">\n                    <h3>🔍 Trazabilidad por producto</h3>\n                    <div class="producto-selector">\n                        <select id="selectorProducto" style="flex: 1;">\n                            <option value="">-- Seleccione producto --</option>\n                            ${catalogoProductos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}\n                        </select>\n                        <button id="verHistorialBtn" class="secondary small">Ver historial</button>\n                    </div>\n                    <div id="historialProductoContainer" style="max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>\n                </div>\n\n                <div id="movimientosContainer" style="margin-top: 20px;">\n                    <h3>Últimos movimientos</h3>\n                    <div class="table-responsive">\n                        <table>\n                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>\n                            <tbody id="movimientosBody"></tbody>\n                        </table>\n                    </div>\n                </div>\n            `;
+                <fieldset>
+                    <legend>🎯 Rango de fechas para cálculo de comisiones</legend>
+                    <div class="flex-row">
+                        <label>Fecha inicio: <input type="date" id="fechaInicioComision" value="${fechaInicioPorDefecto}"></label>
+                        <label>Fecha fin: <input type="date" id="fechaFinComision" value="${fechaFinPorDefecto}"></label>
+                        <button id="actualizarBaseComisionBtn" class="secondary small">Actualizar base</button>
+                    </div>
+                </fieldset>
+                <div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Fecha Vencimiento</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="inventarioBody"></tbody>
+                      </table>
+                </div>
+                <div id="paginacionInventario" class="paginacion"></div>
+
+                <div class="valorizacion">
+                    <span class="comision-item">💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
+                    <span class="comision-item">📅 Ventas del período (total): <span id="ventasPeriodoTotal">Q0.00</span></span>
+                    <span class="comision-item" style="flex-wrap: wrap;">
+                        Comisión (contado + abonos del período + cobros propios): 
+                        <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
+                        = <span id="montoComision">Q0.00</span>
+                        (Base: <span id="baseComision">Q0.00</span>)
+                    </span>
+                </div>
+
+                <div class="trazabilidad-panel">
+                    <h3>🔍 Trazabilidad por producto</h3>
+                    <div class="producto-selector">
+                        <select id="selectorProducto" style="flex: 1;">
+                            <option value="">-- Seleccione producto --</option>
+                            ${catalogoProductos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+                        </select>
+                        <button id="verHistorialBtn" class="secondary small">Ver historial</button>
+                    </div>
+                    <div id="historialProductoContainer" style="max-height: 300px; overflow-y: auto; margin-top: 10px;"></div>
+                </div>
+
+                <div id="movimientosContainer" style="margin-top: 20px;">
+                    <h3>Últimos movimientos</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead>
+                            <tbody id="movimientosBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
             contentEl.innerHTML = html;
 
             const inventarioBody = document.getElementById('inventarioBody');
@@ -2564,14 +2778,54 @@
             const selectorProducto = document.getElementById('selectorProducto');
             const historialContainer = document.getElementById('historialProductoContainer');
             const valorInventarioSpan = document.getElementById('valorInventario');
-            const ventasMesTotalSpan = document.getElementById('ventasMesTotal');
+            const ventasPeriodoTotalSpan = document.getElementById('ventasPeriodoTotal');
             const baseComisionSpan = document.getElementById('baseComision');
             const porcentajeInput = document.getElementById('porcentajeComision');
             const montoComisionSpan = document.getElementById('montoComision');
             const paginacionDiv = document.getElementById('paginacionInventario');
+            const fechaInicioComision = document.getElementById('fechaInicioComision');
+            const fechaFinComision = document.getElementById('fechaFinComision');
+            const actualizarBaseBtn = document.getElementById('actualizarBaseComisionBtn');
+
             let paginaActual = 0;
             const itemsPorPagina = 5;
             let inventarioFiltrado = [...inventario];
+
+            function calcularBaseComision() {
+                const inicio = fechaInicioComision.value;
+                const fin = fechaFinComision.value;
+                if (!inicio || !fin) return 0;
+                const start = new Date(inicio + 'T00:00:00');
+                const end = new Date(fin + 'T23:59:59');
+
+                const ventasContadoPeriodo = ventas.filter(v => {
+                    const fecha = new Date(v.fecha);
+                    return fecha >= start && fecha <= end && v.tipoVenta === 'Contado' && v.estado === 'normal';
+                });
+                const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+
+                const abonosPeriodo = abonos.filter(a => {
+                    const fecha = new Date(a.fecha);
+                    return fecha >= start && fecha <= end;
+                });
+                const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+
+                const pagosPropiosPeriodo = pagosCobro.filter(p => {
+                    const fecha = new Date(p.fecha);
+                    return fecha >= start && fecha <= end && p.tipo === 'propio';
+                });
+                const totalPagosPropios = pagosPropiosPeriodo.reduce((acc, p) => acc + (p.monto || 0), 0);
+
+                const totalVentasPeriodo = ventas.filter(v => {
+                    const fecha = new Date(v.fecha);
+                    return fecha >= start && fecha <= end && v.estado === 'normal';
+                }).reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
+                ventasPeriodoTotalSpan.innerText = formatoQ(totalVentasPeriodo);
+
+                const base = totalContado + totalAbonos + totalPagosPropios;
+                baseComisionSpan.innerText = formatoQ(base);
+                return base;
+            }
 
             function actualizarComision() {
                 const base = parseFloat(baseComisionSpan.innerText.replace('Q', '')) || 0;
@@ -2586,7 +2840,7 @@
                 hoy.setHours(0,0,0,0);
                 const venc = new Date(fechaVencimiento);
                 const diffDays = Math.ceil((venc - hoy) / (1000 * 60 * 60 * 24));
-                if (diffDays < 0) return 'vencimiento-rojo'; // ya vencido
+                if (diffDays < 0) return 'vencimiento-rojo';
                 if (diffDays <= 90) return 'vencimiento-rojo';
                 if (diffDays <= 180) return 'vencimiento-naranja';
                 return 'vencimiento-verde';
@@ -2734,7 +2988,9 @@
                 const ventasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
                 const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
 
-                let html = `<div style="background: #e8f5e9; padding: 10px; border-radius: 20px; margin-bottom: 10px;"><strong>Resumen semana:</strong> Ventas: ${ventasSemana} | Recargas: ${recargasSemana}<br><strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}</div><div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead><tbody>`;
+                let html = `<div style="background: #e8f5e9; padding: 10px; border-radius: 20px; margin-bottom: 10px;"><strong>Resumen semana:</strong> Ventas: ${ventasSemana} | Recargas: ${recargasSemana}<br><strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}</div><div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead><tbody>`;
                 movs.forEach(m => {
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
                     html += `<tr><td>${new Date(m.fecha).toLocaleString()}</td><td>${m.tipo}</td><td class="${claseCant}">${m.cantidad > 0 ? '+' : ''}${m.cantidad}</td><td>${m.stockResultante}</td><td>${m.motivo || ''}</td></tr>`;
@@ -2776,36 +3032,52 @@
                 const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
 
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                const doc = new jsPDF({ orientation: 'portrait', format: 'legal' });
+                const correlativo = obtenerCorrelativoReporte();
+                const fechaHora = new Date().toLocaleString();
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(7, 94, 84);
+                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+                doc.setDrawColor(37, 211, 102);
+                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
 
-                doc.setFontSize(16);
-                doc.text(`Historial de ${producto.nombre}`, 14, 16);
                 doc.setFontSize(10);
-                doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
-                doc.text(`ID Reporte: ${obtenerCorrelativoReporte()}`, 14, 28);
-                doc.text(`Stock actual: ${stockActual}`, 14, 34);
-                doc.text(`Periodo semana (lunes a ${finSemana === viernes ? 'viernes' : 'hoy'}): ${lunes.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`, 14, 40);
-                doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${finMes.toLocaleDateString()}`, 14, 46);
-                doc.text(`Resumen semana: Ventas: ${ventasSemana} | Recargas: ${recargasSemana} | Neto: ${ventasSemana - recargasSemana}`, 14, 52);
+                doc.text(`Historial de ${producto.nombre}`, 14, 40);
+                doc.text(`Stock actual: ${stockActual}`, 14, 46);
+                doc.text(`Periodo semana (lunes a ${finSemana === viernes ? 'viernes' : 'hoy'}): ${lunes.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`, 14, 52);
+                doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${finMes.toLocaleDateString()}`, 14, 58);
+                doc.text(`Resumen semana: Ventas: ${ventasSemana} | Recargas: ${recargasSemana} | Neto: ${ventasSemana - recargasSemana}`, 14, 64);
 
                 if (movsSemana.length > 0) {
-                    doc.text('Movimientos en la semana:', 14, 58);
                     const semanaRows = movsSemana.map(m => [new Date(m.fecha).toLocaleString(), m.tipo, m.cantidad, m.stockResultante, m.motivo || '']);
-                    doc.autoTable({ startY: 62, head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']], body: semanaRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    doc.autoTable({ startY: 70, head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']], body: semanaRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                 } else {
-                    doc.text('No hay movimientos en la semana.', 14, 58);
+                    doc.text('No hay movimientos en la semana.', 14, 70);
                 }
-
-                let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 64;
+                let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 76;
                 doc.text(`Resumen mes: Ventas: ${ventasMes} | Recargas: ${recargasMes} | Neto: ${ventasMes - recargasMes}`, 14, finalY);
                 finalY += 6;
-
                 if (movsMes.length > 0) {
-                    doc.text('Movimientos en el mes:', 14, finalY);
                     const mesRows = movsMes.map(m => [new Date(m.fecha).toLocaleString(), m.tipo, m.cantidad, m.stockResultante, m.motivo || '']);
                     doc.autoTable({ startY: finalY + 4, head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']], body: mesRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                 } else {
                     doc.text('No hay movimientos en el mes.', 14, finalY);
+                }
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
                 }
                 doc.save(`historial_${producto.nombre.replace(/\s+/g, '_')}_${nombreUsuario.replace(/\s+/g,'_')}.pdf`);
             }
@@ -2813,6 +3085,12 @@
             renderInventarioTabla();
             renderMovimientos();
             porcentajeInput.addEventListener('input', actualizarComision);
+            actualizarBaseBtn.addEventListener('click', () => {
+                calcularBaseComision();
+                actualizarComision();
+            });
+            calcularBaseComision();
+            actualizarComision();
 
             document.getElementById('ajusteManualBtn').addEventListener('click', () => {
                 if (catalogoProductos.length === 0) { alert('No hay productos'); return; }
@@ -2874,7 +3152,14 @@
             });
 
             document.getElementById('resumenSemanalBtn').addEventListener('click', () => mostrarResumenVentas('semana'));
-            document.getElementById('resumenMensualBtn').addEventListener('click', () => mostrarResumenVentas('mes'));
+            
+            // ACTUALIZACIÓN: Aquí vinculamos el modal del resumen mensual
+            document.getElementById('resumenMensualBtn').addEventListener('click', () => {
+                const hoy = new Date();
+                document.getElementById('selectMesResumen').value = hoy.getMonth();
+                document.getElementById('inputAnioResumen').value = hoy.getFullYear();
+                document.getElementById('selectorMesModal').style.display = 'flex';
+            });
 
             document.getElementById('resumenComisionesBtn').addEventListener('click', () => generarResumenComisiones());
             document.getElementById('abrirModalTrimestralBtn').addEventListener('click', () => {
@@ -2917,14 +3202,32 @@
 
         function generarReporteDetalladoPDF(tipo, fechaInicio, fechaFin) {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape' });
+            const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
             const titulo = tipo === 'semana' ? 'REPORTE SEMANAL' : 'REPORTE MENSUAL';
-            doc.setFontSize(14);
-            doc.text(titulo, 14, 15);
-            doc.setFontSize(9);
             const correlativo = obtenerCorrelativoReporte();
-            doc.text(`Vendedor: ${nombreUsuario} | ID Interno: ${correlativo}`, 14, 22);
-            doc.text(`Período: ${fechaInicio.toLocaleDateString()} - ${fechaFin.toLocaleDateString()}`, 14, 28);
+            const fechaHora = new Date().toLocaleString();
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(7, 94, 84);
+            doc.text('Droguería Marijose Jhire', 14, 15);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+            doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+            doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+            doc.setDrawColor(37, 211, 102);
+            doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+            doc.setFontSize(14);
+            doc.setTextColor(7, 94, 84);
+            doc.text(titulo, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+            doc.setFontSize(9);
+            doc.setTextColor(60);
+            doc.text(`Período: ${fechaInicio.toLocaleDateString()} - ${fechaFin.toLocaleDateString()}`, doc.internal.pageSize.getWidth() / 2, 47, { align: 'center' });
 
             const ventasPeriodo = ventas.filter(v => {
                 if (v.estado !== 'normal') return false;
@@ -2950,11 +3253,11 @@
             });
 
             doc.autoTable({
-                startY: 32,
+                startY: 52,
                 head: [['Fecha', 'Código', 'Razón Social', 'NIT', 'Dirección', 'Documento', 'Detalle Mercancía', 'Condiciones', 'Total (Q)']],
                 body: tableBody,
                 theme: 'striped',
-                headStyles: { fillColor: [44, 62, 80] },
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                 styles: { fontSize: 8 },
                 columnStyles: {
                     0: { cellWidth: 25 },
@@ -2981,91 +3284,120 @@
             doc.text(`Total Ventas Crédito: ${formatoQ(totalCredito)}`, 14, finalY + 6);
             doc.text(`TOTAL GENERAL: ${formatoQ(totalContado + totalCredito)}`, 14, finalY + 12);
 
-            const resumenProductos = {};
+            const unidadesContado = {}, unidadesCredito = {};
             ventasPeriodo.forEach(v => {
                 v.productos.forEach(p => {
                     const nom = p.producto;
-                    resumenProductos[nom] = (resumenProductos[nom] || 0) + (p.unidades || 0);
+                    const unidades = p.unidades || 0;
+                    if (v.tipoVenta === 'Contado') {
+                        unidadesContado[nom] = (unidadesContado[nom] || 0) + unidades;
+                    } else {
+                        unidadesCredito[nom] = (unidadesCredito[nom] || 0) + unidades;
+                    }
                 });
             });
-            const prodRows = Object.entries(resumenProductos).sort((a,b) => b[1] - a[1]).map(([prod, cant]) => [prod, cant]);
-
-            if (prodRows.length > 0) {
+            const todosProductos = new Set([...Object.keys(unidadesContado), ...Object.keys(unidadesCredito)]);
+            const desgloseRows = Array.from(todosProductos).sort().map(prod => [
+                prod,
+                unidadesContado[prod] || 0,
+                unidadesCredito[prod] || 0,
+                (unidadesContado[prod] || 0) + (unidadesCredito[prod] || 0)
+            ]);
+            if (desgloseRows.length > 0) {
                 doc.addPage();
                 doc.setFontSize(12);
-                doc.text('Resumen de Productos Vendidos', 14, 15);
+                doc.text('Desglose de Unidades por Tipo de Venta', 14, 15);
                 doc.autoTable({
                     startY: 20,
-                    head: [['Producto', 'Cantidad Total']],
-                    body: prodRows,
+                    head: [['Producto', 'Unidades Contado', 'Unidades Crédito', 'Total Unidades']],
+                    body: desgloseRows,
                     theme: 'striped',
                     headStyles: { fillColor: [37, 211, 102] }
                 });
+            }
+
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
             }
 
             doc.save(`${titulo.replace(' ', '_')}_${nombreUsuario.replace(/\s+/g,'_')}_${fechaInicio.toISOString().slice(0,10)}.pdf`);
         }
 
         function generarResumenComisiones() {
-            const hoy = new Date();
-            const mesActual = hoy.getMonth();
-            const anioActual = hoy.getFullYear();
+            const inicio = document.getElementById('fechaInicioComision')?.value;
+            const fin = document.getElementById('fechaFinComision')?.value;
+            if (!inicio || !fin) {
+                alert('Seleccione un rango de fechas válido en la pestaña Inventario.');
+                return;
+            }
+            const start = new Date(inicio + 'T00:00:00');
+            const end = new Date(fin + 'T23:59:59');
 
-            const ventasContadoMes = ventas.filter(v => {
+            const ventasContadoPeriodo = ventas.filter(v => {
                 const fecha = new Date(v.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && v.tipoVenta === 'Contado' && v.estado === 'normal';
+                return fecha >= start && fecha <= end && v.tipoVenta === 'Contado' && v.estado === 'normal';
             });
-            const abonosMes = abonos.filter(a => {
+            const abonosPeriodo = abonos.filter(a => {
                 const fecha = new Date(a.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual;
+                return fecha >= start && fecha <= end;
             });
-            const pagosCobroPropiosMes = pagosCobro.filter(p => {
+            const pagosPropiosPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
-                return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual && p.tipo === 'propio';
+                return fecha >= start && fecha <= end && p.tipo === 'propio';
             });
 
-            const totalContado = ventasContadoMes.reduce((acc, v) => acc + parseFloat(v.total), 0);
-            const totalAbonos = abonosMes.reduce((acc, a) => acc + (a.monto || 0), 0);
-            const totalPagosPropios = pagosCobroPropiosMes.reduce((acc, p) => acc + (p.monto || 0), 0);
+            const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + parseFloat(v.total), 0);
+            const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+            const totalPagosPropios = pagosPropiosPeriodo.reduce((acc, p) => acc + (p.monto || 0), 0);
             const granTotal = totalContado + totalAbonos + totalPagosPropios;
 
-            let html = `<h3>📊 Resumen de comisiones - ${hoy.toLocaleString('default', { month: 'long' })} ${anioActual}</h3><p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
-            html += `<h4>💵 Ventas al contado del mes</h4>`;
-            if (ventasContadoMes.length === 0) {
-                html += '<p>No hay ventas al contado en el mes.</p>';
+            let html = `<h3>📊 Resumen de comisiones</h3><p><strong>Período:</strong> ${new Date(start).toLocaleDateString()} - ${new Date(end).toLocaleDateString()}</p><p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
+            html += `<h4>💵 Ventas al contado</h4>`;
+            if (ventasContadoPeriodo.length === 0) {
+                html += '<p>No hay ventas al contado en el período.</p>';
             } else {
-                html += `<div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Cliente</th><th>Total</th></tr></thead><tbody>`;
-                ventasContadoMes.forEach(v => {
+                html += `<div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Cliente</th><th>Total</th><th>Método de pago</th></tr></thead><tbody>`;
+                ventasContadoPeriodo.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
-                    html += `<tr><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td></tr>`;
+                    html += `<tr><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td><td>Efectivo</td></tr>`;
                 });
-                html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td></tr></tbody></table></div>`;
+                html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td><td></td></tr></tbody></table></div>`;
             }
 
-            html += `<h4>💰 Abonos a créditos del mes</h4>`;
-            if (abonosMes.length === 0) {
-                html += '<p>No hay abonos en el mes.</p>';
+            html += `<h4>💰 Abonos a créditos</h4>`;
+            if (abonosPeriodo.length === 0) {
+                html += '<p>No hay abonos en el período.</p>';
             } else {
-                html += `<div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Factura</th><th>Cliente</th><th>Monto</th></tr></thead><tbody>`;
-                abonosMes.forEach(a => {
+                html += `<div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Factura</th><th>Cliente</th><th>Monto</th><th>Método de pago</th></tr></thead><tbody>`;
+                abonosPeriodo.forEach(a => {
                     const venta = ventas.find(v => v.id === a.ventaId);
                     const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                    html += `<tr><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(a.monto)}</td></tr>`;
+                    html += `<tr><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td></tr>`;
                 });
-                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalAbonos)}</strong></td></tr></tbody></table></div>`;
+                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalAbonos)}</strong></td><td></td></tr></tbody></table></div>`;
             }
 
-            html += `<h4>📄 Pagos de cobros propios del mes</h4>`;
-            if (pagosCobroPropiosMes.length === 0) {
-                html += '<p>No hay pagos de cobros propios en el mes.</p>';
+            html += `<h4>📄 Pagos de cobros propios</h4>`;
+            if (pagosPropiosPeriodo.length === 0) {
+                html += '<p>No hay pagos de cobros propios en el período.</p>';
             } else {
-                html += `<div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Documento cobro</th><th>Cliente</th><th>Monto</th></tr></thead><tbody>`;
-                pagosCobroPropiosMes.forEach(p => {
+                html += `<div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Documento cobro</th><th>Cliente</th><th>Monto</th><th>Método de pago</th></tr></thead><tbody>`;
+                pagosPropiosPeriodo.forEach(p => {
                     const cobro = cobros.find(c => c.id === p.cobroId);
                     const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                    html += `<tr><td>${cobro ? cobro.numeroDocumento : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(p.monto)}</td></tr>`;
+                    html += `<tr><td>${cobro ? cobro.numeroDocumento : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(p.monto)}</td><td>${p.metodoPago}</td></tr>`;
                 });
-                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalPagosPropios)}</strong></td></tr></tbody></table></div>`;
+                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalPagosPropios)}</strong></td><td></td></tr></tbody></table></div>`;
             }
 
             html += `<div style="margin-top:20px; padding:12px; background:#e0f2e9; border-radius:24px; text-align:center;"><strong>TOTAL BASE DE COMISIÓN:</strong> ${formatoQ(granTotal)}</div>`;
@@ -3079,64 +3411,86 @@
             document.getElementById('cerrarResumenComisionesBtn').addEventListener('click', () => modal.style.display = 'none');
             document.getElementById('exportarResumenComisionesPDF').addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
                 const correlativo = obtenerCorrelativoReporte();
-                doc.setFontSize(16);
-                doc.text(`Resumen de comisiones - ${hoy.toLocaleString('default', { month: 'long' })} ${anioActual}`, 14, 16);
+                const fechaHora = new Date().toLocaleString();
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(7, 94, 84);
+                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+                doc.setDrawColor(37, 211, 102);
+                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+                doc.setFontSize(12);
+                doc.text(`Resumen de comisiones - ${new Date(start).toLocaleDateString()} al ${new Date(end).toLocaleDateString()}`, 14, 42);
                 doc.setFontSize(10);
-                doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
-                doc.text(`ID Reporte: ${correlativo}`, 14, 28);
-                let y = 36;
+                let y = 50;
 
                 doc.text('Ventas al contado', 14, y);
                 y += 6;
-                if (ventasContadoMes.length > 0) {
-                    const contadoRows = ventasContadoMes.map(v => {
+                if (ventasContadoPeriodo.length > 0) {
+                    const contadoRows = ventasContadoPeriodo.map(v => {
                         const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
-                        return [cli.razonSocial, formatoQ(v.total)];
+                        return [cli.razonSocial, formatoQ(v.total), 'Efectivo'];
                     });
-                    contadoRows.push(['Total', formatoQ(totalContado)]);
-                    doc.autoTable({ startY: y, head: [['Cliente', 'Total']], body: contadoRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    contadoRows.push(['Total', formatoQ(totalContado), '']);
+                    doc.autoTable({ startY: y, head: [['Cliente', 'Total', 'Método']], body: contadoRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                     y = doc.lastAutoTable.finalY + 6;
                 } else {
-                    doc.text('No hay ventas al contado en el mes.', 14, y);
+                    doc.text('No hay ventas al contado en el período.', 14, y);
                     y += 6;
                 }
 
                 doc.text('Abonos a créditos', 14, y);
                 y += 6;
-                if (abonosMes.length > 0) {
-                    const abonosRows = abonosMes.map(a => {
+                if (abonosPeriodo.length > 0) {
+                    const abonosRows = abonosPeriodo.map(a => {
                         const venta = ventas.find(v => v.id === a.ventaId);
                         const cli = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                        return [venta ? venta.id.substr(0,8) : '', cli.razonSocial, formatoQ(a.monto)];
+                        return [venta ? venta.id.substr(0,8) : '', cli.razonSocial, formatoQ(a.monto), a.tipoPago];
                     });
-                    abonosRows.push(['Total', '', formatoQ(totalAbonos)]);
-                    doc.autoTable({ startY: y, head: [['Factura', 'Cliente', 'Monto']], body: abonosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    abonosRows.push(['Total', '', formatoQ(totalAbonos), '']);
+                    doc.autoTable({ startY: y, head: [['Factura', 'Cliente', 'Monto', 'Método']], body: abonosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                     y = doc.lastAutoTable.finalY + 6;
                 } else {
-                    doc.text('No hay abonos en el mes.', 14, y);
+                    doc.text('No hay abonos en el período.', 14, y);
                     y += 6;
                 }
 
                 doc.text('Pagos de cobros propios', 14, y);
                 y += 6;
-                if (pagosCobroPropiosMes.length > 0) {
-                    const pagosRows = pagosCobroPropiosMes.map(p => {
+                if (pagosPropiosPeriodo.length > 0) {
+                    const pagosRows = pagosPropiosPeriodo.map(p => {
                         const cobro = cobros.find(c => c.id === p.cobroId);
                         const cli = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                        return [cobro ? cobro.numeroDocumento : '', cli.razonSocial, formatoQ(p.monto)];
+                        return [cobro ? cobro.numeroDocumento : '', cli.razonSocial, formatoQ(p.monto), p.metodoPago];
                     });
-                    pagosRows.push(['Total', '', formatoQ(totalPagosPropios)]);
-                    doc.autoTable({ startY: y, head: [['Documento', 'Cliente', 'Monto']], body: pagosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    pagosRows.push(['Total', '', formatoQ(totalPagosPropios), '']);
+                    doc.autoTable({ startY: y, head: [['Documento', 'Cliente', 'Monto', 'Método']], body: pagosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                     y = doc.lastAutoTable.finalY + 6;
                 } else {
-                    doc.text('No hay pagos de cobros propios en el mes.', 14, y);
+                    doc.text('No hay pagos de cobros propios en el período.', 14, y);
                     y += 6;
                 }
 
                 doc.setFontSize(12);
                 doc.text(`TOTAL BASE DE COMISIÓN: ${formatoQ(granTotal)}`, 14, y);
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
                 doc.save(`resumen_comisiones_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
             });
         }
@@ -3233,17 +3587,30 @@
             const bottom5 = ranking.slice(-5).reverse();
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
             const correlativo = obtenerCorrelativoReporte();
+            const fechaHora = new Date().toLocaleString();
+
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, 105, 15, { align: 'center' });
-            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.setTextColor(7, 94, 84);
+            doc.text('Droguería Marijose Jhire', 14, 15);
             doc.setFontSize(9);
-            doc.text(`Vendedor: ${nombreUsuario}`, 14, 22);
-            doc.text(`ID Interno: ${correlativo}`, 14, 28);
+            doc.setFont('helvetica', 'normal');
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+            doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+            doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+            doc.setDrawColor(37, 211, 102);
+            doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+            doc.setFontSize(14);
+            doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+            doc.setFontSize(10);
             doc.autoTable({
-                startY: 32,
+                startY: 48,
                 head: [['KPI / Indicador Financiero', 'Valor']],
                 body: [
                     ['Volumen de Ventas (Contado)', formatoQ(totalContado)],
@@ -3256,7 +3623,7 @@
                     ['Eficiencia de Cobro (Efectivo / Créditos Otorgados)', eficienciaCobro.toFixed(2) + '%']
                 ],
                 theme: 'grid',
-                headStyles: { fillColor: [44, 62, 80] }
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 }
             });
 
             doc.text("Análisis de Mora por Días de Crédito", 14, doc.lastAutoTable.finalY + 15);
@@ -3272,7 +3639,6 @@
                 body: agingBody,
                 theme: 'striped',
                 headStyles: { fillColor: [37, 211, 102] }
-                // Se eliminó didDrawCell para quitar los colores de fondo
             });
 
             if (top10.length > 0) {
@@ -3295,76 +3661,76 @@
                 });
             }
 
-            doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
-        }
-
-        function mostrarModalCalificacion(clienteId) {
-            const cliente = clientes.find(c => c.id === clienteId);
-            if (!cliente) return;
-            const modal = document.getElementById('calificacionModal');
-            const content = document.getElementById('calificacionContent');
-            content.innerHTML = `
-                <h3>Calificar a ${cliente.razonSocial}</h3>
-                <label>Calificación pagos al contado (1-5): <input type="number" id="califContado" min="1" max="5" step="1" value="5"></label>
-                <label>Calificación pagos al crédito (1-5): <input type="number" id="califCredito" min="1" max="5" step="1" value="5"></label>
-                <label>Comentario: <textarea id="califComentario" rows="3" placeholder="Observaciones sobre el comportamiento de pago..."></textarea></label>
-                <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarCalificacionBtn" class="secondary">Guardar</button><button id="cancelarCalificacionBtn" class="secondary small">Cancelar</button></div>
-            `;
-            modal.style.display = 'flex';
-
-            document.getElementById('guardarCalificacionBtn').addEventListener('click', () => {
-                const califContado = parseInt(document.getElementById('califContado').value);
-                const califCredito = parseInt(document.getElementById('califCredito').value);
-                const comentario = document.getElementById('califComentario').value.trim();
-                if (isNaN(califContado) || califContado < 1 || califContado > 5 || isNaN(califCredito) || califCredito < 1 || califCredito > 5) {
-                    alert('Las calificaciones deben ser números entre 1 y 5');
-                    return;
-                }
-                const nuevaCalificacion = {
-                    id: generarIdCalificacion(),
-                    clienteId: cliente.id,
-                    calificacionContado: califContado,
-                    calificacionCredito: califCredito,
-                    comentario: comentario,
-                    fecha: new Date().toISOString(),
-                    usuario: nombreUsuario
-                };
-                calificacionesClientes.push(nuevaCalificacion);
-                saveData();
-                modal.style.display = 'none';
-                renderCatalogo();
+            const unidadesContado = {}, unidadesCredito = {};
+            ventasQ.forEach(v => {
+                v.productos.forEach(p => {
+                    const nom = p.producto;
+                    const unidades = p.unidades || 0;
+                    if (v.tipoVenta === 'Contado') {
+                        unidadesContado[nom] = (unidadesContado[nom] || 0) + unidades;
+                    } else {
+                        unidadesCredito[nom] = (unidadesCredito[nom] || 0) + unidades;
+                    }
+                });
             });
-            document.getElementById('cancelarCalificacionBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        }
-
-        function eliminarCalificacion(calificacionId) {
-            if (confirm('¿Eliminar esta calificación?')) {
-                calificacionesClientes = calificacionesClientes.filter(c => c.id !== calificacionId);
-                saveData();
-                renderCatalogo();
+            const todosProductos = new Set([...Object.keys(unidadesContado), ...Object.keys(unidadesCredito)]);
+            const desgloseRows = Array.from(todosProductos).sort().map(prod => [
+                prod,
+                unidadesContado[prod] || 0,
+                unidadesCredito[prod] || 0,
+                (unidadesContado[prod] || 0) + (unidadesCredito[prod] || 0)
+            ]);
+            if (desgloseRows.length > 0) {
+                doc.addPage();
+                doc.setFontSize(12);
+                doc.text('Desglose de Unidades por Tipo de Venta (Contado vs Crédito)', 14, 15);
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Producto', 'Unidades Contado', 'Unidades Crédito', 'Total Unidades']],
+                    body: desgloseRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [37, 211, 102] }
+                });
             }
+
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+            }
+            doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
         }
 
         // ========== PESTAÑA COBROS ==========
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><span></span><button id="eliminarTodosCobrosBtn" class="danger small">🗑️ Eliminar todos los cobros</button></div>
+                <div class="action-buttons" style="justify-content: flex-end;">
+                    <button id="eliminarTodosCobrosBtn" class="danger small">🗑️ Eliminar todos los cobros</button>
+                </div>
                 ${mostrarRecordatorios()}
                 <fieldset><legend>Registrar nuevo cobro</legend>
-                    <div class="search-section"><label>🔍 Buscar cliente</label><input type="text" id="buscarClienteCobro" placeholder="Nombre, NIT o código"><button class="secondary small" id="limpiarBusquedaCobroBtn">Limpiar</button></div>
+                    <div class="search-section"><label>🔍 Buscar cliente</label><input type="text" id="buscarClienteCobro" placeholder="Nombre, NIT o código"><button class="secondary small" id="limpiarBusquedaCobroBtn" style="align-self:flex-start;">Limpiar</button></div>
                     <div id="clienteSeleccionadoCobroContainer"></div><div id="listaClientesCobroResultado" class="client-list"></div><div id="paginacionClientesCobro" class="paginacion"></div>
                     <label>Código: <input type="text" id="codigoClienteCobro" placeholder="Código"></label><label>Nombre/Razón Social: <input type="text" id="razonSocialCobro" required></label>
                     <label>NIT: <input type="text" id="nitCobro" placeholder="C/F"></label><label>Dirección: <input type="text" id="direccionCobro"></label>
                     <label>Teléfono: <input type="tel" id="telefonoCobro"></label><label>Encargado: <input type="text" id="encargadoCobro"></label>
                     <label>Número de documento: <input type="text" id="numeroDocumentoCobro" required></label><label>Fecha: <input type="date" id="fechaCobro" value="${new Date().toISOString().slice(0,10)}"></label>
                     <label>Monto total: <input type="number" id="montoTotalCobro" step="0.01" min="0" required></label>
-                    <button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button>
+                    <div class="action-buttons" style="justify-content: flex-start;"><button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button></div>
                 </fieldset>
                 <div id="ventasDelDiaContainer" style="margin-top: 20px;"></div>
                 <h3>Lista de cobros</h3>
-                <div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>\n                        <tbody id="cobrosBody"></tbody>\n                      </table>\n                </div>\n                <div id="paginacionCobros" class="paginacion"></div>\n            `;
+                <div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
+                        <tbody id="cobrosBody"></tbody>
+                      </table>
+                </div>
+                <div id="paginacionCobros" class="paginacion"></div>
+            `;
             contentEl.innerHTML = html;
 
             document.getElementById('eliminarTodosCobrosBtn').addEventListener('click', () => {
@@ -3456,7 +3822,9 @@
                             if (ventasClienteHoy.length === 0) {
                                 ventasDelDiaContainer.innerHTML = '<p>No hay ventas registradas hoy para este cliente.</p>';
                             } else {
-                                let html = `<fieldset><legend>Ventas del día de este cliente</legend><div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead><tbody>`;
+                                let html = `<fieldset><legend>Ventas del día de este cliente</legend><div class="table-responsive">
+                                       <table>
+                                         <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead><tbody>`;
                                 ventasClienteHoy.forEach(v => {
                                     const docId = v.id.substr(0,8);
                                     const saldoOriginal = parseFloat(v.total).toFixed(2);
@@ -3617,15 +3985,17 @@
             const cliente = clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' };
             const pagos = pagosCobro.filter(p => p.cobroId === cobroId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
-            let html = `<h3>Estado de cobro: ${cobro.numeroDocumento}</h3><p>Cliente: ${cliente.razonSocial}</p><p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p><div style="margin-bottom: 10px;"><button id="eliminarCobroDesdeModalBtn" class="danger small">🗑 Eliminar este cobro</button></div><h4>Pagos realizados</h4><div class="table-responsive">\n                       <table>\n                        <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th></tr></thead><tbody>`;
+            let html = `<h3>Estado de cobro: ${cobro.numeroDocumento}</h3><p>Cliente: ${cliente.razonSocial}</p><p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p><div style="margin-bottom: 10px;"><button id="eliminarCobroDesdeModalBtn" class="danger small">🗑 Eliminar este cobro</button></div><h4>Pagos realizados</h4><div class="table-responsive">
+                   <table>
+                     <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th><th>Método de pago</th></tr></thead><tbody>`;
             if (pagos.length === 0) {
-                html += '<tr><td colspan="4">No hay pagos registrados.</td></tr>';
+                html += '<tr><td colspan="5">No hay pagos registrados.</td></tr>';
             } else {
                 pagos.forEach(p => {
-                    html += `<tr><td>${new Date(p.fecha).toLocaleDateString()}</td><td>${formatoQ(p.monto)}</td><td>${p.tipo}</td><td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td></tr>`;
+                    html += `<tr><td>${new Date(p.fecha).toLocaleDateString()}</td><td>${formatoQ(p.monto)}</td><td>${p.tipo}</td><td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td><td>${p.metodoPago}</td></tr>`;
                 });
             }
-            html += `</tbody></table></div><h4>Registrar nuevo pago</h4><label>Monto: <input type="number" id="pagoMontoCobro" step="0.01" min="0.01" max="${cobro.saldoPendiente}"></label><label>Tipo: <select id="pagoTipoCobro"><option value="propio">Propio</option><option value="ajeno">Ajeno</option></select></label><div id="porcentajeContainerCobro" style="display:none; margin-top:10px;"><label>Porcentaje base para comisión (0-100): <input type="number" id="pagoPorcentajeCobro" value="100" min="0" max="100" step="0.1"></label></div><label>Método de pago: <select id="pagoMetodoCobro"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option></select></label><label>Fecha del pago: <input type="date" id="pagoFechaCobro" value="${new Date().toISOString().slice(0,10)}"></label><div style="margin-top:20px;"><button id="guardarPagoCobroBtn" class="secondary">Guardar pago</button><button id="cancelarPagoCobroBtn" class="secondary small">Cancelar</button></div>`;
+            html += `</tbody></table></div><h4>Registrar nuevo pago</h4><label>Monto: <input type="number" id="pagoMontoCobro" step="0.01" min="0.01" max="${cobro.saldoPendiente}"></label><label>Tipo: <select id="pagoTipoCobro"><option value="propio">Propio</option><option value="ajeno">Ajeno</option></select></label><div id="porcentajeContainerCobro" style="display:none; margin-top:10px;"><label>Porcentaje base para comisión (0-100): <input type="number" id="pagoPorcentajeCobro" value="100" min="0" max="100" step="0.1"></label></div><label>Método de pago: <select id="pagoMetodoCobro"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label><label>Fecha del pago: <input type="date" id="pagoFechaCobro" value="${new Date().toISOString().slice(0,10)}"></label><div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarPagoCobroBtn" class="secondary">Guardar pago</button><button id="cancelarPagoCobroBtn" class="secondary small">Cancelar</button></div>`;
 
             const modal = document.getElementById('estadoCobroModal');
             const modalContent = document.getElementById('estadoCobroContent');
