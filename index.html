@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Gestión ventas Marijose Jhire</title>
+    <title>📱 Droguería Marijose Jhire - Sistema de Gestión</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,7 +19,6 @@
             align-items: flex-start;
             padding: 12px;
         }
-        /* Aumentamos el tamaño máximo para que todas las pestañas se vean uniformes y quepan las tablas */
         .app {
             max-width: 950px;
             width: 100%;
@@ -28,6 +27,30 @@
             box-shadow: 0 10px 30px rgba(0,20,30,0.2);
             overflow: hidden;
             margin: 8px 0;
+        }
+        .header-main {
+            background: #075e54;
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            border-bottom: 4px solid #25d366;
+        }
+        .header-main .logo {
+            font-size: 2.8rem;
+        }
+        .header-main .title-container h1 {
+            font-size: 1.6rem;
+            margin: 0 0 4px 0;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .header-main .title-container p {
+            font-size: 0.9rem;
+            margin: 0;
+            opacity: 0.9;
         }
         .tabs {
             display: flex;
@@ -90,7 +113,7 @@
             color: #1e3b4f;
             font-size: 0.95rem;
         }
-        input, select, textarea {
+        input[type="text"], input[type="number"], input[type="date"], input[type="tel"], input[type="email"], select, textarea {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #b0c7da;
@@ -104,7 +127,6 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(37,211,102,0.2);
         }
-        /* Ajuste para que los botones sean simétricos */
         button {
             background: #25d366;
             border: none;
@@ -132,18 +154,36 @@
         button.small {
             padding: 8px 14px;
             font-size: 0.85rem;
-            min-width: auto; /* Los botones pequeños dentro de tablas se ajustan a su texto */
+            min-width: auto; 
         }
         button.danger {
             background: #dc3545;
             color: white;
             border-color: #a71d2a;
         }
+        .btn-upload-label {
+            background: #eaf0f6;
+            color: #1f3a57;
+            border: 1px solid #a0b9cf;
+            font-weight: 600;
+            padding: 11px 20px; 
+            border-radius: 40px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 4px 4px 4px 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-width: 150px;
+        }
         .action-buttons {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 20px;
+            align-items: center;
         }
         .search-section {
             background: #e3f0fa;
@@ -339,6 +379,7 @@
         .recordatorio-item {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
             margin: 6px 0;
         }
@@ -403,13 +444,15 @@
             margin-bottom: 16px;
             border: 1px solid #e1f5fe;
             border-radius: 12px;
+            width: 100%;
+            display: block; 
         }
         .table-responsive table {
-            min-width: 600px;
+            min-width: 800px; 
         }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .tab { font-size: 0.8rem; padding: 10px 4px; }
-            button { width: 100%; margin: 6px 0; }
+            button, .btn-upload-label { width: 100%; margin: 6px 0; }
             th, td { font-size: 0.8rem; padding: 6px 4px; }
             .total-item { flex: 1 1 100%; }
         }
@@ -450,6 +493,7 @@
             color: white;
             display: inline-block;
             font-weight: bold;
+            text-align: center;
         }
         .vencimiento-rojo { background-color: #ffebee !important; color: #c62828; }
         .vencimiento-naranja { background-color: #fff3e0 !important; color: #ef6c00; }
@@ -484,13 +528,20 @@
 </head>
 <body>
 <div class="app" id="app">
+    <div class="header-main">
+        <div class="logo">🏥</div>
+        <div class="title-container">
+            <h1>Droguería Marijose Jhire</h1>
+            <p>Sistema Integral de Gestión y Control Financiero</p>
+        </div>
+    </div>
     <div id="greeting"></div>
     <div class="tabs">
         <div class="tab active" data-tab="venta">🧾 Registrar venta</div>
         <div class="tab" data-tab="ventas">📅 Ventas</div>
         <div class="tab" data-tab="catalogo">📇 Clientes</div>
         <div class="tab" data-tab="productos">📦 Productos</div>
-        <div class="tab" data-tab="inventario">📊 Inventario</div>
+        <div class="tab" data-tab="inventario">📊 Inventario / Comisiones</div>
         <div class="tab" data-tab="cobros">💰 Cobros</div>
     </div>
     <div class="content" id="content"></div>
@@ -537,13 +588,13 @@
         <h3 style="color: #075e54; margin-bottom: 15px;">📈 Generar Reporte Trimestral</h3>
         <label>Ciclo Fiscal:
             <select id="selectTrimestre">
-                <option value="Q1">Q1 (Nov - Ene)</option>
-                <option value="Q2">Q2 (Feb - Abr)</option>
-                <option value="Q3">Q3 (May - Jul)</option>
-                <option value="Q4">Q4 (Ago - Oct)</option>
+                <option value="Q1">Q1 (Ene - Mar)</option>
+                <option value="Q2">Q2 (Abr - Jun)</option>
+                <option value="Q3">Q3 (Jul - Sep)</option>
+                <option value="Q4">Q4 (Oct - Dic)</option>
             </select>
         </label>
-        <label>Año (del cierre del ciclo):
+        <label>Año:
             <input type="number" id="anioTrimestre" value="2026">
         </label>
         <div style="margin-top:20px; display:flex; gap:10px;">
@@ -577,6 +628,13 @@
             }
         }
         document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
+
+        function obtenerSaludo() {
+            const hora = new Date().getHours();
+            if (hora < 12) return 'Buenos días';
+            if (hora < 18) return 'Buenas tardes';
+            return 'Buenas noches';
+        }
 
         function generarIdCliente() { return 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
         function generarIdVenta() { return 'ven_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
@@ -647,6 +705,7 @@
                 } else { if (v.saldoPendiente === undefined) v.saldoPendiente = 0; }
                 if (v.fechaCancelacion === undefined) v.fechaCancelacion = null;
                 if (v.estado === undefined) { v.estado = 'normal'; migrado = true; }
+                if (v.facturado === undefined) { v.facturado = false; migrado = true; }
             });
             inventario.forEach(i => {
                 if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7;
@@ -803,21 +862,111 @@
                 html += '<div class="recordatorios"><strong>⏰ Recordatorios</strong>';
                 facturasProximas.forEach(f => {
                     const clase = f.vencida ? 'vencido' : 'proximo';
-                    html += `<div class="recordatorio-item ${clase}">📄 Factura ${f.id.substr(0,8)} - ${f.clienteNombre}: ${f.vencida ? 'VENCIDA' : 'Vence en '+f.diasRestantes+' día(s)'} (Q${redondearDinero(f.saldoPendiente).toFixed(2)})</div>`;
+                    html += `<div class="recordatorio-item ${clase}">
+                        <div style="flex:1;">📄 Factura ${f.id.substr(0,8)} - ${f.clienteNombre}: ${f.vencida ? 'VENCIDA' : 'Vence en '+f.diasRestantes+' día(s)'} (Q${redondearDinero(f.saldoPendiente).toFixed(2)})</div>
+                        <button class="secondary small btn-enviar-recordatorio" data-id="${f.id}" title="Enviar Recordatorio WhatsApp">📲</button>
+                    </div>`;
                 });
                 chequesPendientes.forEach(c => {
-                    html += `<div class="recordatorio-item proximo">💰 Cheque de Q${redondearDinero(c.monto).toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div>`;
+                    html += `<div class="recordatorio-item proximo"><div style="flex:1;">💰 Cheque de Q${redondearDinero(c.monto).toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div></div>`;
                 });
                 if (cobrosPendientes.length > 0) {
                     html += '<div><strong>💰 Cobros pendientes</strong></div>';
                     cobrosPendientes.forEach(c => {
                         const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?' };
-                        html += `<div class="recordatorio-item">📄 ${c.numeroDocumento} - ${cliente.razonSocial}: ${formatoQ(c.saldoPendiente)}</div>`;
+                        html += `<div class="recordatorio-item"><div style="flex:1;">📄 ${c.numeroDocumento} - ${cliente.razonSocial}: ${formatoQ(c.saldoPendiente)}</div></div>`;
                     });
                 }
                 html += '</div>';
             }
             return html;
+        }
+
+        // Delegación de eventos para los botones de recordatorio dinámicos
+        document.getElementById('content').addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-enviar-recordatorio');
+            if (btn) {
+                 enviarRecordatorioWhatsApp(btn.dataset.id);
+            }
+        });
+
+        function enviarRecordatorioWhatsApp(ventaId) {
+            const venta = ventas.find(v => v.id === ventaId);
+            if(!venta) return;
+            const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Cliente', telefono: '' };
+            const correlativo = venta.id.substr(0,8);
+            
+            // Generate PDF Recordatorio
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ format: 'a5', orientation: 'portrait' });
+            const fechaEmision = new Date().toLocaleString();
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(7, 94, 84);
+            doc.text('DROGUERÍA MARIJOSE JHIRE', 74, 15, { align: 'center' });
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100);
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 74, 20, { align: 'center' });
+            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 74, 24, { align: 'center' });
+
+            doc.setDrawColor(200);
+            doc.line(10, 30, 138, 30);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`RECORDATORIO DE PAGO`, 10, 38);
+            doc.text(`FACTURA: ${correlativo}`, 138, 38, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Fecha/Hora: ${fechaEmision}`, 10, 43);
+            doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
+
+            doc.setFillColor(255, 243, 205); // Fondo amarillito suave
+            doc.rect(10, 52, 128, 30, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.text('DATOS DEL CLIENTE:', 12, 57);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Razón Social: ${cliente.razonSocial}`, 12, 62);
+            doc.text(`NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || 'N/A'}`, 12, 67);
+            doc.text(`Dirección: ${cliente.direccion || 'Ciudad'}`, 12, 72);
+            doc.text(`Ruta/Zona: ${cliente.ruta || 'N/A'}`, 12, 77);
+
+            const body = venta.productos.map(p => [
+                p.unidades,
+                p.producto,
+                `Q${parseFloat(p.precioUnitario).toFixed(2)}`,
+                `Q${parseFloat(p.monto).toFixed(2)}`
+            ]);
+            doc.autoTable({
+                startY: 87,
+                head: [['Cant', 'Descripción', 'P/Unit', 'Subtotal']],
+                body: body,
+                theme: 'grid',
+                styles: { fontSize: 7, font: 'helvetica' },
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                columnStyles: {
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 25, halign: 'right' },
+                    3: { cellWidth: 25, halign: 'right' }
+                },
+                didDrawPage: function(data) {
+                    let finalY = data.cursor.y + 10;
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(10);
+                    doc.text(`MONTO ORIGINAL: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
+                    doc.setTextColor(220, 53, 69); // Rojo para saldo pendiente
+                    doc.text(`SALDO PENDIENTE: Q${parseFloat(venta.saldoPendiente).toFixed(2)}`, 138, finalY + 6, { align: 'right' });
+                }
+            });
+            doc.save(`Recordatorio_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
+
+            // Open WhatsApp
+            const saludo = obtenerSaludo();
+            let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
+            let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+            const mensaje = `¡${saludo}! 🌟 Esperamos que esté teniendo un excelente día.\n\nDe parte de *Droguería Marijose Jhire*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
+            
+            window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
         }
 
         const tabs = document.querySelectorAll('.tab');
@@ -893,13 +1042,15 @@
             doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
 
             doc.setFillColor(240, 247, 252);
-            doc.rect(10, 52, 128, 25, 'F');
+            doc.rect(10, 52, 128, 30, 'F');
             doc.setFont('helvetica', 'bold');
             doc.text('DATOS DEL CLIENTE:', 12, 57);
             doc.setFont('helvetica', 'normal');
             doc.text(`Razón Social: ${cliente.razonSocial}`, 12, 62);
             doc.text(`NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || 'N/A'}`, 12, 67);
             doc.text(`Dirección: ${cliente.direccion || 'Ciudad'}`, 12, 72);
+            if (cliente.telefono) doc.text(`Teléfono: ${cliente.telefono}`, 12, 77);
+            if (cliente.encargado) doc.text(`Encargado: ${cliente.encargado}`, 74, 77);
 
             const body = venta.productos.map(p => [
                 p.unidades,
@@ -908,7 +1059,7 @@
                 `Q${parseFloat(p.monto).toFixed(2)}`
             ]);
             doc.autoTable({
-                startY: 82,
+                startY: 87,
                 head: [['Cant', 'Descripción', 'P/Unit', 'Subtotal']],
                 body: body,
                 theme: 'grid',
@@ -924,7 +1075,15 @@
                     let finalY = data.cursor.y + 10;
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(10);
+                    doc.setTextColor(0);
                     doc.text(`TOTAL A PAGAR: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
+                    
+                    // Disclaimer
+                    doc.setFontSize(7);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(150);
+                    doc.text('Nota legal: Este documento debe ser confrontado con la boleta de', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 12, { align: 'center' });
+                    doc.text('depósito o transferencia para validar su autenticidad.', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
                 }
             });
             doc.save(`RECIBO_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
@@ -943,7 +1102,7 @@
                 <h2>🧾 Registrar venta (Q)</h2>
                 <div class="action-buttons">
                     <button id="backupBtn" class="secondary">⬇️ Respaldo Manual</button>
-                    <label for="restoreFile" class="secondary" style="padding: 12px 20px; background: #eaf0f6; border-radius: 40px; cursor: pointer; text-align: center; border: 1px solid #a0b9cf; font-weight:600; display:inline-flex; justify-content:center; align-items:center; min-width:150px;">⬆️ Restaurar</label>
+                    <label for="restoreFile" class="btn-upload-label">⬆️ Restaurar</label>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;">
                 </div>
                 ${mostrarRecordatorios()}
@@ -1047,6 +1206,7 @@
 
             let clienteSeleccionado = null;
 
+            // Bloqueo de edición si la venta tiene abonos
             if (ventaEditandoId) {
                 const venta = ventas.find(v => v.id === ventaEditandoId);
                 const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
@@ -1107,7 +1267,7 @@
                 const tr = document.createElement('tr');
                 const stockActual = productoId ? obtenerStock(productoId) : 0;
                 tr.innerHTML = `
-                     <td><select class="prod-select" style="width:100%;">${optionsProductos(productoId)}</select></td>
+                     <td><select class="prod-select" style="width:100%; min-width: 150px;">${optionsProductos(productoId)}</select></td>
                      <td><input type="number" class="prod-unidad" value="${unidades}" min="0" step="1" style="width:60px;"></td>
                      <td><input type="number" class="prod-precio" value="${precio}" min="0" step="0.01" style="width:80px;"></td>
                      <td><input type="number" class="prod-monto" value="${monto}" min="0" step="0.01" style="width:90px;"></td>
@@ -1310,7 +1470,7 @@
                         direccion.value = borrador.cliente.direccion || '';
                         telefono.value = borrador.cliente.telefono || '';
                         correo.value = borrador.cliente.correo || '';
-                        categoria.value = borrador.cliente.categoria || '';
+                        categoria.value = borrador.categoria || '';
                         ruta.value = borrador.cliente.ruta || '';
                         limiteCredito.value = borrador.cliente.limiteCredito !== null ? borrador.cliente.limiteCredito : '';
                         clienteSelContainer.innerHTML = `<div class="badge">✅ Cliente: ${borrador.cliente.razonSocial} ${borrador.cliente.codigo ? '('+borrador.cliente.codigo+')' : ''}<button id="quitarSeleccionBtn" class="small secondary">✕ Quitar</button></div>`;
@@ -1448,7 +1608,7 @@
                 }
 
                 let ventaId;
-                const correlativo = obtenerCorrelativoRecibo(); // Siempre generamos el correlativo para usarlo en comprobantes
+                const correlativo = obtenerCorrelativoRecibo(); 
                 if (ventaEditandoId) {
                     const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
                     if (tieneAbonos) {
@@ -1490,7 +1650,8 @@
                             fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
                             mensaje: '',
                             fechaCancelacion: ventas[index].fechaCancelacion || null,
-                            estado: ventas[index].estado || 'normal'
+                            estado: ventas[index].estado || 'normal',
+                            facturado: false 
                         };
                         ventaId = ventaEditandoId;
                         alert('Venta actualizada');
@@ -1510,7 +1671,8 @@
                         fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
                         mensaje: '',
                         fechaCancelacion: null,
-                        estado: 'normal'
+                        estado: 'normal',
+                        facturado: false
                     };
                     ventas.push(nuevaVenta);
                     ventaId = nuevaVenta.id;
@@ -1544,10 +1706,11 @@
                         generarReciboVentaContado(ventaFinal, clienteFinal, correlativo);
                         const confirmarWhatsApp = confirm(`¿Deseas enviar un mensaje de WhatsApp al cliente?`);
                         if (confirmarWhatsApp) {
+                            const saludo = obtenerSaludo();
                             let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
                             let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
                             
-                            const mensaje = `*Droguería Marijose Jhire le saluda cordialmente.*\n\n¡Gracias por su preferencia!\n\nLe adjuntamos/compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\nEstamos para servirle.`;
+                            const mensaje = `¡${saludo}! 🌟 Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le agradecemos muchísimo por su compra. Le compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\n¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
                             
                             const url = baseUrl + encodeURIComponent(mensaje);
                             window.open(url, '_blank');
@@ -1595,7 +1758,6 @@
                 `;
 
                 document.getElementById('enviarResumenDiaBtn')?.addEventListener('click', () => {
-                    // Creado de Respaldo automático
                     exportarBackup();
 
                     let mensaje = `📋 *RESUMEN DEL DÍA* (${new Date().toLocaleDateString()})\n\n`;
@@ -1668,6 +1830,29 @@
 
                     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
                     window.open(url, '_blank');
+
+                    const datosDia = {
+                        fecha: new Date().toISOString().slice(0,10),
+                        ventas: ventasHoy,
+                        abonos: abonosHoy,
+                        cobros: cobrosHoy,
+                        pagosCobro: pagosCobroHoy,
+                        totales: {
+                            ventas: contado+credito,
+                            contado,
+                            credito,
+                            abonos: totalAbonosHoy,
+                            cobrosCreados: totalCobrosHoy,
+                            pagosCobro: totalPagosCobroHoy
+                        }
+                    };
+                    const blob = new Blob([JSON.stringify(datosDia, null, 2)], { type: 'application/json' });
+                    const url2 = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url2;
+                    a.download = `resumen_dia_${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url2);
                 });
             }
             mostrarTotalesDia();
@@ -1701,7 +1886,7 @@
                 <div class="table-responsive">
                         <table>
                         <thead>
-                            <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr><th>Fecha</th><th>Código</th><th>NIT</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Tipo</th><th>Saldo</th><th>Vcto</th><th>Facturado</th><th>Estado</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="ventasBody"></tbody>
                        </table>
@@ -1777,7 +1962,7 @@
                 pagina.forEach(v => {
                     const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Desconocido' };
                     const fecha = new Date(v.fecha).toLocaleDateString();
-                    const productosStr = v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ');
+                    const productosStr = v.productos.map(p => `${p.unidades} ${p.producto} (Q${parseFloat(p.precioUnitario).toFixed(2)} c/u)`).join(', ');
                     const saldo = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '—';
                     const vcto = v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '—';
                     let estadoTexto = 'Normal';
@@ -1788,11 +1973,16 @@
                     } else {
                         estadoTexto = 'Liquidado';
                     }
+                    
+                    const checkFactura = v.estado !== 'anulada' 
+                        ? `<input type="checkbox" class="facturar-checkbox" data-id="${v.id}" ${v.facturado ? 'checked' : ''} style="width:20px; height:20px; cursor:pointer;" title="Marcar como facturado">` 
+                        : '—';
+
                     const tr = document.createElement('tr');
                     if (v.estado === 'anulada') tr.classList.add('anulada');
                     tr.innerHTML = `
-                        <td>${fecha}</td><td>${cliente.razonSocial}</td><td>${productosStr}</td><td>${formatoQ(v.total)}</td><td>${v.tipoVenta}</td><td>${saldo !== '—' ? 'Q' + saldo : '—'}</td><td>${vcto}</td><td><span class="estado-badge" style="background: ${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? '#ff9800' : '#2e7d32'}">${estadoTexto}</span></td>
-                        <td>${v.estado !== 'anulada' ? `<button class="secondary small editarVentaBtn" data-id="${v.id}">✏️</button><button class="danger small anularVentaBtn" data-id="${v.id}">🚫</button><button class="secondary small whatsappVentaBtn" data-id="${v.id}">📲</button>${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? `<button class="secondary small abonoVentaBtn" data-id="${v.id}">💰 Abono</button>` : ''}` : '—'}</td>
+                        <td>${fecha}</td><td>${cliente.codigo || '—'}</td><td>${cliente.nit || 'C/F'}</td><td>${cliente.razonSocial}</td><td>${productosStr}</td><td>${formatoQ(v.total)}</td><td>${v.tipoVenta}</td><td>${saldo !== '—' ? 'Q' + saldo : '—'}</td><td>${vcto}</td><td style="text-align:center;">${checkFactura}</td><td><span class="estado-badge" style="background: ${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? '#ff9800' : '#2e7d32'}">${estadoTexto}</span></td>
+                        <td>${v.estado !== 'anulada' ? `<button class="secondary small editarVentaBtn" data-id="${v.id}">✏️</button><button class="danger small anularVentaBtn" data-id="${v.id}">🚫</button><button class="secondary small whatsappVentaBtn" data-id="${v.id}">📲</button>${v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 ? `<button class="secondary small abonoVentaBtn" data-id="${v.id}">💰</button>` : ''}` : '—'}</td>
                     `;
                     ventasBody.appendChild(tr);
                 });
@@ -1811,6 +2001,17 @@
                 });
                 document.getElementById('paginaVentasSiguiente')?.addEventListener('click', () => {
                     if (paginaVentas < totalPaginas-1) { paginaVentas++; mostrarVentas(); }
+                });
+
+                document.querySelectorAll('.facturar-checkbox').forEach(cb => {
+                    cb.addEventListener('change', (e) => {
+                        const id = e.target.dataset.id;
+                        const venta = ventas.find(v => v.id === id);
+                        if (venta) {
+                            venta.facturado = e.target.checked;
+                            saveData();
+                        }
+                    });
                 });
 
                 document.querySelectorAll('.editarVentaBtn').forEach(btn => {
@@ -1857,13 +2058,14 @@
                         const venta = ventas.find(v => v.id === id);
                         if (!venta) return;
                         const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
-                        let mensaje = `📄 *DETALLE DE VENTA*\n`;
+                        
+                        const saludo = obtenerSaludo();
+                        let mensaje = `¡${saludo}! 🌟 Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le compartimos el detalle de su compra:\n\n`;
+                        mensaje += `📄 *DETALLE DE VENTA*\n`;
                         mensaje += `Fecha: ${new Date(venta.fecha).toLocaleDateString()}\n`;
                         mensaje += `Cliente: ${cliente.razonSocial}\n`;
                         mensaje += `NIT: ${cliente.nit || 'C/F'}\n`;
                         if (cliente.direccion) mensaje += `Dirección: ${cliente.direccion}\n`;
-                        if (cliente.telefono) mensaje += `Teléfono: ${cliente.telefono}\n`;
-                        if (cliente.correo) mensaje += `Correo: ${cliente.correo}\n`;
                         if (cliente.codigo) mensaje += `Código: ${cliente.codigo}\n`;
                         mensaje += `\n*Productos:*\n`;
                         venta.productos.forEach(p => {
@@ -1875,6 +2077,7 @@
                             mensaje += `\nSaldo pendiente: Q${(venta.saldoPendiente || 0).toFixed(2)}`;
                             mensaje += `\nVence: ${new Date(venta.fechaVencimiento).toLocaleDateString()}`;
                         }
+                        
                         let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
                         let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
                         window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
@@ -1923,15 +2126,18 @@
             document.getElementById('exportarVentasBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
                 const ventasData = ventasFiltradas.map(v => {
-                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '', nit: '' };
                     return {
                         Fecha: new Date(v.fecha).toLocaleDateString(),
+                        'Código Cliente': cliente.codigo || '',
+                        'NIT': cliente.nit || 'C/F',
                         Cliente: cliente.razonSocial,
                         'Tipo Venta': v.tipoVenta,
                         Total: v.total,
                         Saldo: v.saldoPendiente || 0,
                         Vencimiento: v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '',
-                        Productos: v.productos.map(p => `${p.unidades} ${p.producto}`).join(', '),
+                        Facturado: v.facturado ? 'Sí' : 'No',
+                        Productos: v.productos.map(p => `${p.unidades} ${p.producto} (Q${parseFloat(p.precioUnitario).toFixed(2)} c/u)`).join(', '),
                         Estado: v.estado || 'normal'
                     };
                 });
@@ -1947,7 +2153,7 @@
 
             document.getElementById('exportarVentasPdfBtn').addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
                 const correlativo = obtenerCorrelativoReporte();
                 const fechaHora = new Date().toLocaleString();
 
@@ -1972,7 +2178,7 @@
                 doc.text(`REPORTE DE VENTAS (FILTRADO)`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
 
                 const tableBody = ventasFiltradas.map(v => {
-                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '', nit: '' };
                     const prods = v.productos.map(p => `${p.unidades} ${p.producto}`).join(', ');
                     let estado = 'Liquidado';
                     if (v.estado === 'anulada') estado = 'ANULADA';
@@ -1981,30 +2187,45 @@
 
                     return [
                         new Date(v.fecha).toLocaleDateString(),
+                        cliente.codigo || '—',
+                        cliente.nit || 'C/F',
                         cliente.razonSocial,
                         prods,
                         formatoQ(v.total),
                         v.tipoVenta,
                         v.tipoVenta === 'Crédito' ? formatoQ(v.saldoPendiente) : '—',
-                        v.fechaVencimiento ? new Date(v.fechaVencimiento).toLocaleDateString() : '—',
+                        v.facturado ? 'Sí' : 'No',
                         estado
                     ];
                 });
 
                 doc.autoTable({
                     startY: 48,
-                    head: [['Fecha', 'Cliente', 'Productos', 'Total', 'Tipo', 'Saldo', 'Vencimiento', 'Estado']],
+                    head: [['Fecha', 'Código', 'NIT', 'Cliente', 'Productos', 'Total', 'Tipo', 'Saldo', 'Facturado', 'Estado']],
                     body: tableBody,
                     theme: 'striped',
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 },
-                    styles: { fontSize: 8 }
+                    styles: { fontSize: 7 },
+                    columnStyles: {
+                        0: { cellWidth: 15 },
+                        1: { cellWidth: 15 },
+                        2: { cellWidth: 20 },
+                        3: { cellWidth: 35 },
+                        4: { cellWidth: 60 },
+                        5: { cellWidth: 20 },
+                        6: { cellWidth: 15 },
+                        7: { cellWidth: 20 },
+                        8: { cellWidth: 15 },
+                        9: { cellWidth: 15 }
+                    }
                 });
 
                 const finalY = doc.lastAutoTable.finalY + 10;
                 doc.setFont('helvetica', 'bold');
+                doc.setFontSize(10);
                 doc.text(`Total período: ${document.getElementById('totalPeriodo').innerText}`, 14, finalY);
-                doc.text(`Contado: ${document.getElementById('totalContadoPeriodo').innerText}`, 14, finalY + 6);
-                doc.text(`Crédito: ${document.getElementById('totalCreditoPeriodo').innerText}`, 14, finalY + 12);
+                doc.text(`Total Contado: ${document.getElementById('totalContadoPeriodo').innerText}`, 14, finalY + 6);
+                doc.text(`Total Crédito: ${document.getElementById('totalCreditoPeriodo').innerText}`, 14, finalY + 12);
 
                 const totalPages = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
@@ -2026,8 +2247,8 @@
                     mensaje += 'No hay ventas en este período.';
                 } else {
                     ventasMes.forEach((v, i) => {
-                        const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
-                        mensaje += `${i+1}. ${new Date(v.fecha).toLocaleDateString()} - ${cliente.razonSocial}: ${formatoQ(v.total)} (${v.tipoVenta})\n`;
+                        const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '', nit: '' };
+                        mensaje += `${i+1}. ${new Date(v.fecha).toLocaleDateString()} - [${cliente.codigo || 'S/C'}] ${cliente.razonSocial} (NIT: ${cliente.nit || 'C/F'}): ${formatoQ(v.total)} (${v.tipoVenta}) - ${v.facturado ? '[FACTURADO]' : '[Pendiente Facturar]'}\n`;
                     });
                     mensaje += `\n*Totales*\n`;
                     mensaje += `Total: ${totalPeriodo.innerText}\n`;
@@ -2051,9 +2272,9 @@
                 <p>Venta: ${new Date(venta.fecha).toLocaleDateString()} - ${cliente.razonSocial}</p>
                 <p>Total: ${formatoQ(venta.total)} | Saldo pendiente: ${formatoQ(venta.saldoPendiente)}</p>
                 <label>Monto del abono: <input type="number" id="abonoMonto" step="0.01" min="0.01" max="${venta.saldoPendiente}"></label>
-                <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option></select></label>
+                <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label>
                 <div id="chequeOpciones" style="display:none; margin-top:10px;"><div class="flex-row"><label class="checkbox-label"><input type="radio" name="chequeTipo" value="hoy" checked> Cheque del día</label><label class="checkbox-label"><input type="radio" name="chequeTipo" value="futuro"> Cheque posfechado</label></div><div id="fechaChequeContainer" style="display:none;"><label>Fecha de cobro: <input type="date" id="fechaCheque"></label></div></div>
-                <div style="margin-top:20px;"><button id="guardarAbonoBtn" class="secondary">Guardar abono</button><button id="cancelarAbonoBtn" class="secondary small">Cancelar</button></div>
+                <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarAbonoBtn" class="secondary">Guardar abono</button><button id="cancelarAbonoBtn" class="secondary small">Cancelar</button></div>
             `;
             modal.style.display = 'flex';
 
@@ -2229,6 +2450,7 @@
                     const promedio = obtenerPromedioCalificaciones(cli.id);
                     const estrellas = promedio ? `<br><span style="font-size:0.75rem; color:#ffc107;">⭐ ${promedio.contado.toFixed(1)}</span>` : '<br><span style="font-size:0.7rem; color:#888;">Sin calif.</span>';
 
+                    // Calcular saldo pendiente y determinar el estado
                     const saldoTotalCliente = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     const estadoVenta = saldoTotalCliente > 0 
                         ? `<span style="color: #c62828; font-weight: 600;">Pendiente<br>(Q${saldoTotalCliente.toFixed(2)})</span>` 
@@ -2265,6 +2487,7 @@
                 document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
                 document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
 
+                // Eventos de botones
                 document.querySelectorAll('.calificarClienteBtn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         mostrarModalCalificacion(btn.dataset.id);
@@ -2334,7 +2557,7 @@
 
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
                 const correlativo = obtenerCorrelativoReporte();
                 const fechaHora = new Date().toLocaleString();
                 doc.setFont('helvetica', 'bold');
@@ -2343,6 +2566,7 @@
                 doc.text('Droguería Marijose Jhire', 14, 15);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
+                doc.setTextColor(60, 60, 60);
                 doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
                 doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
                 doc.setFont('helvetica', 'bold');
@@ -2458,9 +2682,9 @@
 
             html += `<h4>Registrar nuevo abono</h4><div><label>Factura: <select id="abonoVentaId">${ventasCliente.filter(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0).map(v => `<option value="${v.id}">${new Date(v.fecha).toLocaleDateString()} - Q${v.saldoPendiente.toFixed(2)}</option>`).join('')}</select></label>
                 <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
-                <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option></select></label>
+                <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label>
                 <div id="chequeOpcionesModal" style="display:none; margin-top:10px;"><div class="flex-row"><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="hoy" checked> Cheque del día</label><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="futuro"> Cheque posfechado</label></div><div id="fechaChequeModalContainer" style="display:none;"><label>Fecha de cobro: <input type="date" id="fechaChequeModal"></label></div></div>
-                <div style="margin-top:10px;"><button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button></div></div>`;
+                <div style="margin-top:10px; display:flex; gap:10px;"><button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button></div></div>`;
 
             const modal = document.getElementById('estadoCuentaModal');
             const modalContent = document.getElementById('estadoCuentaContent');
@@ -2622,7 +2846,7 @@
 
         // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
-            let html = `<h2>📦 Catálogo de productos</h2>${mostrarRecordatorios()}<button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button><div class="table-responsive">
+            let html = `<h2>📦 Catálogo de productos</h2>${mostrarRecordatorios()}<div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
                        <table>
                          <thead><tr><th>Nombre</th><th>Precio (Q)</th><th>Activo</th><th></th></tr></thead>
                         <tbody id="productosCatalogoBody"></tbody>
@@ -2742,10 +2966,10 @@
                     <span class="comision-item">💰 Valor inventario (venta): <span id="valorInventario">Q0.00</span></span>
                     <span class="comision-item">📅 Ventas del período (total): <span id="ventasPeriodoTotal">Q0.00</span></span>
                     <span class="comision-item" style="flex-wrap: wrap;">
-                        Comisión (contado + abonos del período + cobros propios): 
+                        Comisión (contado + créditos pagados al 100% + cobros propios): 
                         <input type="number" id="porcentajeComision" class="comision-input" value="4" min="0" max="100" step="0.1"> %
                         = <span id="montoComision">Q0.00</span>
-                        (Base: <span id="baseComision">Q0.00</span>)
+                        <br><span style="font-size:0.8rem; color:#666;">(Base actual: <span id="baseComision">Q0.00</span>)</span>
                     </span>
                 </div>
 
@@ -2804,11 +3028,13 @@
                 });
                 const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-                const abonosPeriodo = abonos.filter(a => {
-                    const fecha = new Date(a.fecha);
-                    return fecha >= start && fecha <= end;
+                // Nueva Lógica: Ventas al crédito pagadas al 100% en el periodo
+                const ventasCreditoCanceladas = ventas.filter(v => {
+                    if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
+                    const fechaCanc = new Date(v.fechaCancelacion);
+                    return fechaCanc >= start && fechaCanc <= end;
                 });
-                const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+                const totalCreditosCancelados = ventasCreditoCanceladas.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
                 const pagosPropiosPeriodo = pagosCobro.filter(p => {
                     const fecha = new Date(p.fecha);
@@ -2822,7 +3048,7 @@
                 }).reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
                 ventasPeriodoTotalSpan.innerText = formatoQ(totalVentasPeriodo);
 
-                const base = totalContado + totalAbonos + totalPagosPropios;
+                const base = totalContado + totalCreditosCancelados + totalPagosPropios;
                 baseComisionSpan.innerText = formatoQ(base);
                 return base;
             }
@@ -3032,7 +3258,7 @@
                 const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
 
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'portrait', format: 'legal' });
+                const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
                 const correlativo = obtenerCorrelativoReporte();
                 const fechaHora = new Date().toLocaleString();
                 doc.setFont('helvetica', 'bold');
@@ -3153,7 +3379,6 @@
 
             document.getElementById('resumenSemanalBtn').addEventListener('click', () => mostrarResumenVentas('semana'));
             
-            // ACTUALIZACIÓN: Aquí vinculamos el modal del resumen mensual
             document.getElementById('resumenMensualBtn').addEventListener('click', () => {
                 const hoy = new Date();
                 document.getElementById('selectMesResumen').value = hoy.getMonth();
@@ -3202,8 +3427,8 @@
 
         function generarReporteDetalladoPDF(tipo, fechaInicio, fechaFin) {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
-            const titulo = tipo === 'semana' ? 'REPORTE SEMANAL' : 'REPORTE MENSUAL';
+            const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+            const titulo = tipo === 'semana' ? 'REPORTE SEMANAL DE VENTAS' : 'REPORTE MENSUAL DE VENTAS';
             const correlativo = obtenerCorrelativoReporte();
             const fechaHora = new Date().toLocaleString();
 
@@ -3237,37 +3462,38 @@
 
             const tableBody = ventasPeriodo.map(v => {
                 const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '', nit: '', direccion: '' };
-                const detalleMercancia = v.productos.map(p => `${p.unidades} x ${p.producto} @ ${formatoQ(p.precioUnitario)}`).join(', ');
+                const detalleMercancia = v.productos.map(p => `${p.unidades} x ${p.producto} (Q${parseFloat(p.precioUnitario).toFixed(2)})`).join('\n');
                 const condiciones = v.tipoVenta === 'Contado' ? 'Contado' : `Crédito (vence: ${new Date(v.fechaVencimiento).toLocaleDateString()})`;
+                const facturadoStr = v.facturado ? 'Sí' : 'No';
                 return [
                     new Date(v.fecha).toLocaleDateString(),
                     cliente.codigo || 'S/C',
                     cliente.razonSocial,
                     cliente.nit || 'C/F',
-                    cliente.direccion || '—',
                     v.id.substr(0,8),
                     detalleMercancia,
                     condiciones,
+                    facturadoStr,
                     formatoQ(v.total)
                 ];
             });
 
             doc.autoTable({
                 startY: 52,
-                head: [['Fecha', 'Código', 'Razón Social', 'NIT', 'Dirección', 'Documento', 'Detalle Mercancía', 'Condiciones', 'Total (Q)']],
+                head: [['Fecha', 'Código', 'Razón Social', 'NIT', 'Documento', 'Detalle Mercancía', 'Condiciones', 'Facturado', 'Total']],
                 body: tableBody,
                 theme: 'striped',
                 headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                 styles: { fontSize: 8 },
                 columnStyles: {
-                    0: { cellWidth: 25 },
-                    1: { cellWidth: 20 },
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 15 },
                     2: { cellWidth: 40 },
-                    3: { cellWidth: 25 },
-                    4: { cellWidth: 40 },
-                    5: { cellWidth: 20 },
-                    6: { cellWidth: 55 },
-                    7: { cellWidth: 30 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 20 },
+                    5: { cellWidth: 60 },
+                    6: { cellWidth: 25 },
+                    7: { cellWidth: 20 },
                     8: { cellWidth: 25 }
                 }
             });
@@ -3284,37 +3510,73 @@
             doc.text(`Total Ventas Crédito: ${formatoQ(totalCredito)}`, 14, finalY + 6);
             doc.text(`TOTAL GENERAL: ${formatoQ(totalContado + totalCredito)}`, 14, finalY + 12);
 
-            const unidadesContado = {}, unidadesCredito = {};
+            // Desglose de unidades
+            const detalleContado = {};
+            const detalleCredito = {};
+            let totalUnidadesContado = 0, totalMontoContadoCalc = 0;
+            let totalUnidadesCredito = 0, totalMontoCreditoCalc = 0;
+
             ventasPeriodo.forEach(v => {
                 v.productos.forEach(p => {
                     const nom = p.producto;
                     const unidades = p.unidades || 0;
+                    const monto = parseFloat(p.monto) || 0;
+                    const pu = parseFloat(p.precioUnitario) || 0;
+
                     if (v.tipoVenta === 'Contado') {
-                        unidadesContado[nom] = (unidadesContado[nom] || 0) + unidades;
+                        if(!detalleContado[nom]) detalleContado[nom] = { uni: 0, monto: 0, pu: pu };
+                        detalleContado[nom].uni += unidades;
+                        detalleContado[nom].monto += monto;
+                        totalUnidadesContado += unidades;
+                        totalMontoContadoCalc += monto;
                     } else {
-                        unidadesCredito[nom] = (unidadesCredito[nom] || 0) + unidades;
+                        if(!detalleCredito[nom]) detalleCredito[nom] = { uni: 0, monto: 0, pu: pu };
+                        detalleCredito[nom].uni += unidades;
+                        detalleCredito[nom].monto += monto;
+                        totalUnidadesCredito += unidades;
+                        totalMontoCreditoCalc += monto;
                     }
                 });
             });
-            const todosProductos = new Set([...Object.keys(unidadesContado), ...Object.keys(unidadesCredito)]);
-            const desgloseRows = Array.from(todosProductos).sort().map(prod => [
-                prod,
-                unidadesContado[prod] || 0,
-                unidadesCredito[prod] || 0,
-                (unidadesContado[prod] || 0) + (unidadesCredito[prod] || 0)
+
+            // Tabla Contado
+            doc.addPage();
+            doc.setFontSize(12);
+            doc.text('Detalle de Productos Vendidos - AL CONTADO', 14, 15);
+            const rowsContado = Object.keys(detalleContado).sort().map(k => [
+                k, 
+                formatoQ(detalleContado[k].pu), 
+                detalleContado[k].uni, 
+                formatoQ(detalleContado[k].monto)
             ]);
-            if (desgloseRows.length > 0) {
-                doc.addPage();
-                doc.setFontSize(12);
-                doc.text('Desglose de Unidades por Tipo de Venta', 14, 15);
-                doc.autoTable({
-                    startY: 20,
-                    head: [['Producto', 'Unidades Contado', 'Unidades Crédito', 'Total Unidades']],
-                    body: desgloseRows,
-                    theme: 'striped',
-                    headStyles: { fillColor: [37, 211, 102] }
-                });
-            }
+            rowsContado.push(['TOTAL CONTADO', '', totalUnidadesContado, formatoQ(totalMontoContadoCalc)]);
+            
+            doc.autoTable({
+                startY: 20,
+                head: [['Producto', 'Precio Unitario', 'Unidades', 'Monto Total']],
+                body: rowsContado,
+                theme: 'striped',
+                headStyles: { fillColor: [37, 211, 102] }
+            });
+
+            // Tabla Credito
+            let nextY = doc.lastAutoTable.finalY + 15;
+            doc.text('Detalle de Productos Vendidos - AL CRÉDITO', 14, nextY);
+            const rowsCredito = Object.keys(detalleCredito).sort().map(k => [
+                k, 
+                formatoQ(detalleCredito[k].pu), 
+                detalleCredito[k].uni, 
+                formatoQ(detalleCredito[k].monto)
+            ]);
+            rowsCredito.push(['TOTAL CRÉDITO', '', totalUnidadesCredito, formatoQ(totalMontoCreditoCalc)]);
+            
+            doc.autoTable({
+                startY: nextY + 5,
+                head: [['Producto', 'Precio Unitario', 'Unidades', 'Monto Total']],
+                body: rowsCredito,
+                theme: 'striped',
+                headStyles: { fillColor: [255, 152, 0] }
+            });
 
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
@@ -3341,21 +3603,34 @@
                 const fecha = new Date(v.fecha);
                 return fecha >= start && fecha <= end && v.tipoVenta === 'Contado' && v.estado === 'normal';
             });
-            const abonosPeriodo = abonos.filter(a => {
-                const fecha = new Date(a.fecha);
-                return fecha >= start && fecha <= end;
+            
+            const detalleContado = {};
+            ventasContadoPeriodo.forEach(v => {
+                v.productos.forEach(p => {
+                    if(!detalleContado[p.producto]) detalleContado[p.producto] = { unidades: 0, monto: 0 };
+                    detalleContado[p.producto].unidades += p.unidades;
+                    detalleContado[p.producto].monto += (parseFloat(p.monto) || 0);
+                });
             });
+
+            const ventasCreditoCanceladas = ventas.filter(v => {
+                if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
+                const fechaCanc = new Date(v.fechaCancelacion);
+                return fechaCanc >= start && fechaCanc <= end;
+            });
+
             const pagosPropiosPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
                 return fecha >= start && fecha <= end && p.tipo === 'propio';
             });
 
             const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + parseFloat(v.total), 0);
-            const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+            const totalCreditosCancelados = ventasCreditoCanceladas.reduce((acc, v) => acc + parseFloat(v.total), 0);
             const totalPagosPropios = pagosPropiosPeriodo.reduce((acc, p) => acc + (p.monto || 0), 0);
-            const granTotal = totalContado + totalAbonos + totalPagosPropios;
+            const granTotal = totalContado + totalCreditosCancelados + totalPagosPropios;
 
             let html = `<h3>📊 Resumen de comisiones</h3><p><strong>Período:</strong> ${new Date(start).toLocaleDateString()} - ${new Date(end).toLocaleDateString()}</p><p><strong>Vendedor:</strong> ${nombreUsuario}</p>`;
+            
             html += `<h4>💵 Ventas al contado</h4>`;
             if (ventasContadoPeriodo.length === 0) {
                 html += '<p>No hay ventas al contado en el período.</p>';
@@ -3370,19 +3645,34 @@
                 html += `<tr><td><strong>Total</strong></td><td><strong>${formatoQ(totalContado)}</strong></td><td></td></tr></tbody></table></div>`;
             }
 
-            html += `<h4>💰 Abonos a créditos</h4>`;
-            if (abonosPeriodo.length === 0) {
-                html += '<p>No hay abonos en el período.</p>';
+            html += `<h4>📦 Detalle de Productos (Contado)</h4>`;
+            if (Object.keys(detalleContado).length === 0) {
+                html += '<p>No hay productos vendidos al contado en este período.</p>';
             } else {
                 html += `<div class="table-responsive">
                        <table>
-                         <thead><tr><th>Factura</th><th>Cliente</th><th>Monto</th><th>Método de pago</th></tr></thead><tbody>`;
-                abonosPeriodo.forEach(a => {
-                    const venta = ventas.find(v => v.id === a.ventaId);
-                    const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                    html += `<tr><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td></tr>`;
+                         <thead><tr><th>Producto</th><th>Unidades</th><th>Monto Total</th></tr></thead><tbody>`;
+                for(const prod in detalleContado) {
+                    html += `<tr><td>${prod}</td><td>${detalleContado[prod].unidades}</td><td>${formatoQ(detalleContado[prod].monto)}</td></tr>`;
+                }
+                html += `</tbody></table></div>`;
+            }
+
+            html += `<h4>💰 Créditos cancelados al 100% (Comisionables)</h4>`;
+            if (ventasCreditoCanceladas.length === 0) {
+                html += '<p>No hay créditos que se hayan terminado de pagar en este período.</p>';
+            } else {
+                html += `<div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Factura</th><th>Cliente</th><th>Total Venta</th><th>Fecha Cancelación</th><th>Desglose de pagos</th></tr></thead><tbody>`;
+                ventasCreditoCanceladas.forEach(v => {
+                    const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                    const abonosVenta = abonos.filter(a => a.ventaId === v.id).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+                    let desgloseHtml = abonosVenta.map(a => `${new Date(a.fecha).toLocaleDateString()}: ${formatoQ(a.monto)}`).join('<br>');
+                    
+                    html += `<tr><td>${v.id.substr(0,8)}</td><td>${cliente.razonSocial}</td><td>${formatoQ(v.total)}</td><td>${new Date(v.fechaCancelacion).toLocaleDateString()}</td><td style="font-size:0.8rem;">${desgloseHtml}</td></tr>`;
                 });
-                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalAbonos)}</strong></td><td></td></tr></tbody></table></div>`;
+                html += `<tr><td colspan="2"><strong>Total Base Comisionable</strong></td><td><strong>${formatoQ(totalCreditosCancelados)}</strong></td><td colspan="2"></td></tr></tbody></table></div>`;
             }
 
             html += `<h4>📄 Pagos de cobros propios</h4>`;
@@ -3391,17 +3681,27 @@
             } else {
                 html += `<div class="table-responsive">
                        <table>
-                         <thead><tr><th>Documento cobro</th><th>Cliente</th><th>Monto</th><th>Método de pago</th></tr></thead><tbody>`;
+                         <thead><tr><th>Fecha Pago</th><th>Documento cobro</th><th>Cliente</th><th>Monto</th><th>Método de pago</th></tr></thead><tbody>`;
                 pagosPropiosPeriodo.forEach(p => {
                     const cobro = cobros.find(c => c.id === p.cobroId);
                     const cliente = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                    html += `<tr><td>${cobro ? cobro.numeroDocumento : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(p.monto)}</td><td>${p.metodoPago}</td></tr>`;
+                    html += `<tr><td>${new Date(p.fecha).toLocaleDateString()}</td><td>${cobro ? cobro.numeroDocumento : ''}</td><td>${cliente.razonSocial}</td><td>${formatoQ(p.monto)}</td><td>${p.metodoPago}</td></tr>`;
                 });
-                html += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatoQ(totalPagosPropios)}</strong></td><td></td></tr></tbody></table></div>`;
+                html += `<tr><td colspan="3"><strong>Total</strong></td><td><strong>${formatoQ(totalPagosPropios)}</strong></td><td></td></tr></tbody></table></div>`;
             }
 
-            html += `<div style="margin-top:20px; padding:12px; background:#e0f2e9; border-radius:24px; text-align:center;"><strong>TOTAL BASE DE COMISIÓN:</strong> ${formatoQ(granTotal)}</div>`;
-            html += `<div style="margin-top:20px;"><button id="exportarResumenComisionesPDF" class="secondary">📄 Exportar PDF</button> <button id="cerrarResumenComisionesBtn" class="secondary small">Cerrar</button></div>`;
+            let totalUnidadesContado = 0;
+            let totalMontoContadoCalculado = 0;
+            for(const prod in detalleContado) {
+                totalUnidadesContado += detalleContado[prod].unidades;
+                totalMontoContadoCalculado += detalleContado[prod].monto;
+            }
+
+            html += `<div style="margin-top:20px; padding:12px; background:#e0f2e9; border-radius:24px; text-align:center;">
+                <strong>TOTAL BASE DE COMISIÓN:</strong> ${formatoQ(granTotal)}<br>
+                <span style="font-size: 0.9rem; color:#075e54;">(Total productos al contado: ${totalUnidadesContado} unidades = ${formatoQ(totalMontoContadoCalculado)})</span>
+            </div>`;
+            html += `<div style="margin-top:20px; display:flex; gap:10px;"><button id="exportarResumenComisionesPDF" class="secondary">📄 Exportar PDF</button> <button id="cerrarResumenComisionesBtn" class="secondary small">Cerrar</button></div>`;
 
             const modal = document.getElementById('resumenVentasModal');
             const modalContent = document.getElementById('resumenVentasContent');
@@ -3411,7 +3711,7 @@
             document.getElementById('cerrarResumenComisionesBtn').addEventListener('click', () => modal.style.display = 'none');
             document.getElementById('exportarResumenComisionesPDF').addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
                 const correlativo = obtenerCorrelativoReporte();
                 const fechaHora = new Date().toLocaleString();
 
@@ -3450,19 +3750,32 @@
                     y += 6;
                 }
 
-                doc.text('Abonos a créditos', 14, y);
+                doc.text('Detalle de Productos (Contado)', 14, y);
                 y += 6;
-                if (abonosPeriodo.length > 0) {
-                    const abonosRows = abonosPeriodo.map(a => {
-                        const venta = ventas.find(v => v.id === a.ventaId);
-                        const cli = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                        return [venta ? venta.id.substr(0,8) : '', cli.razonSocial, formatoQ(a.monto), a.tipoPago];
-                    });
-                    abonosRows.push(['Total', '', formatoQ(totalAbonos), '']);
-                    doc.autoTable({ startY: y, head: [['Factura', 'Cliente', 'Monto', 'Método']], body: abonosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                if (Object.keys(detalleContado).length > 0) {
+                    const prodsRows = Object.keys(detalleContado).map(prod => [prod, detalleContado[prod].unidades, formatoQ(detalleContado[prod].monto)]);
+                    doc.autoTable({ startY: y, head: [['Producto', 'Unidades', 'Monto Total']], body: prodsRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                     y = doc.lastAutoTable.finalY + 6;
                 } else {
-                    doc.text('No hay abonos en el período.', 14, y);
+                    doc.text('No hay productos vendidos al contado en este período.', 14, y);
+                    y += 6;
+                }
+
+                doc.text('Créditos cancelados al 100% (Comisionables)', 14, y);
+                y += 6;
+                if (ventasCreditoCanceladas.length > 0) {
+                    const abonosRows = ventasCreditoCanceladas.map(v => {
+                        const cli = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?' };
+                        const abonosVenta = abonos.filter(a => a.ventaId === v.id).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+                        const desgloseStr = abonosVenta.map(a => `${new Date(a.fecha).toLocaleDateString()}: ${formatoQ(a.monto)}`).join('\n');
+                        
+                        return [v.id.substr(0,8), cli.razonSocial, formatoQ(v.total), new Date(v.fechaCancelacion).toLocaleDateString(), desgloseStr];
+                    });
+                    abonosRows.push(['Total Base Comisionable', '', formatoQ(totalCreditosCancelados), '', '']);
+                    doc.autoTable({ startY: y, head: [['Factura', 'Cliente', 'Total Venta', 'Fecha Cancelación', 'Desglose']], body: abonosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    y = doc.lastAutoTable.finalY + 6;
+                } else {
+                    doc.text('No hay créditos cancelados al 100% en el período.', 14, y);
                     y += 6;
                 }
 
@@ -3472,10 +3785,10 @@
                     const pagosRows = pagosPropiosPeriodo.map(p => {
                         const cobro = cobros.find(c => c.id === p.cobroId);
                         const cli = cobro ? (clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
-                        return [cobro ? cobro.numeroDocumento : '', cli.razonSocial, formatoQ(p.monto), p.metodoPago];
+                        return [new Date(p.fecha).toLocaleDateString(), cobro ? cobro.numeroDocumento : '', cli.razonSocial, formatoQ(p.monto), p.metodoPago];
                     });
-                    pagosRows.push(['Total', '', formatoQ(totalPagosPropios), '']);
-                    doc.autoTable({ startY: y, head: [['Documento', 'Cliente', 'Monto', 'Método']], body: pagosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
+                    pagosRows.push(['', 'Total', '', formatoQ(totalPagosPropios), '']);
+                    doc.autoTable({ startY: y, head: [['Fecha Pago', 'Documento', 'Cliente', 'Monto', 'Método']], body: pagosRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                     y = doc.lastAutoTable.finalY + 6;
                 } else {
                     doc.text('No hay pagos de cobros propios en el período.', 14, y);
@@ -3484,6 +3797,10 @@
 
                 doc.setFontSize(12);
                 doc.text(`TOTAL BASE DE COMISIÓN: ${formatoQ(granTotal)}`, 14, y);
+                doc.setFontSize(9);
+                doc.setTextColor(100);
+                doc.text(`(Total productos al contado: ${totalUnidadesContado} unidades = ${formatoQ(totalMontoContadoCalculado)})`, 14, y + 6);
+                
                 const totalPages = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     doc.setPage(i);
@@ -3497,10 +3814,10 @@
 
         function generarAnalisisTrimestral(trimestre, anio) {
             const config = {
-                'Q1': { inicioMes: 10, finMes: 0, anioOffset: -1 },
-                'Q2': { inicioMes: 1, finMes: 3, anioOffset: 0 },
-                'Q3': { inicioMes: 4, finMes: 6, anioOffset: 0 },
-                'Q4': { inicioMes: 7, finMes: 9, anioOffset: 0 }
+                'Q1': { inicioMes: 0, finMes: 2, anioOffset: 0 },
+                'Q2': { inicioMes: 3, finMes: 5, anioOffset: 0 },
+                'Q3': { inicioMes: 6, finMes: 8, anioOffset: 0 },
+                'Q4': { inicioMes: 9, finMes: 11, anioOffset: 0 }
             };
             const sel = config[trimestre];
             const fechaInicio = new Date(anio + sel.anioOffset, sel.inicioMes, 1);
@@ -3587,7 +3904,7 @@
             const bottom5 = ranking.slice(-5).reverse();
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', format: 'legal' });
+            const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
             const correlativo = obtenerCorrelativoReporte();
             const fechaHora = new Date().toLocaleString();
 
@@ -3707,8 +4024,9 @@
         function renderCobros() {
             let html = `
                 <h2>💰 Cobros recuperados</h2>
-                <div class="action-buttons" style="justify-content: flex-end;">
-                    <button id="eliminarTodosCobrosBtn" class="danger small">🗑️ Eliminar todos los cobros</button>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="exportarCobrosPdfBtn" class="secondary">📄 Exportar PDF</button>
+                    <button id="eliminarTodosCobrosBtn" class="danger" style="margin-left:auto;">🗑️ Eliminar todos los cobros</button>
                 </div>
                 ${mostrarRecordatorios()}
                 <fieldset><legend>Registrar nuevo cobro</legend>
@@ -3732,6 +4050,66 @@
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
             contentEl.innerHTML = html;
+
+            document.getElementById('exportarCobrosPdfBtn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+                const correlativo = obtenerCorrelativoReporte();
+                const fechaHora = new Date().toLocaleString();
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(7, 94, 84);
+                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(60, 60, 60);
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+                doc.setDrawColor(37, 211, 102);
+                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+                doc.setFontSize(14);
+                doc.setTextColor(7, 94, 84);
+                doc.text(`REPORTE DE COBROS`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+
+                const tableBody = cobros.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
+                    const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?', codigo: '', nit: '', direccion: '' };
+                    return [
+                        new Date(c.fecha).toLocaleDateString(),
+                        c.numeroDocumento,
+                        cliente.codigo || '—',
+                        cliente.razonSocial,
+                        cliente.nit || 'C/F',
+                        cliente.direccion || '—',
+                        formatoQ(c.montoTotal),
+                        formatoQ(c.saldoPendiente),
+                        c.saldoPendiente > 0 ? 'Pendiente' : 'Cancelado'
+                    ];
+                });
+
+                doc.autoTable({
+                    startY: 48,
+                    head: [['Fecha', 'Documento', 'Código', 'Cliente', 'NIT', 'Dirección', 'Monto Total', 'Saldo', 'Estado']],
+                    body: tableBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8 }
+                });
+
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
+                doc.save(`Reporte_Cobros_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
 
             document.getElementById('eliminarTodosCobrosBtn').addEventListener('click', () => {
                 if (cobros.length === 0) { alert('No hay cobros para eliminar.'); return; }
@@ -3945,7 +4323,8 @@
                     if (totalPaginas > 1) {
                         paginacionHtml += `<button class="secondary small" id="paginaCobrosAnterior" ${paginaCobros === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
                         paginacionHtml += `<span> Página ${paginaCobros+1} de ${totalPaginas} </span>`;
-                        paginacionHtml += `<button class="secondary small" id="paginaCobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                        paginacionHtml += `<button class="secondary small" id="pagina
+CobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
                     }
                     paginacionCobros.innerHTML = paginacionHtml;
 
