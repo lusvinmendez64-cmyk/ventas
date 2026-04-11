@@ -521,6 +521,13 @@
         .clientes-ejecutivos-table tr:nth-child(even) {
             background-color: #f5faff;
         }
+        .reporte-fisico-container {
+            background: #fdfaf0;
+            border-radius: 24px;
+            padding: 16px;
+            margin-top: 20px;
+            border: 1px solid #e1e8e3;
+        }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -541,7 +548,7 @@
         <div class="tab" data-tab="ventas">📅 Ventas</div>
         <div class="tab" data-tab="catalogo">📇 Clientes</div>
         <div class="tab" data-tab="productos">📦 Productos</div>
-        <div class="tab" data-tab="inventario">📊 Inventario / Comisiones</div>
+        <div class="tab" data-tab="inventario">📊 Inventario</div>
         <div class="tab" data-tab="cobros">💰 Cobros</div>
     </div>
     <div class="content" id="content"></div>
@@ -882,7 +889,6 @@
             return html;
         }
 
-        // Delegación de eventos para los botones de recordatorio dinámicos
         document.getElementById('content').addEventListener('click', (e) => {
             const btn = e.target.closest('.btn-enviar-recordatorio');
             if (btn) {
@@ -896,7 +902,6 @@
             const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Cliente', telefono: '' };
             const correlativo = venta.id.substr(0,8);
             
-            // Generate PDF Recordatorio
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ format: 'a5', orientation: 'portrait' });
             const fechaEmision = new Date().toLocaleString();
@@ -920,7 +925,7 @@
             doc.text(`Fecha/Hora: ${fechaEmision}`, 10, 43);
             doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
 
-            doc.setFillColor(255, 243, 205); // Fondo amarillito suave
+            doc.setFillColor(255, 243, 205);
             doc.rect(10, 52, 128, 30, 'F');
             doc.setFont('helvetica', 'bold');
             doc.text('DATOS DEL CLIENTE:', 12, 57);
@@ -954,17 +959,16 @@
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(10);
                     doc.text(`MONTO ORIGINAL: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
-                    doc.setTextColor(220, 53, 69); // Rojo para saldo pendiente
+                    doc.setTextColor(220, 53, 69);
                     doc.text(`SALDO PENDIENTE: Q${parseFloat(venta.saldoPendiente).toFixed(2)}`, 138, finalY + 6, { align: 'right' });
                 }
             });
             doc.save(`Recordatorio_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
 
-            // Open WhatsApp
             const saludo = obtenerSaludo();
             let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
             let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
-            const mensaje = `¡${saludo}! 🌟 Esperamos que esté teniendo un excelente día.\n\nDe parte de *Droguería Marijose Jhire*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
+            const mensaje = `¡${saludo}! Esperamos que esté teniendo un excelente día.\n\nDe parte de *Droguería Marijose Jhire*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
             
             window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
         }
@@ -983,7 +987,6 @@
         }
         tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
-        // ========== EVENTOS GLOBALES DE MODALES ==========
         document.getElementById('cerrarSelectorMesBtn').onclick = () => {
             document.getElementById('selectorMesModal').style.display = 'none';
         };
@@ -1001,7 +1004,6 @@
             document.getElementById('selectorMesModal').style.display = 'none';
         };
 
-        // ========== FUNCIONES DE BORRADOR ==========
         function guardarBorradorVenta(estado) {
             localStorage.setItem('borradorVenta', JSON.stringify(estado));
         }
@@ -1078,7 +1080,6 @@
                     doc.setTextColor(0);
                     doc.text(`TOTAL A PAGAR: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
                     
-                    // Disclaimer
                     doc.setFontSize(7);
                     doc.setFont('helvetica', 'normal');
                     doc.setTextColor(150);
@@ -1206,7 +1207,6 @@
 
             let clienteSeleccionado = null;
 
-            // Bloqueo de edición si la venta tiene abonos
             if (ventaEditandoId) {
                 const venta = ventas.find(v => v.id === ventaEditandoId);
                 const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
@@ -1710,7 +1710,7 @@
                             let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
                             let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
                             
-                            const mensaje = `¡${saludo}! 🌟 Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le agradecemos muchísimo por su compra. Le compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\n¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
+                            const mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le agradecemos por su compra. Le compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\n¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
                             
                             const url = baseUrl + encodeURIComponent(mensaje);
                             window.open(url, '_blank');
@@ -2060,7 +2060,7 @@
                         const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                         
                         const saludo = obtenerSaludo();
-                        let mensaje = `¡${saludo}! 🌟 Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le compartimos el detalle de su compra:\n\n`;
+                        let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le compartimos el detalle de su compra:\n\n`;
                         mensaje += `📄 *DETALLE DE VENTA*\n`;
                         mensaje += `Fecha: ${new Date(venta.fecha).toLocaleDateString()}\n`;
                         mensaje += `Cliente: ${cliente.razonSocial}\n`;
@@ -2586,7 +2586,7 @@
                         c.direccion || '—',
                         c.telefono || '—',
                         saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
-                        obtenerComportamiento(c.id).texto
+                        obtennerComportamiento(c.id).texto
                     ];
                 });
                 
@@ -2850,7 +2850,7 @@
                        <table>
                          <thead><tr><th>Nombre</th><th>Precio (Q)</th><th>Activo</th><th></th></tr></thead>
                         <tbody id="productosCatalogoBody"></tbody>
-                      </table>
+                       </table>
                     </div><div id="paginacionProductos" class="paginacion"></div>`;
             contentEl.innerHTML = html;
 
@@ -2939,13 +2939,26 @@
                 <h2>📊 Inventario y comisiones</h2>
                 ${mostrarRecordatorios()}
                 <div class="action-buttons" style="justify-content: flex-start;">
-                    <button id="ajusteManualBtn" class="secondary">➕ Ajuste manual</button>
+                    <button id="ajusteManualBtn" class="secondary">➕ Ajuste / Recarga</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
                     <button id="resumenSemanalBtn" class="secondary">📅 Resumen Semanal</button>
                     <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
                     <button id="resumenComisionesBtn" class="secondary">📊 Resumen comisiones</button>
                     <button id="abrirModalTrimestralBtn" class="secondary">📈 Reporte Trimestral</button>
                 </div>
+
+                <div class="reporte-fisico-container">
+                    <h3>📄 Gestión de Giras y Reportes Físicos</h3>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                        <label style="flex: 1 1 200px;">Gira a realizar: <input type="text" id="giraInventario" placeholder="Ej: Occidente, Ruta 2..."></label>
+                        <label class="checkbox-label" style="flex: 1 1 200px; padding-top:25px;"><input type="checkbox" id="cambioMesInventario"> La semana incluye cambio de mes</label>
+                    </div>
+                    <label style="margin-top:10px;">Observaciones: <textarea id="observacionesInventario" rows="2" placeholder="Observaciones manuales para el reporte..."></textarea></label>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button id="btnCorteSemanaUnificado" class="secondary small" style="background:#075e54; color:white; border-color:#075e54;">📄 Generar Corte Semanal Maestro</button>
+                    </div>
+                </div>
+
                 <fieldset>
                     <legend>🎯 Rango de fechas para cálculo de comisiones</legend>
                     <div class="flex-row">
@@ -3015,6 +3028,309 @@
             const itemsPorPagina = 5;
             let inventarioFiltrado = [...inventario];
 
+            function calcularFechasReporteFisico() {
+                const dateHoy = new Date();
+                const diaSem = dateHoy.getDay();
+                const diffALunes = diaSem === 0 ? 6 : diaSem - 1;
+                
+                const lunes = new Date(dateHoy);
+                lunes.setDate(dateHoy.getDate() - diffALunes);
+                lunes.setHours(0,0,0,0);
+
+                let finSemana = new Date(lunes);
+                if (document.getElementById('cambioMesInventario').checked) {
+                    finSemana = new Date(dateHoy.getFullYear(), dateHoy.getMonth() + 1, 0);
+                } else {
+                    finSemana.setDate(lunes.getDate() + 4);
+                }
+                finSemana.setHours(23,59,59,999);
+
+                return { inicio: lunes, fin: finSemana };
+            }
+
+            document.getElementById('btnCorteSemanaUnificado').addEventListener('click', () => {
+                let telVendedor = localStorage.getItem('telefonoVendedor_App');
+                if (!telVendedor) {
+                    telVendedor = prompt('Para el reporte, por favor ingresa tu número de teléfono (Vendedor):');
+                    if (telVendedor && telVendedor.trim() !== '') {
+                        localStorage.setItem('telefonoVendedor_App', telVendedor.trim());
+                    } else {
+                        alert('⚠️ El teléfono es obligatorio para generar el corte.');
+                        return;
+                    }
+                }
+                generarPDFInventarioFisicoUnificado();
+            });
+
+            function generarPDFInventarioFisicoUnificado() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+                const fechas = calcularFechasReporteFisico();
+                const giraStr = document.getElementById('giraInventario').value.trim() || 'No especificada';
+                const telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
+                const correlativo = obtenerCorrelativoReporte();
+                
+                // Extraer datos de la semana
+                const ventasDeSemana = ventas.filter(v => v.estado === 'normal' && new Date(v.fecha) >= fechas.inicio && new Date(v.fecha) <= fechas.fin);
+                const abonosDeSemana = abonos.filter(a => new Date(a.fecha) >= fechas.inicio && new Date(a.fecha) <= fechas.fin);
+                const pagosCobroDeSemana = pagosCobro.filter(p => new Date(p.fecha) >= fechas.inicio && new Date(p.fecha) <= fechas.fin);
+
+                // 🎨 1. ENCABEZADO SIMÉTRICO Y PROFESIONAL
+                doc.setFillColor(7, 94, 84); // Color verde corporativo
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+                doc.setFontSize(10);
+                doc.text('CORTE SEMANAL MAESTRO', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                // Lado izquierdo
+                doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                doc.text(`Teléfono: ${telVendedor}`, 14, 30);
+                doc.text(`Gira/Ruta: ${giraStr}`, 14, 35);
+                // Lado derecho
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+                doc.text(`Período evaluado: Del ${fechas.inicio.toLocaleDateString()} al ${fechas.fin.toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 30, { align: 'right' });
+                doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 35, { align: 'right' });
+
+                doc.setDrawColor(200);
+                doc.line(14, 39, doc.internal.pageSize.getWidth() - 14, 39);
+
+                let currentY = 46;
+
+                // 📊 2. TABLA 1: INVENTARIO, VENTAS Y DESCUENTOS
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text('1. DETALLE DE INVENTARIO Y VENTAS POR PRODUCTO', 14, currentY);
+
+                const tableRowsFisico = [];
+                let granTotalInicial = 0, granTotalVendidas = 0, granTotalRetorno = 0;
+                let granTotalVentasQ = 0, granTotalDescuentosQ = 0;
+                let valorTotalInventarioAbordo = 0;
+
+                inventario.forEach(item => {
+                    let invInicial = item.stock;
+                    let udsVendidas = 0;
+                    let ventasProductoRealQ = 0;
+                    let ventasProductoIdealQ = 0;
+
+                    // Calcular inventario a bordo (Retorno x Precio Normal)
+                    valorTotalInventarioAbordo += (item.stock * item.precioUnitario);
+
+                    const movsSemana = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
+                    
+                    // Reconstruir el inventario del lunes
+                    movsSemana.forEach(m => {
+   		 if (m.tipo === 'venta') {
+      		  udsVendidas += Math.abs(m.cantidad);
+       		 invInicial += Math.abs(m.cantidad);
+   		 } else if (m.tipo === 'ajuste') {
+       		 // Ajuste positivo (recarga): se debe restar para obtener el inicial
+        	// Ajuste negativo (merma/descarte): se debe sumar
+        	if (m.cantidad > 0) {
+            invInicial -= m.cantidad;
+       		 } else if (m.cantidad < 0) {
+            invInicial += Math.abs(m.cantidad);
+        }
+    }
+});
+                    // Calcular ventas y descuentos de la semana para este producto
+                    ventasDeSemana.forEach(v => {
+                        v.productos.forEach(p => {
+                            if(p.productoId === item.productoId) {
+                                ventasProductoRealQ += parseFloat(p.monto) || 0;
+                                ventasProductoIdealQ += p.unidades * item.precioUnitario;
+                            }
+                        });
+                    });
+
+                    let descuentoConcedido = Math.max(0, ventasProductoIdealQ - ventasProductoRealQ);
+
+                    granTotalInicial += invInicial;
+                    granTotalVendidas += udsVendidas;
+                    granTotalRetorno += item.stock;
+                    granTotalVentasQ += ventasProductoRealQ;
+                    granTotalDescuentosQ += descuentoConcedido;
+
+                    tableRowsFisico.push([
+                        item.nombre, 
+                        item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString() : 'N/A',
+                        invInicial, 
+                        udsVendidas, 
+                        item.stock,
+                        formatoQ(ventasProductoRealQ),
+                        formatoQ(descuentoConcedido)
+                    ]);
+                });
+
+                // Fila de totales
+                tableRowsFisico.push([
+                    'TOTALES GLOBALES', 
+                    '-', 
+                    granTotalInicial.toString(), 
+                    granTotalVendidas.toString(), 
+                    granTotalRetorno.toString(), 
+                    formatoQ(granTotalVentasQ), 
+                    formatoQ(granTotalDescuentosQ)
+                ]);
+
+                doc.autoTable({
+                    startY: currentY + 4,
+                    head: [['Nombre del Producto', 'Vencimiento', 'Inv. Inicial', 'Uds. Vendidas', 'Uds. Retorno', 'Ventas (Q)', 'Descuentos (Q)']],
+                    body: tableRowsFisico,
+                    theme: 'grid',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8, halign: 'center', cellPadding: 3 },
+                    columnStyles: { 
+                        0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } 
+                    },
+                    willDrawCell: function(data) {
+                        if (data.row.index === tableRowsFisico.length - 1) { // Fila de totales
+                            doc.setFillColor(230, 245, 235);
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(0, 0, 0);
+                        }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 12;
+
+                // Si no hay espacio para la siguiente sección, creamos página nueva
+                if (currentY > doc.internal.pageSize.getHeight() - 60) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+
+                // 💰 3. TABLA 2: RESUMEN DE COBROS DE LA SEMANA
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text('2. RECUPERACIÓN Y COBROS DE LA SEMANA', 14, currentY);
+
+                const tableRowsCobros = [];
+                let totalCobradoSemana = 0;
+
+                // Unir abonos de ventas de crédito y pagos del módulo de cobros
+                const todosLosPagos = [];
+                
+                abonosDeSemana.forEach(a => {
+                    const venta = ventas.find(v => v.id === a.ventaId);
+                    const cli = venta ? clientes.find(c => c.id === venta.clienteId) : null;
+                    todosLosPagos.push({
+                        fecha: a.fecha,
+                        cliente: cli ? cli.razonSocial : 'Desconocido',
+                        doc: venta ? venta.id.substr(0,8) : 'Factura',
+                        metodo: a.tipoPago,
+                        monto: a.monto
+                    });
+                });
+
+                pagosCobroDeSemana.forEach(p => {
+                    const cobro = cobros.find(c => c.id === p.cobroId);
+                    const cli = cobro ? clientes.find(c => c.id === cobro.clienteId) : null;
+                    todosLosPagos.push({
+                        fecha: p.fecha,
+                        cliente: cli ? cli.razonSocial : 'Desconocido',
+                        doc: cobro ? cobro.numeroDocumento : 'Recibo',
+                        metodo: p.metodoPago,
+                        monto: p.monto
+                    });
+                });
+
+                // Ordenar por fecha
+                todosLosPagos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                if (todosLosPagos.length === 0) {
+                    tableRowsCobros.push(['-', 'No se registraron cobros ni abonos en esta semana', '-', '-', '-']);
+                } else {
+                    todosLosPagos.forEach(p => {
+                        totalCobradoSemana += p.monto;
+                        tableRowsCobros.push([
+                            new Date(p.fecha).toLocaleDateString(),
+                            p.cliente,
+                            p.doc,
+                            p.metodo.toUpperCase(),
+                            formatoQ(p.monto)
+                        ]);
+                    });
+                    tableRowsCobros.push(['', 'TOTAL RECUPERADO EN LA SEMANA', '', '', formatoQ(totalCobradoSemana)]);
+                }
+
+                doc.autoTable({
+                    startY: currentY + 4,
+                    head: [['Fecha', 'Cliente', 'Doc / Factura', 'Método', 'Monto Cobrado']],
+                    body: tableRowsCobros,
+                    theme: 'striped',
+                    headStyles: { fillColor: [37, 211, 102], textColor: 255 },
+                    styles: { fontSize: 8, halign: 'center' },
+                    columnStyles: { 1: { halign: 'left' } },
+                    willDrawCell: function(data) {
+                        if (todosLosPagos.length > 0 && data.row.index === tableRowsCobros.length - 1) {
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(0, 0, 0);
+                        }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 15;
+                if (currentY > doc.internal.pageSize.getHeight() - 40) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+
+                // 📦 4. RESUMEN FINANCIERO Y VALOR A BORDO
+                doc.setFillColor(240, 247, 252);
+                doc.rect(14, currentY, doc.internal.pageSize.getWidth() - 28, 25, 'F');
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('RESUMEN DE CIERRE FINANCIERO', 20, currentY + 8);
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Venta Total Generada: ${formatoQ(granTotalVentasQ)}`, 20, currentY + 16);
+                doc.text(`Cobros Recuperados: ${formatoQ(totalCobradoSemana)}`, doc.internal.pageSize.getWidth() / 2 - 20, currentY + 16);
+                
+                // Gran total del inventario a bordo
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text(`VALOR TOTAL DEL INVENTARIO A BORDO: ${formatoQ(valorTotalInventarioAbordo)}`, doc.internal.pageSize.getWidth() - 20, currentY + 16, { align: 'right' });
+
+                // ✍️ 5. FIRMAS AL FINAL
+                currentY += 45;
+                if (currentY > doc.internal.pageSize.getHeight() - 20) {
+                    doc.addPage();
+                    currentY = 40;
+                }
+                
+                doc.setDrawColor(0);
+                doc.line(40, currentY, 110, currentY);
+                doc.setTextColor(0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Firma del Colaborador (Entrega)', 75, currentY + 5, { align: 'center' });
+
+                doc.line(doc.internal.pageSize.getWidth() - 110, currentY, doc.internal.pageSize.getWidth() - 40, currentY);
+                doc.text('Firma de Vo.Bo. (Recibe)', doc.internal.pageSize.getWidth() - 75, currentY + 5, { align: 'center' });
+
+                // Paginación
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
+
+                doc.save(`Corte_Maestro_${fechas.fin.toISOString().slice(0,10)}.pdf`);
+            }
+
             function calcularBaseComision() {
                 const inicio = fechaInicioComision.value;
                 const fin = fechaFinComision.value;
@@ -3028,7 +3344,6 @@
                 });
                 const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-                // Nueva Lógica: Ventas al crédito pagadas al 100% en el periodo
                 const ventasCreditoCanceladas = ventas.filter(v => {
                     if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
                     const fechaCanc = new Date(v.fechaCancelacion);
@@ -3096,7 +3411,7 @@
                         <td>${formatoQ(item.precioUnitario)}</td>
                         <td><input type="date" class="fecha-vencimiento" data-id="${item.productoId}" value="${item.fechaVencimiento || ''}" style="width:120px;"></td>
                         <td>${claseVenc === 'vencimiento-rojo' ? '🔴 Vence pronto' : (claseVenc === 'vencimiento-naranja' ? '🟠 Próximo a vencer' : '🟢 Vigente')}</td>
-                        <td><button class="secondary small ajustarBtn" data-id="${item.productoId}" style="padding:4px 8px; font-size:0.7rem;">✏️ Ajustar</button></td>
+                        <td></td>
                     `;
                     inventarioBody.appendChild(tr);
                 });
@@ -3130,37 +3445,6 @@
                 });
                 document.getElementById('paginaInventarioSiguiente')?.addEventListener('click', () => {
                     if (paginaActual < totalPaginas-1) { paginaActual++; renderInventarioTabla(); }
-                });
-
-                document.querySelectorAll('.ajustarBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const prodId = btn.dataset.id;
-                        const item = inventario.find(i => i.productoId === prodId);
-                        if (!item) return;
-                        const nuevaCant = prompt(`Ajustar stock para ${item.nombre}\nStock actual: ${item.stock}\nIngresa nueva cantidad (puede ser negativa):`, item.stock);
-                        if (nuevaCant === null) return;
-                        const nueva = parseInt(nuevaCant);
-                        if (isNaN(nueva)) { alert('Cantidad no válida'); return; }
-                        const motivo = prompt('Motivo del ajuste:', 'ajuste manual');
-                        if (motivo === null) return;
-                        const diferencia = nueva - item.stock;
-                        item.stock = nueva;
-                        movimientosInventario.push({
-                            id: generarIdMovimiento(),
-                            fecha: new Date().toISOString(),
-                            productoId: item.productoId,
-                            productoNombre: item.nombre,
-                            tipo: 'ajuste',
-                            cantidad: diferencia,
-                            motivo: motivo,
-                            stockResultante: nueva,
-                            usuario: 'admin',
-                            documento: 'Ajuste manual'
-                        });
-                        saveData();
-                        renderInventarioTabla();
-                        renderMovimientos();
-                    });
                 });
             }
 
@@ -3317,39 +3601,187 @@
             });
             calcularBaseComision();
             actualizarComision();
-
+            
             document.getElementById('ajusteManualBtn').addEventListener('click', () => {
-                if (catalogoProductos.length === 0) { alert('No hay productos'); return; }
-                const prodSelect = catalogoProductos.map(p => `${p.nombre} (ID: ${p.id})`).join('\n');
-                const prodId = prompt(`Ingresa el ID del producto:\n${prodSelect}`, '');
-                if (!prodId) return;
-                const item = inventario.find(i => i.productoId === prodId);
-                if (!item) { alert('ID no válido'); return; }
-                const nuevaCant = prompt(`Stock actual de ${item.nombre}: ${item.stock}\nNueva cantidad:`, item.stock);
-                if (nuevaCant === null) return;
-                const nueva = parseInt(nuevaCant);
-                if (isNaN(nueva)) return;
-                const motivo = prompt('Motivo:');
-                if (motivo === null) return;
-                const diferencia = nueva - item.stock;
-                item.stock = nueva;
-                movimientosInventario.push({
-                    id: generarIdMovimiento(),
-                    fecha: new Date().toISOString(),
-                    productoId: item.productoId,
-                    productoNombre: item.nombre,
-                    tipo: 'ajuste',
-                    cantidad: diferencia,
-                    motivo: motivo,
-                    stockResultante: nueva,
-                    usuario: 'admin',
-                    documento: 'Ajuste manual'
-                });
-                saveData();
-                renderInventarioTabla();
-                renderMovimientos();
+                if (catalogoProductos.length === 0) { alert('No hay productos en el inventario.'); return; }
+
+                // Crear la ventana (Modal) si no existe
+                let modal = document.getElementById('modalAjusteMasivo');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'modalAjusteMasivo';
+                    modal.className = 'modal';
+                    document.body.appendChild(modal);
+                }
+
+                // Generar la lista de productos
+                let filasHtml = inventario.map(item => `
+                    <tr style="border-bottom: 1px solid #e1f5fe;">
+                        <td style="padding: 10px;"><strong>${item.nombre}</strong><br><span style="font-size:0.85rem; color:#075e54;">Stock actual: <b>${item.stock}</b></span></td>
+                        <td style="padding: 10px;"><input type="number" class="ajuste-cant" data-id="${item.productoId}" placeholder="Ej: 5 o -2" style="width: 90px; padding: 8px; border-radius: 10px; border: 1px solid #b0c7da;"></td>
+                        <td style="padding: 10px;"><input type="text" class="ajuste-motivo" data-id="${item.productoId}" placeholder="Motivo de recarga o ajuste" style="width: 100%; padding: 8px; border-radius: 10px; border: 1px solid #b0c7da;"></td>
+                    </tr>
+                `).join('');
+
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 750px; padding: 24px;">
+                        <h3 style="color: #075e54; margin-bottom: 10px; border-left: 5px solid #25d366; padding-left: 10px;">➕ Recarga y Ajuste de Inventario</h3>
+                        <p style="font-size: 0.95rem; color: #555; margin-bottom: 15px;">Ingresa números <b>positivos</b> para recargar stock, o <b>negativos</b> para restar. Deja en blanco los productos que no cambian.</p>
+                        
+                        <div style="max-height: 45vh; overflow-y: auto; border: 1px solid #c9ddec; border-radius: 15px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                                <thead style="position: sticky; top: 0; background: #c9ecdc; color: #075e54; z-index: 1;">
+                                    <tr><th style="padding:12px;">Producto</th><th style="padding:12px;">Cantidad (+ / -)</th><th style="padding:12px;">Justificación</th></tr>
+                                </thead>
+                                <tbody>${filasHtml}</tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-top:20px; display:flex; gap:10px; justify-content: flex-end;">
+                            <button id="guardarAjusteMasivoBtn" class="secondary" style="background:#25d366; color:white; border:none; font-weight:bold; font-size: 1rem;">💾 Guardar Cambios</button>
+                            <button id="cerrarAjusteMasivoBtn" class="secondary small">Cancelar</button>
+                        </div>
+                    </div>
+                `;
+                modal.style.display = 'flex';
+
+                // Botón Cancelar
+                document.getElementById('cerrarAjusteMasivoBtn').onclick = () => modal.style.display = 'none';
+
+               // Botón Guardar
+                document.getElementById('guardarAjusteMasivoBtn').onclick = () => {
+                    let cambiosRealizados = 0;
+                    let detallesParaPDF = []; // <-- Guardamos los detalles para el reporte
+                    
+                    const inputsCant = modal.querySelectorAll('.ajuste-cant');
+                    const inputsMotivo = modal.querySelectorAll('.ajuste-motivo');
+
+                    inputsCant.forEach((inputCant, index) => {
+                        const cant = parseInt(inputCant.value);
+                        if (!isNaN(cant) && cant !== 0) {
+                            const prodId = inputCant.dataset.id;
+                            const motivo = inputsMotivo[index].value.trim() || 'Ajuste / Recarga masiva';
+                            const item = inventario.find(i => i.productoId === prodId);
+
+                            if (item) {
+                                const stockAnterior = item.stock;
+                                const nuevaCant = item.stock + cant;
+                                item.stock = nuevaCant;
+                                
+                                movimientosInventario.push({
+                                    id: generarIdMovimiento(),
+                                    fecha: new Date().toISOString(),
+                                    productoId: item.productoId,
+                                    productoNombre: item.nombre,
+                                    tipo: 'ajuste',
+                                    cantidad: cant,
+                                    motivo: motivo,
+                                    stockResultante: nuevaCant,
+                                    usuario: 'admin',
+                                    documento: 'Recarga Panel'
+                                });
+                                
+                                detallesParaPDF.push({
+                                    producto: item.nombre,
+                                    anterior: stockAnterior,
+                                    ajuste: cant,
+                                    nuevo: nuevaCant,
+                                    motivo: motivo
+                                });
+                                cambiosRealizados++;
+                            }
+                        }
+                    });
+
+                    if (cambiosRealizados > 0) {
+                        saveData();
+                        renderInventarioTabla();
+                        renderMovimientos();
+                        alert(`✅ ¡Listo! Se registraron cambios en ${cambiosRealizados} productos.`);
+                        
+                        // Generar el PDF Automáticamente
+                        if (confirm("¿Deseas descargar el comprobante PDF de esta recarga?")) {
+                            generarPDFRecargaMasiva(detallesParaPDF);
+                        }
+                    }
+                    modal.style.display = 'none';
+                };
             });
 
+            // 🖨️ NUEVA FUNCIÓN: PDF PROFESIONAL DE RECARGAS
+            function generarPDFRecargaMasiva(detalles) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+                const correlativo = obtenerCorrelativoReporte();
+                const fechaHora = new Date().toLocaleString();
+                let telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
+
+                // 🎨 Encabezado Simétrico
+                doc.setFillColor(7, 94, 84);
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+                doc.setFontSize(10);
+                doc.text('COMPROBANTE DE RECARGA/AJUSTE', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                doc.text(`Teléfono: ${telVendedor}`, 14, 30);
+                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 30, { align: 'right' });
+
+                doc.setDrawColor(200);
+                doc.line(14, 34, doc.internal.pageSize.getWidth() - 14, 34);
+
+                // 📊 Tabla de Productos
+                const tableBody = detalles.map(d => [
+                    d.producto,
+                    d.anterior,
+                    d.ajuste > 0 ? `+${d.ajuste}` : d.ajuste,
+                    d.nuevo,
+                    d.motivo
+                ]);
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [['Producto', 'Stock Anterior', 'Ajuste', 'Nuevo Stock', 'Justificación']],
+                    body: tableBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 9, halign: 'center' },
+                    columnStyles: { 0: { halign: 'left', cellWidth: 60 }, 4: { halign: 'left' } }
+                });
+
+                // 💰 Cálculo del Gran Total a Bordo
+                let totalValorVenta = 0;
+                inventario.forEach(item => { totalValorVenta += item.stock * item.precioUnitario; });
+
+                let currentY = doc.lastAutoTable.finalY + 15;
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text(`VALOR TOTAL DEL INVENTARIO A BORDO: ${formatoQ(totalValorVenta)}`, doc.internal.pageSize.getWidth() - 14, currentY, { align: 'right' });
+
+                // ✍️ Firmas Simétricas
+                currentY += 35;
+                if (currentY > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); currentY = 40; }
+                
+                doc.setDrawColor(0);
+                doc.line(40, currentY, 85, currentY);
+                doc.setTextColor(0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Firma Recibe (Colaborador)', 62.5, currentY + 5, { align: 'center' });
+
+                doc.line(doc.internal.pageSize.getWidth() - 85, currentY, doc.internal.pageSize.getWidth() - 40, currentY);
+                doc.text('Firma Entrega (Vo.Bo.)', doc.internal.pageSize.getWidth() - 62.5, currentY + 5, { align: 'center' });
+
+                doc.save(`Recarga_${new Date().toISOString().slice(0,10)}.pdf`);
+            } 
             document.getElementById('exportarInventarioBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
                 const inventarioData = inventario.map(i => ({
@@ -3413,10 +3845,14 @@
                 const diaSemana = hoy.getDay();
                 const diff = diaSemana === 0 ? 6 : diaSemana - 1;
                 inicio = new Date(hoy);
-                inicio.setDate(hoy.getDate() - diff);
-                inicio.setHours(0,0,0,0);
-                fin = new Date(hoy);
-                fin.setHours(23,59,59,999);
+		inicio.setDate(hoy.getDate() - diff);
+		inicio.setHours(0,0,0,0);
+		// Calcular el viernes de la misma semana
+		let diasHastaViernes = (5 - hoy.getDay() + 7) % 7;
+		if (diasHastaViernes === 0) diasHastaViernes = 7; // si hoy es viernes, ir al próximo? mejor mantener hoy
+		fin = new Date(hoy);
+		fin.setDate(hoy.getDate() + diasHastaViernes);
+		fin.setHours(23,59,59,999);
             } else {
                 inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
                 inicio.setHours(0,0,0,0);
@@ -3432,27 +3868,26 @@
             const correlativo = obtenerCorrelativoReporte();
             const fechaHora = new Date().toLocaleString();
 
+            // 🎨 ENCABEZADO SIMÉTRICO
+            doc.setFillColor(7, 94, 84);
+            doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.setTextColor(7, 94, 84);
-            doc.text('Droguería Marijose Jhire', 14, 15);
+            doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+            doc.setFontSize(10);
+            doc.text(titulo, doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+            doc.setTextColor(0, 0, 0);
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
-            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
-            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
-            doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
-            doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
-            doc.setDrawColor(37, 211, 102);
-            doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+            doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+            doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+            doc.text(`Período evaluado: ${fechaInicio.toLocaleDateString()} - ${fechaFin.toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 30, { align: 'right' });
+            doc.text(`Fecha de emisión: ${fechaHora}`, 14, 30);
 
-            doc.setFontSize(14);
-            doc.setTextColor(7, 94, 84);
-            doc.text(titulo, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
-            doc.setFontSize(9);
-            doc.setTextColor(60);
-            doc.text(`Período: ${fechaInicio.toLocaleDateString()} - ${fechaFin.toLocaleDateString()}`, doc.internal.pageSize.getWidth() / 2, 47, { align: 'center' });
+            doc.setDrawColor(200);
+            doc.line(14, 34, doc.internal.pageSize.getWidth() - 14, 34);
 
             const ventasPeriodo = ventas.filter(v => {
                 if (v.estado !== 'normal') return false;
@@ -3460,11 +3895,38 @@
                 return f >= fechaInicio && f <= fechaFin;
             });
 
+            // Variables matemáticas para la validación precisa
+            const desgloseProductos = {};
+            let totalContado = 0, totalCredito = 0;
+
             const tableBody = ventasPeriodo.map(v => {
                 const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: '?', codigo: '', nit: '', direccion: '' };
-                const detalleMercancia = v.productos.map(p => `${p.unidades} x ${p.producto} (Q${parseFloat(p.precioUnitario).toFixed(2)})`).join('\n');
-                const condiciones = v.tipoVenta === 'Contado' ? 'Contado' : `Crédito (vence: ${new Date(v.fechaVencimiento).toLocaleDateString()})`;
+                const detalleMercancia = v.productos.map(p => `${p.unidades} x ${p.producto}`).join('\n');
+                const condiciones = v.tipoVenta === 'Contado' ? 'Contado' : `Crédito`;
                 const facturadoStr = v.facturado ? 'Sí' : 'No';
+                
+                // Calcular matemáticas exactas
+                const totalVenta = parseFloat(v.total) || 0;
+                if (v.tipoVenta === 'Contado') totalContado += totalVenta;
+                else totalCredito += totalVenta;
+
+                // Agrupar por producto y tipo de venta
+                v.productos.forEach(p => {
+                    if (!desgloseProductos[p.producto]) {
+                        desgloseProductos[p.producto] = { contadoUds: 0, contadoMonto: 0, creditoUds: 0, creditoMonto: 0 };
+                    }
+                    const uds = p.unidades || 0;
+                    const montoP = parseFloat(p.monto) || 0;
+
+                    if (v.tipoVenta === 'Contado') {
+                        desgloseProductos[p.producto].contadoUds += uds;
+                        desgloseProductos[p.producto].contadoMonto += montoP;
+                    } else {
+                        desgloseProductos[p.producto].creditoUds += uds;
+                        desgloseProductos[p.producto].creditoMonto += montoP;
+                    }
+                });
+
                 return [
                     new Date(v.fecha).toLocaleDateString(),
                     cliente.codigo || 'S/C',
@@ -3474,121 +3936,91 @@
                     detalleMercancia,
                     condiciones,
                     facturadoStr,
-                    formatoQ(v.total)
+                    formatoQ(totalVenta)
                 ];
             });
 
+            // 1. TABLA GENERAL DE VENTAS
             doc.autoTable({
-                startY: 52,
-                head: [['Fecha', 'Código', 'Razón Social', 'NIT', 'Documento', 'Detalle Mercancía', 'Condiciones', 'Facturado', 'Total']],
+                startY: 40,
+                head: [['Fecha', 'Código', 'Cliente', 'NIT', 'Doc', 'Detalle', 'Tipo', 'Facturado', 'Total']],
                 body: tableBody,
                 theme: 'striped',
                 headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                 styles: { fontSize: 8 },
-                columnStyles: {
-                    0: { cellWidth: 20 },
-                    1: { cellWidth: 15 },
-                    2: { cellWidth: 40 },
-                    3: { cellWidth: 20 },
-                    4: { cellWidth: 20 },
-                    5: { cellWidth: 60 },
-                    6: { cellWidth: 25 },
-                    7: { cellWidth: 20 },
-                    8: { cellWidth: 25 }
+                columnStyles: { 5: { cellWidth: 50 }, 8: { halign: 'right' } }
+            });
+
+            // Cuadro de Resumen General
+            let finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFillColor(240, 247, 252);
+            doc.rect(14, finalY, 100, 25, 'F');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Total Ventas Contado: ${formatoQ(totalContado)}`, 18, finalY + 7);
+            doc.text(`Total Ventas Crédito: ${formatoQ(totalCredito)}`, 18, finalY + 14);
+            doc.setTextColor(7, 94, 84);
+            doc.text(`TOTAL GENERAL: ${formatoQ(totalContado + totalCredito)}`, 18, finalY + 21);
+
+            // 2. NUEVA TABLA DE DESGLOSE MATEMÁTICO (Contado vs Crédito)
+            doc.addPage();
+            doc.setTextColor(0);
+            doc.setFontSize(12);
+            doc.text('ANÁLISIS DE PRODUCTOS (CONTADO VS CRÉDITO)', 14, 20);
+            
+            const rowsDesglose = Object.keys(desgloseProductos).sort().map(prod => {
+                const d = desgloseProductos[prod];
+                const totalUds = d.contadoUds + d.creditoUds;
+                const totalMonto = d.contadoMonto + d.creditoMonto;
+                return [
+                    prod,
+                    d.contadoUds.toString(),
+                    formatoQ(d.contadoMonto),
+                    d.creditoUds.toString(),
+                    formatoQ(d.creditoMonto),
+                    totalUds.toString(),
+                    formatoQ(totalMonto)
+                ];
+            });
+
+            // Fila de gran total matemático
+            rowsDesglose.push([
+                'GRAN TOTAL', 
+                '-', 
+                formatoQ(totalContado), 
+                '-', 
+                formatoQ(totalCredito), 
+                '-', 
+                formatoQ(totalContado + totalCredito)
+            ]);
+
+            doc.autoTable({
+                startY: 25,
+                head: [['Producto', 'Uds Contado', 'Venta Contado (Q)', 'Uds Crédito', 'Venta Crédito (Q)', 'Total Uds', 'Total Venta (Q)']],
+                body: rowsDesglose,
+                theme: 'grid',
+                headStyles: { fillColor: [37, 211, 102], textColor: 255 },
+                styles: { fontSize: 9, halign: 'center' },
+                columnStyles: { 0: { halign: 'left', cellWidth: 60, fontStyle: 'bold' } },
+                willDrawCell: function(data) {
+                    if (data.row.index === rowsDesglose.length - 1) {
+                        doc.setFillColor(230, 245, 235);
+                        doc.setFont('helvetica', 'bold');
+                    }
                 }
             });
 
-            let totalContado = 0, totalCredito = 0;
-            ventasPeriodo.forEach(v => {
-                const total = parseFloat(v.total) || 0;
-                if (v.tipoVenta === 'Contado') totalContado += total;
-                else totalCredito += total;
-            });
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Total Ventas Contado: ${formatoQ(totalContado)}`, 14, finalY);
-            doc.text(`Total Ventas Crédito: ${formatoQ(totalCredito)}`, 14, finalY + 6);
-            doc.text(`TOTAL GENERAL: ${formatoQ(totalContado + totalCredito)}`, 14, finalY + 12);
-
-            // Desglose de unidades
-            const detalleContado = {};
-            const detalleCredito = {};
-            let totalUnidadesContado = 0, totalMontoContadoCalc = 0;
-            let totalUnidadesCredito = 0, totalMontoCreditoCalc = 0;
-
-            ventasPeriodo.forEach(v => {
-                v.productos.forEach(p => {
-                    const nom = p.producto;
-                    const unidades = p.unidades || 0;
-                    const monto = parseFloat(p.monto) || 0;
-                    const pu = parseFloat(p.precioUnitario) || 0;
-
-                    if (v.tipoVenta === 'Contado') {
-                        if(!detalleContado[nom]) detalleContado[nom] = { uni: 0, monto: 0, pu: pu };
-                        detalleContado[nom].uni += unidades;
-                        detalleContado[nom].monto += monto;
-                        totalUnidadesContado += unidades;
-                        totalMontoContadoCalc += monto;
-                    } else {
-                        if(!detalleCredito[nom]) detalleCredito[nom] = { uni: 0, monto: 0, pu: pu };
-                        detalleCredito[nom].uni += unidades;
-                        detalleCredito[nom].monto += monto;
-                        totalUnidadesCredito += unidades;
-                        totalMontoCreditoCalc += monto;
-                    }
-                });
-            });
-
-            // Tabla Contado
-            doc.addPage();
-            doc.setFontSize(12);
-            doc.text('Detalle de Productos Vendidos - AL CONTADO', 14, 15);
-            const rowsContado = Object.keys(detalleContado).sort().map(k => [
-                k, 
-                formatoQ(detalleContado[k].pu), 
-                detalleContado[k].uni, 
-                formatoQ(detalleContado[k].monto)
-            ]);
-            rowsContado.push(['TOTAL CONTADO', '', totalUnidadesContado, formatoQ(totalMontoContadoCalc)]);
-            
-            doc.autoTable({
-                startY: 20,
-                head: [['Producto', 'Precio Unitario', 'Unidades', 'Monto Total']],
-                body: rowsContado,
-                theme: 'striped',
-                headStyles: { fillColor: [37, 211, 102] }
-            });
-
-            // Tabla Credito
-            let nextY = doc.lastAutoTable.finalY + 15;
-            doc.text('Detalle de Productos Vendidos - AL CRÉDITO', 14, nextY);
-            const rowsCredito = Object.keys(detalleCredito).sort().map(k => [
-                k, 
-                formatoQ(detalleCredito[k].pu), 
-                detalleCredito[k].uni, 
-                formatoQ(detalleCredito[k].monto)
-            ]);
-            rowsCredito.push(['TOTAL CRÉDITO', '', totalUnidadesCredito, formatoQ(totalMontoCreditoCalc)]);
-            
-            doc.autoTable({
-                startY: nextY + 5,
-                head: [['Producto', 'Precio Unitario', 'Unidades', 'Monto Total']],
-                body: rowsCredito,
-                theme: 'striped',
-                headStyles: { fillColor: [255, 152, 0] }
-            });
-
+            // Paginación
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
                 doc.setFontSize(8);
-                doc.setTextColor(100);
+                doc.setTextColor(150);
                 doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
             }
 
-            doc.save(`${titulo.replace(' ', '_')}_${nombreUsuario.replace(/\s+/g,'_')}_${fechaInicio.toISOString().slice(0,10)}.pdf`);
+            doc.save(`${titulo.replace(/ /g, '_')}_${nombreUsuario.replace(/\s+/g,'_')}_${fechaInicio.toISOString().slice(0,10)}.pdf`);
         }
-
         function generarResumenComisiones() {
             const inicio = document.getElementById('fechaInicioComision')?.value;
             const fin = document.getElementById('fechaFinComision')?.value;
@@ -3605,11 +4037,16 @@
             });
             
             const detalleContado = {};
+            const unidadesGlobales = {};
+
             ventasContadoPeriodo.forEach(v => {
                 v.productos.forEach(p => {
                     if(!detalleContado[p.producto]) detalleContado[p.producto] = { unidades: 0, monto: 0 };
                     detalleContado[p.producto].unidades += p.unidades;
                     detalleContado[p.producto].monto += (parseFloat(p.monto) || 0);
+
+                    if (!unidadesGlobales[p.producto]) unidadesGlobales[p.producto] = 0;
+                    unidadesGlobales[p.producto] += p.unidades;
                 });
             });
 
@@ -3617,6 +4054,13 @@
                 if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
                 const fechaCanc = new Date(v.fechaCancelacion);
                 return fechaCanc >= start && fechaCanc <= end;
+            });
+
+            ventasCreditoCanceladas.forEach(v => {
+                v.productos.forEach(p => {
+                    if (!unidadesGlobales[p.producto]) unidadesGlobales[p.producto] = 0;
+                    unidadesGlobales[p.producto] += p.unidades;
+                });
             });
 
             const pagosPropiosPeriodo = pagosCobro.filter(p => {
@@ -3699,7 +4143,7 @@
 
             html += `<div style="margin-top:20px; padding:12px; background:#e0f2e9; border-radius:24px; text-align:center;">
                 <strong>TOTAL BASE DE COMISIÓN:</strong> ${formatoQ(granTotal)}<br>
-                <span style="font-size: 0.9rem; color:#075e54;">(Total productos al contado: ${totalUnidadesContado} unidades = ${formatoQ(totalMontoContadoCalculado)})</span>
+                <span style="font-size: 0.9rem; color:#075e54;">(Total productos al contado: ${totalUnidadesContado} units = ${formatoQ(totalMontoContadoCalculado)})</span>
             </div>`;
             html += `<div style="margin-top:20px; display:flex; gap:10px;"><button id="exportarResumenComisionesPDF" class="secondary">📄 Exportar PDF</button> <button id="cerrarResumenComisionesBtn" class="secondary small">Cerrar</button></div>`;
 
@@ -3800,6 +4244,31 @@
                 doc.setFontSize(9);
                 doc.setTextColor(100);
                 doc.text(`(Total productos al contado: ${totalUnidadesContado} unidades = ${formatoQ(totalMontoContadoCalculado)})`, 14, y + 6);
+                y += 15;
+
+                doc.setFontSize(12);
+                doc.setTextColor(0);
+                doc.text('RESUMEN GLOBAL DE UNIDADES COMISIONABLES (CONTADO + CRÉDITO CANCELADO)', 14, y);
+                
+                const rowsUnidadesGlobal = Object.keys(unidadesGlobales).sort().map(k => [
+                    k,
+                    unidadesGlobales[k]
+                ]);
+
+                if(rowsUnidadesGlobal.length > 0) {
+                    doc.autoTable({
+                        startY: y + 5,
+                        head: [['Producto', 'Total Unidades']],
+                        body: rowsUnidadesGlobal,
+                        theme: 'grid',
+                        headStyles: { fillColor: [7, 94, 84] },
+                        styles: { fontSize: 10, halign: 'center' },
+                        columnStyles: { 0: { halign: 'left' } }
+                    });
+                } else {
+                    doc.setFontSize(10);
+                    doc.text('No hay unidades en el período.', 14, y + 10);
+                }
                 
                 const totalPages = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
@@ -3829,6 +4298,23 @@
             });
             if (ventasQ.length === 0) { alert("No hay datos para este periodo"); return; }
 
+            const mesesUnicos = new Set();
+            const ventasPorRuta = {};
+
+            ventasQ.forEach(v => {
+                mesesUnicos.add(new Date(v.fecha).getMonth());
+                
+                const cli = clientes.find(c => c.id === v.clienteId) || {};
+                const ruta = cli.ruta && cli.ruta.trim() !== '' ? cli.ruta : 'Sin Ruta Asignada';
+                if (!ventasPorRuta[ruta]) ventasPorRuta[ruta] = {};
+                
+                v.productos.forEach(p => {
+                    ventasPorRuta[ruta][p.producto] = (ventasPorRuta[ruta][p.producto] || 0) + p.unidades;
+                });
+            });
+
+            const mesesActivos = mesesUnicos.size || 1;
+
             let totalContado = 0, totalCredito = 0;
             ventasQ.forEach(v => {
                 const t = parseFloat(v.total) || 0;
@@ -3839,7 +4325,6 @@
             const numFacturas = ventasQ.length;
             const ticketPromedio = numFacturas > 0 ? totalVentas / numFacturas : 0;
 
-            // Descuentos totales (fuga)
             let totalPotencial = 0;
             let fugaTotal = 0;
             ventasQ.forEach(v => {
@@ -3855,20 +4340,21 @@
             });
             const porcentajeDescuento = totalPotencial > 0 ? (fugaTotal / totalPotencial) * 100 : 0;
 
-            // Saldo de créditos pendiente del trimestre
             let saldoCreditoPendiente = 0;
             ventasQ.forEach(v => {
                 if (v.tipoVenta === 'Crédito') {
                     saldoCreditoPendiente += (v.saldoPendiente || 0);
                 }
             });
-
-            const abonosPeriodo = abonos.filter(a => {
-                const fecha = new Date(a.fecha);
-                return fecha >= fechaInicio && fecha <= fechaFin;
-            });
-            const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
-            const pagosCobroPeriodo = pagosCobro.filter(p => {
+		const abonosPeriodo = abonos.filter(a => {
+   		 const venta = ventas.find(v => v.id === a.ventaId);
+    		if (!venta) return false;
+   		 const fechaVenta = new Date(venta.fecha);
+    		return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
+});
+		const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+                       
+		 const pagosCobroPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
                 return fecha >= fechaInicio && fecha <= fechaFin && p.tipo === 'propio';
             });
@@ -3932,12 +4418,16 @@
                 body: [
                     ['Volumen de Ventas (Contado)', formatoQ(totalContado)],
                     ['Volumen de Ventas (Crédito)', formatoQ(totalCredito)],
-                    ['Total de Ingresos Generados', formatoQ(totalVentas)],
+                    ['Total de Ingresos Generados (Ingreso Bruto)', formatoQ(totalVentas)],
+                    ['Meses Operativos Detectados en Trimestre', `${mesesActivos} mes(es)`],
+                    ['Costo Variable Estimado (21%)', `- ${formatoQ(totalVentas * 0.21)}`],
+                    ['Gastos Fijos Dinámicos (Q12,500 x mes activo)', `- ${formatoQ(12500 * mesesActivos)}`],
+                    ['RESULTADO NETO ESTIMADO', formatoQ(totalVentas - (totalVentas * 0.21) - (12500 * mesesActivos))],
                     ['Ticket Promedio de Venta', formatoQ(ticketPromedio)],
                     ['Porcentaje de Descuento Promedio', porcentajeDescuento.toFixed(2) + '%'],
-                    ['Monto total de descuentos', formatoQ(fugaTotal)],
+                    ['Monto total de descuentos (Fuga)', formatoQ(fugaTotal)],
                     ['Saldo de créditos pendiente', formatoQ(saldoCreditoPendiente)],
-                    ['Eficiencia de Cobro (Efectivo / Créditos Otorgados)', eficienciaCobro.toFixed(2) + '%']
+                    ['Eficiencia de Cobro', eficienciaCobro.toFixed(2) + '%']
                 ],
                 theme: 'grid',
                 headStyles: { fillColor: [7, 94, 84], textColor: 255 }
@@ -3977,6 +4467,42 @@
                     headStyles: { fillColor: [220, 53, 69] }
                 });
             }
+
+            // --- TABLAS DE PRODUCTOS POR RUTA ---
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor(7, 94, 84);
+            doc.text("Top Productos por Ruta/Región", 14, 20);
+
+            let rutaY = 30;
+            Object.keys(ventasPorRuta).sort().forEach(ruta => {
+                // Si no cabe en la página, saltar
+                if (rutaY > doc.internal.pageSize.getHeight() - 40) {
+                    doc.addPage();
+                    rutaY = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setTextColor(0);
+                doc.text(`Ruta: ${ruta}`, 14, rutaY);
+                
+                // Ordenar los productos de esta ruta
+                const prodsRuta = Object.entries(ventasPorRuta[ruta])
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 5); // Tomamos el Top 5 de cada ruta para no alargar demasiado
+
+                doc.autoTable({
+                    startY: rutaY + 3,
+                    head: [['Producto', 'Unidades Vendidas']],
+                    body: prodsRuta,
+                    theme: 'plain',
+                    headStyles: { fillColor: [240, 247, 252], textColor: 0 },
+                    margin: { left: 14 },
+                    tableWidth: 120
+                });
+                
+                rutaY = doc.lastAutoTable.finalY + 10;
+            });
 
             const unidadesContado = {}, unidadesCredito = {};
             ventasQ.forEach(v => {
@@ -4323,8 +4849,7 @@
                     if (totalPaginas > 1) {
                         paginacionHtml += `<button class="secondary small" id="paginaCobrosAnterior" ${paginaCobros === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
                         paginacionHtml += `<span> Página ${paginaCobros+1} de ${totalPaginas} </span>`;
-                        paginacionHtml += `<button class="secondary small" id="pagina
-CobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                        paginacionHtml += `<button class="secondary small" id="paginaCobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
                     }
                     paginacionCobros.innerHTML = paginacionHtml;
 
