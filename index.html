@@ -1504,226 +1504,148 @@
             }
             cargarBorrador();
 
-            function guardarVenta() {
-                const razon = razonSocial.value.trim();
-                if (!razon) { alert('Razón social obligatoria'); return; }
-                const filas = [];
-                let stockSuficiente = true;
-                let erroresStock = [];
+            async function guardarVenta() {
+    const razon = razonSocial.value.trim();
+    if (!razon) { alert('Razón social obligatoria'); return; }
+    
+    // --- NUEVA REGLA: 2 de Contado por 1 de Crédito (Mensual) ---
+    let tipoVenta = 'Crédito';
+    const radios = document.getElementsByName('tipoVenta');
+    for (let r of radios) if (r.checked) tipoVenta = r.value;
 
-                document.querySelectorAll('#productosBody tr').forEach(tr => {
-                    const select = tr.querySelector('.prod-select');
-                    const opt = select.selectedOptions[0];
-                    const prodId = select.value;
-                    const prodNombre = opt && opt.value ? opt.dataset.nombre : 'Otro';
-                    const unidades = parseFloat(tr.querySelector('.prod-unidad').value) || 0;
-                    const precio = tr.querySelector('.prod-precio').value.trim();
-                    const monto = tr.querySelector('.prod-monto').value.trim();
+    if (tipoVenta === 'Crédito') {
+        const mesActual = new Date().getMonth();
+        const anioActual = new Date().getFullYear();
+        const ventasMes = ventas.filter(v => new Date(v.fecha).getMonth() === mesActual && new Date(v.fecha).getFullYear() === anioActual && v.estado === 'normal');
+        
+        const cantContado = ventasMes.filter(v => v.tipoVenta === 'Contado').length;
+        const cantCredito = ventasMes.filter(v => v.tipoVenta === 'Crédito').length;
+        
+        // Si tienes X créditos, necesitas X*2 de contado. Para un nuevo crédito, necesitas (cantCredito * 2) + 2
+        const contadoRequerido = (cantCredito * 2) + 2;
+        if (cantContado < contadoRequerido) {
+            alert(`⚠️ REGLA DE EFICIENCIA: Necesitas 2 ventas al contado por cada venta al crédito.\n\nEste mes llevas:\n- ${cantContado} ventas al contado\n- ${cantCredito} ventas al crédito\n\nDebes llegar a ${contadoRequerido} ventas al contado para habilitar otro crédito.`);
+            return; // Bloquea la venta
+        }
+    }
 
-                    if (prodId && unidades > 0) {
-                        const itemInv = inventario.find(i => i.productoId === prodId);
-                        if (itemInv && itemInv.stock < unidades) {
-                            stockSuficiente = false;
-                            erroresStock.push(`${prodNombre} (stock: ${itemInv.stock}, requerido: ${unidades})`);
-                        }
-                        if (itemInv && itemInv.fechaVencimiento) {
-                            const hoy = new Date();
-                            hoy.setHours(0,0,0,0);
-                            const venc = new Date(itemInv.fechaVencimiento);
-                            if (venc < hoy) {
-                                stockSuficiente = false;
-                                erroresStock.push(`${prodNombre} (PRODUCTO VENCIDO - fecha: ${itemInv.fechaVencimiento})`);
-                            }
-                        }
-                        filas.push({
-                            productoId: prodId,
-                            producto: prodNombre,
-                            unidades: unidades,
-                            precioUnitario: precio || '0',
-                            monto: monto || '0'
-                        });
-                    } else if (prodNombre !== 'Otro' || unidades > 0 || precio || monto) {
-                        if (!prodId) {
-                            alert('Hay filas con producto sin seleccionar. Por favor selecciona un producto o elimina la fila.');
-                            return;
-                        }
-                    }
-                });
+    // --- NUEVA REGLA: GPS para Créditos ---
+    let linkGPS = "";
+    if (tipoVenta === 'Crédito') {
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+            });
+            linkGPS = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+        } catch (error) {
+            alert("⚠️ No se pudo obtener la ubicación GPS. Asegúrate de tener el GPS encendido y darle permisos al navegador. La venta se guardará sin ubicación.");
+            linkGPS = "Sin ubicación GPS";
+        }
+    }
 
-                if (!stockSuficiente) {
-                    alert('Stock insuficiente o producto vencido:\n' + erroresStock.join('\n'));
-                    return;
-                }
+    // --- Lógica original de guardado (Optimizada) ---
+    const filas = [];
+    let stockSuficiente = true;
+    let erroresStock = [];
 
-                if (filas.length === 0 && !confirm('¿Guardar venta sin productos?')) return;
+    document.querySelectorAll('#productosBody tr').forEach(tr => {
+        const select = tr.querySelector('.prod-select');
+        const opt = select.selectedOptions[0];
+        const prodId = select.value;
+        const prodNombre = opt && opt.value ? opt.dataset.nombre : 'Otro';
+        const unidades = parseFloat(tr.querySelector('.prod-unidad').value) || 0;
+        const precio = tr.querySelector('.prod-precio').value.trim();
+        const monto = tr.querySelector('.prod-monto').value.trim();
 
-                const total = redondearDinero(parseFloat(totalSpan.innerText.replace('Q','')));
-                let tipoVenta = 'Crédito';
-                for (let r of radios) if (r.checked) tipoVenta = r.value;
-
-                let fechaSeleccionada = fechaVenta.value;
-                if (!fechaSeleccionada) fechaSeleccionada = new Date().toISOString().slice(0,10);
-                const fechaISO = new Date(fechaSeleccionada + 'T12:00:00').toISOString();
-
-                let clienteFinal = clienteSeleccionado;
-                const datosForm = {
-                    codigo: codigoCliente.value.trim() || null,
-                    razonSocial: razon,
-                    nit: nit.value.trim() || null,
-                    direccion: direccion.value.trim(),
-                    telefono: telefono.value.trim(),
-                    correo: correo.value.trim(),
-                    categoria: categoria.value,
-                    ruta: ruta.value,
-                    limiteCredito: limiteCredito.value ? parseFloat(limiteCredito.value) : null
-                };
-
-                if (!clienteFinal) {
-                    clienteFinal = { 
-                        id: generarIdCliente(),
-                        ...datosForm,
-                        codigo: datosForm.codigo || '',
-                        encargado: '',
-                        fechaCreacion: new Date().toISOString() 
-                    };
-                    clientes.push(clienteFinal);
-                } else {
-                    Object.assign(clienteFinal, datosForm);
-                }
-                saveData();
-
-                let diasCredito = 30;
-                if (tipoVenta === 'Crédito') {
-                    diasCredito = parseInt(document.getElementById('diasCredito').value) || 30;
-                }
-
-                if (tipoVenta === 'Crédito' && clienteFinal.limiteCredito !== null) {
-                    const saldoActualCliente = ventas
-                        .filter(v => v.clienteId === clienteFinal.id && v.tipoVenta === 'Crédito' && v.estado === 'normal')
-                        .reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-                    if (saldoActualCliente + total > clienteFinal.limiteCredito) {
-                        alert(`El cliente superaría su límite de crédito de ${formatoQ(clienteFinal.limiteCredito)}. Saldo actual: ${formatoQ(saldoActualCliente)}. Esta venta suma ${formatoQ(total)}.`);
-                        return;
-                    }
-                }
-
-                let ventaId;
-                const correlativo = obtenerCorrelativoRecibo(); 
-                if (ventaEditandoId) {
-                    const tieneAbonos = abonos.some(a => a.ventaId === ventaEditandoId);
-                    if (tieneAbonos) {
-                        alert('No se puede editar porque ya tiene abonos registrados.');
-                        return;
-                    }
-                    const ventaAnterior = ventas.find(v => v.id === ventaEditandoId);
-                    if (ventaAnterior) {
-                        ventaAnterior.productos.forEach(p => {
-                            const itemInv = inventario.find(i => i.productoId === p.productoId);
-                            if (itemInv) {
-                                itemInv.stock += p.unidades;
-                                movimientosInventario.push({
-                                    id: generarIdMovimiento(),
-                                    fecha: new Date().toISOString(),
-                                    productoId: p.productoId,
-                                    productoNombre: p.producto,
-                                    tipo: 'ajuste',
-                                    cantidad: p.unidades,
-                                    motivo: 'Reversión por edición de venta ' + ventaEditandoId + ' (cliente: ' + clienteFinal.razonSocial + ')',
-                                    stockResultante: itemInv.stock,
-                                    usuario: 'admin',
-                                    documento: `Reversión venta ${ventaEditandoId}`
-                                });
-                            }
-                        });
-                    }
-                    const index = ventas.findIndex(v => v.id === ventaEditandoId);
-                    if (index !== -1) {
-                        ventas[index] = {
-                            ...ventas[index],
-                            clienteId: clienteFinal.id,
-                            fecha: fechaISO,
-                            productos: filas,
-                            total: total,
-                            tipoVenta: tipoVenta,
-                            diasCredito: diasCredito,
-                            saldoPendiente: tipoVenta === 'Crédito' ? redondearDinero(total) : 0,
-                            fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
-                            mensaje: '',
-                            fechaCancelacion: ventas[index].fechaCancelacion || null,
-                            estado: ventas[index].estado || 'normal',
-                            facturado: false 
-                        };
-                        ventaId = ventaEditandoId;
-                        alert('Venta actualizada');
-                    } else {
-                        ventaEditandoId = null;
-                    }
-                } else {
-                    const nuevaVenta = {
-                        id: generarIdVenta(),
-                        clienteId: clienteFinal.id,
-                        fecha: fechaISO,
-                        productos: filas,
-                        total: total,
-                        tipoVenta,
-                        diasCredito: tipoVenta === 'Crédito' ? diasCredito : null,
-                        saldoPendiente: tipoVenta === 'Crédito' ? redondearDinero(total) : 0,
-                        fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null,
-                        mensaje: '',
-                        fechaCancelacion: null,
-                        estado: 'normal',
-                        facturado: false
-                    };
-                    ventas.push(nuevaVenta);
-                    ventaId = nuevaVenta.id;
-                    alert('Venta guardada');
-                }
-
-                filas.forEach(p => {
-                    const itemInv = inventario.find(i => i.productoId === p.productoId);
-                    if (itemInv) {
-                        itemInv.stock -= p.unidades;
-                        movimientosInventario.push({
-                            id: generarIdMovimiento(),
-                            fecha: new Date().toISOString(),
-                            productoId: p.productoId,
-                            productoNombre: p.producto,
-                            tipo: 'venta',
-                            cantidad: -p.unidades,
-                            motivo: `Venta a ${clienteFinal.razonSocial} (${ventaId})`,
-                            stockResultante: itemInv.stock,
-                            usuario: 'admin',
-                            documento: `Venta ${ventaId}`
-                        });
-                    }
-                });
-
-                saveData();
-
-                if (tipoVenta === 'Contado') {
-                    const ventaFinal = ventas.find(v => v.id === ventaId);
-                    if (ventaFinal) {
-                        generarReciboVentaContado(ventaFinal, clienteFinal, correlativo);
-                        const confirmarWhatsApp = confirm(`¿Deseas enviar un mensaje de WhatsApp al cliente?`);
-                        if (confirmarWhatsApp) {
-                            const saludo = obtenerSaludo();
-                            let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
-                            let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
-                            
-                            const mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le agradecemos por su compra. Le compartimos los detalles de su comprobante número ${correlativo} por su compra al contado de ${formatoQ(ventaFinal.total)} a nombre de ${clienteFinal.razonSocial}.\n\n¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
-                            
-                            const url = baseUrl + encodeURIComponent(mensaje);
-                            window.open(url, '_blank');
-                        }
-                    }
-                }
-
-                ventaEditandoId = null;
-                editIndicator.style.display = 'none';
-                limpiarFormularioCompleto();
-                eliminarBorrador();
-                mostrarTotalesDia();
+        if (prodId && unidades > 0) {
+            const itemInv = inventario.find(i => i.productoId === prodId);
+            if (itemInv && itemInv.stock < unidades) {
+                stockSuficiente = false;
+                erroresStock.push(`${prodNombre} (stock: ${itemInv.stock}, requerido: ${unidades})`);
             }
+            if (itemInv && itemInv.fechaVencimiento) {
+                const hoy = new Date(); hoy.setHours(0,0,0,0);
+                const venc = new Date(itemInv.fechaVencimiento);
+                if (venc < hoy) {
+                    stockSuficiente = false;
+                    erroresStock.push(`${prodNombre} (PRODUCTO VENCIDO)`);
+                }
+            }
+            filas.push({ productoId: prodId, producto: prodNombre, unidades, precioUnitario: precio || '0', monto: monto || '0' });
+        } else if (prodNombre !== 'Otro' || unidades > 0 || precio || monto) {
+            if (!prodId) { alert('Hay filas sin producto seleccionado.'); return; }
+        }
+    });
+
+    if (!stockSuficiente) { alert('Stock insuficiente o vencido:\n' + erroresStock.join('\n')); return; }
+    if (filas.length === 0 && !confirm('¿Guardar venta sin productos?')) return;
+
+    const total = Math.round((parseFloat(document.getElementById('totalVentaCalc').innerText.replace('Q','')) || 0) * 100) / 100;
+    
+    let fechaSeleccionada = document.getElementById('fechaVenta').value || new Date().toISOString().slice(0,10);
+    const fechaISO = new Date(fechaSeleccionada + 'T12:00:00').toISOString();
+
+    let clienteFinal = clienteSeleccionado;
+    const datosForm = {
+        codigo: document.getElementById('codigoCliente').value.trim() || null,
+        razonSocial: razon,
+        nit: document.getElementById('nit').value.trim() || null,
+        direccion: document.getElementById('direccion').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        correo: document.getElementById('correo').value.trim(),
+        categoria: document.getElementById('categoria').value,
+        ruta: document.getElementById('ruta').value,
+        limiteCredito: document.getElementById('limiteCredito').value ? parseFloat(document.getElementById('limiteCredito').value) : null
+    };
+
+    if (!clienteFinal) {
+        clienteFinal = { id: 'cli_' + Date.now(), ...datosForm, encargado: '', fechaCreacion: new Date().toISOString() };
+        clientes.push(clienteFinal);
+    } else {
+        Object.assign(clienteFinal, datosForm);
+    }
+    saveData();
+
+    let diasCredito = tipoVenta === 'Crédito' ? (parseInt(document.getElementById('diasCredito').value) || 30) : null;
+
+    if (tipoVenta === 'Crédito' && clienteFinal.limiteCredito !== null) {
+        const saldoActualCliente = ventas.filter(v => v.clienteId === clienteFinal.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+        if (saldoActualCliente + total > clienteFinal.limiteCredito) {
+            alert(`El cliente superaría su límite de crédito de Q${clienteFinal.limiteCredito.toFixed(2)}. Saldo actual: Q${saldoActualCliente.toFixed(2)}.`);
+            return;
+        }
+    }
+
+    let ventaId;
+    if (ventaEditandoId) {
+        if (abonos.some(a => a.ventaId === ventaEditandoId)) { alert('No se puede editar porque ya tiene abonos registrados.'); return; }
+        const index = ventas.findIndex(v => v.id === ventaEditandoId);
+        if (index !== -1) {
+            ventas[index] = { ...ventas[index], clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS };
+            ventaId = ventaEditandoId;
+            alert('Venta actualizada con éxito.');
+        }
+    } else {
+        const nuevaVenta = { id: 'ven_' + Date.now(), clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS, estado: 'normal', facturado: false };
+        ventas.push(nuevaVenta);
+        ventaId = nuevaVenta.id;
+        alert('Venta guardada con éxito.');
+        if (tipoVenta === 'Contado') generarReciboVentaContado(nuevaVenta, clienteFinal, obtenerCorrelativoRecibo());
+    }
+
+    // Descontar stock
+    filas.forEach(p => {
+        const itemInv = inventario.find(i => i.productoId === p.productoId);
+        if (itemInv) itemInv.stock -= p.unidades;
+    });
+
+    saveData();
+    ventaEditandoId = null;
+    document.getElementById('editIndicator').style.display = 'none';
+    document.getElementById('nuevoClienteBtn').click(); // Limpia formulario
+    localStorage.removeItem('borradorVenta');
+    mostrarTotalesDia();
+}
 
             guardarBtn.addEventListener('click', guardarVenta);
 
@@ -2558,54 +2480,50 @@
             exportarPdfBtn.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
-                const correlativo = obtenerCorrelativoReporte();
                 const fechaHora = new Date().toLocaleString();
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(12);
-                doc.setTextColor(7, 94, 84);
-                doc.text('Droguería Marijose Jhire', 14, 15);
-                doc.setFontSize(9);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(60, 60, 60);
-                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
-                doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
-                doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
-                doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
-                doc.setDrawColor(37, 211, 102);
-                doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
 
-                const tableColumn = ['Cliente', 'Código', 'NIT', 'Dirección', 'Teléfono', 'Estado Venta', 'Comportamiento'];
+                doc.setFillColor(7, 94, 84);
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('DIRECTORIO DE CLIENTES Y CRÉDITOS (CON GPS)', 14, 12);
+
+                const tableColumn = ['Cliente', 'NIT', 'Dirección', 'Teléfono', 'Estado de Cuenta', 'Ubicación GPS'];
                 const tableRows = clientesFiltrados.map(c => {
                     const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+                    
+                    // Buscar el último crédito para sacar el GPS
+                    const creditosCliente = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                    const gps = creditosCliente.length > 0 && creditosCliente[0].ubicacionGPS ? creditosCliente[0].ubicacionGPS : 'Sin registro';
+
                     return [
                         c.razonSocial,
-                        c.codigo || '',
                         c.nit || 'C/F',
                         c.direccion || '—',
                         c.telefono || '—',
                         saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
-                        obtennerComportamiento(c.id).texto
+                        gps
                     ];
                 });
                 
                 doc.autoTable({
-                    startY: 38,
+                    startY: 25,
                     head: [tableColumn],
                     body: tableRows,
                     theme: 'striped',
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 },
-                    styles: { fontSize: 8 }
+                    styles: { fontSize: 8 },
+                    columnStyles: { 5: { textColor: [0, 0, 255], fontStyle: 'italic' } }, // Estilo de link para el GPS
+                    didDrawCell: function(data) {
+                        // Hace que el texto del GPS sea "cliqueable" en el PDF generado
+                        if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin registro' && data.cell.raw !== 'Sin ubicación GPS') {
+                            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw });
+                        }
+                    }
                 });
-                const totalPages = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i);
-                    doc.setFontSize(8);
-                    doc.setTextColor(100);
-                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
-                }
-                doc.save(`clientes_${nombreUsuario.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+
+                doc.save(`Clientes_GPS_${new Date().toISOString().slice(0,10)}.pdf`);
             });
         }
 
@@ -2845,19 +2763,19 @@
         }
 
         // ========== PESTAÑA PRODUCTOS ==========
-        function renderProductos() {
-            let html = `<h2>📦 Catálogo de productos</h2>${mostrarRecordatorios()}<div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
-                       <table>
-                         <thead><tr><th>Nombre</th><th>Precio (Q)</th><th>Activo</th><th></th></tr></thead>
-                        <tbody id="productosCatalogoBody"></tbody>
-                       </table>
-                    </div><div id="paginacionProductos" class="paginacion"></div>`;
-            contentEl.innerHTML = html;
+   function renderProductos() {
+            let html = `<h2>📦 Catálogo de productos y Lotes</h2>${mostrarRecordatorios()}<div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
+                    <table>
+                     <thead><tr><th>Nombre</th><th>Lote</th><th>Vencimiento (Desde Inv)</th><th>Precio (Q)</th><th>Activo</th><th>Acción</th></tr></thead>
+                    <tbody id="productosCatalogoBody"></tbody>
+                    </table>
+                </div><div id="paginacionProductos" class="paginacion"></div>`;
+            document.getElementById('content').innerHTML = html;
 
             const tbody = document.getElementById('productosCatalogoBody');
             const paginacionDiv = document.getElementById('paginacionProductos');
             let paginaActual = 0;
-            const itemsPorPagina = 5;
+            const itemsPorPagina = 8;
 
             function render() {
                 const inicio = paginaActual * itemsPorPagina;
@@ -2866,12 +2784,17 @@
 
                 tbody.innerHTML = '';
                 productosPagina.forEach(p => {
+                    const invItem = inventario.find(i => i.productoId === p.id) || { lote: '', fechaVencimiento: '' };
+                    const vencimiento = invItem.fechaVencimiento ? new Date(invItem.fechaVencimiento).toLocaleDateString() : 'No asignado';
+                    
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><input type="text" class="prod-nombre" value="${p.nombre}" data-id="${p.id}" style="width:100%;"></td>
-                        <td><input type="number" class="prod-precio" value="${p.precioSugerido.toFixed(2)}" step="0.01" min="0" style="width:100px;"></td>
+                        <td><input type="text" class="prod-nombre" value="${p.nombre}" style="width:100%;"></td>
+                        <td><input type="text" class="prod-lote" value="${invItem.lote || ''}" placeholder="Ej: L-001" style="width:80px;"></td>
+                        <td style="font-size:0.85rem; color:#075e54;"><b>${vencimiento}</b></td>
+                        <td><input type="number" class="prod-precio" value="${p.precioSugerido.toFixed(2)}" step="0.01" min="0" style="width:90px;"></td>
                         <td><label class="checkbox-label"><input type="checkbox" class="prod-activo" ${p.activo !== false ? 'checked' : ''} style="width:20px;"> Activo</label></td>
-                        <td style="white-space: nowrap;"><button class="secondary small guardarBtn" data-id="${p.id}">💾 Guardar</button></td>
+                        <td><button class="secondary small guardarBtn" data-id="${p.id}">💾 Guardar</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -2883,53 +2806,45 @@
                         const nombre = tr.querySelector('.prod-nombre').value.trim();
                         const precio = parseFloat(tr.querySelector('.prod-precio').value);
                         const activo = tr.querySelector('.prod-activo').checked;
+                        const lote = tr.querySelector('.prod-lote').value.trim();
+                        
                         const prod = catalogoProductos.find(p => p.id === id);
                         if (prod && nombre) {
                             prod.nombre = nombre;
                             prod.precioSugerido = precio;
                             prod.activo = activo;
-                            const invItem = inventario.find(i => i.productoId === id);
-                            if (invItem) {
-                                invItem.nombre = nombre;
-                                invItem.precioUnitario = precio;
-                                if (invItem.costoUnitario === undefined) invItem.costoUnitario = precio * 0.7;
+                            const inv = inventario.find(i => i.productoId === id);
+                            if (inv) {
+                                inv.nombre = nombre;
+                                inv.precioUnitario = precio;
+                                inv.lote = lote; 
                             }
                             saveData();
-                            alert('Producto guardado');
+                            alert('Producto actualizado con Lote.');
                         }
                     });
                 });
 
                 const totalPaginas = Math.ceil(catalogoProductos.length / itemsPorPagina);
-                let paginacionHtml = '';
                 if (totalPaginas > 1) {
-                    paginacionHtml += `<button class="secondary small" id="paginaProductosAnterior" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
-                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
-                    paginacionHtml += `<button class="secondary small" id="paginaProductosSiguiente" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                    paginacionDiv.innerHTML = `<button class="secondary small" id="paginaProductosAnterior" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Ant</button><span> Pág ${paginaActual+1} de ${totalPaginas} </span><button class="secondary small" id="paginaProductosSiguiente" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Sig ➔</button>`;
+                    document.getElementById('paginaProductosAnterior')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; render(); } });
+                    document.getElementById('paginaProductosSiguiente')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; render(); } });
+                } else {
+                    paginacionDiv.innerHTML = '';
                 }
-                paginacionDiv.innerHTML = paginacionHtml;
-
-                document.getElementById('paginaProductosAnterior')?.addEventListener('click', () => {
-                    if (paginaActual > 0) { paginaActual--; render(); }
-                });
-                document.getElementById('paginaProductosSiguiente')?.addEventListener('click', () => {
-                    if (paginaActual < totalPaginas-1) { paginaActual++; render(); }
-                });
             }
             render();
 
             document.getElementById('nuevoProductoBtn').addEventListener('click', () => {
-                const newId = generarIdProducto();
-                catalogoProductos.push({ id: newId, nombre: 'Nuevo', precioSugerido: 0, activo: true });
-                const fechaVencimiento = new Date();
-                fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 1);
-                inventario.push({ productoId: newId, nombre: 'Nuevo', stock: 0, precioUnitario: 0, costoUnitario: 0, fechaVencimiento: fechaVencimiento.toISOString().slice(0,10) });
+                const newId = 'prod_' + Date.now();
+                catalogoProductos.push({ id: newId, nombre: 'Nuevo Producto', precioSugerido: 0, activo: true });
+                inventario.push({ productoId: newId, nombre: 'Nuevo Producto', stock: 0, precioUnitario: 0, costoUnitario: 0, fechaVencimiento: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0,10), lote: '' });
                 saveData();
                 render();
             });
         }
-
-        // ========== PESTAÑA INVENTARIO ==========
+// ========== PESTAÑA INVENTARIO ==========
         function renderInventario() {
             const hoy = new Date();
             const fechaInicioPorDefecto = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
@@ -2971,7 +2886,7 @@
                        <table>
                          <thead><tr><th>Producto</th><th>Stock</th><th>Precio (Q)</th><th>Fecha Vencimiento</th><th>Estado</th><th>Acciones</th></tr></thead>
                         <tbody id="inventarioBody"></tbody>
-                      </table>
+                       </table>
                 </div>
                 <div id="paginacionInventario" class="paginacion"></div>
 
@@ -3008,7 +2923,7 @@
                     </div>
                 </div>
             `;
-            contentEl.innerHTML = html;
+            document.getElementById('content').innerHTML = html;
 
             const inventarioBody = document.getElementById('inventarioBody');
             const movimientosBody = document.getElementById('movimientosBody');
@@ -3070,13 +2985,11 @@
                 const telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
                 const correlativo = obtenerCorrelativoReporte();
                 
-                // Extraer datos de la semana
                 const ventasDeSemana = ventas.filter(v => v.estado === 'normal' && new Date(v.fecha) >= fechas.inicio && new Date(v.fecha) <= fechas.fin);
                 const abonosDeSemana = abonos.filter(a => new Date(a.fecha) >= fechas.inicio && new Date(a.fecha) <= fechas.fin);
                 const pagosCobroDeSemana = pagosCobro.filter(p => new Date(p.fecha) >= fechas.inicio && new Date(p.fecha) <= fechas.fin);
 
-                // 🎨 1. ENCABEZADO SIMÉTRICO Y PROFESIONAL
-                doc.setFillColor(7, 94, 84); // Color verde corporativo
+                doc.setFillColor(7, 94, 84);
                 doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(16);
@@ -3088,11 +3001,9 @@
                 doc.setTextColor(0, 0, 0);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
-                // Lado izquierdo
                 doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
                 doc.text(`Teléfono: ${telVendedor}`, 14, 30);
                 doc.text(`Gira/Ruta: ${giraStr}`, 14, 35);
-                // Lado derecho
                 doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
                 doc.text(`Período evaluado: Del ${fechas.inicio.toLocaleDateString()} al ${fechas.fin.toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 30, { align: 'right' });
                 doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 35, { align: 'right' });
@@ -3102,7 +3013,6 @@
 
                 let currentY = 46;
 
-                // 📊 2. TABLA 1: INVENTARIO, VENTAS Y DESCUENTOS
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(7, 94, 84);
@@ -3119,27 +3029,23 @@
                     let ventasProductoRealQ = 0;
                     let ventasProductoIdealQ = 0;
 
-                    // Calcular inventario a bordo (Retorno x Precio Normal)
                     valorTotalInventarioAbordo += (item.stock * item.precioUnitario);
 
                     const movsSemana = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
                     
-                    // Reconstruir el inventario del lunes
                     movsSemana.forEach(m => {
-   		 if (m.tipo === 'venta') {
-      		  udsVendidas += Math.abs(m.cantidad);
-       		 invInicial += Math.abs(m.cantidad);
-   		 } else if (m.tipo === 'ajuste') {
-       		 // Ajuste positivo (recarga): se debe restar para obtener el inicial
-        	// Ajuste negativo (merma/descarte): se debe sumar
-        	if (m.cantidad > 0) {
-            invInicial -= m.cantidad;
-       		 } else if (m.cantidad < 0) {
-            invInicial += Math.abs(m.cantidad);
-        }
-    }
-});
-                    // Calcular ventas y descuentos de la semana para este producto
+                        if (m.tipo === 'venta') {
+                            udsVendidas += Math.abs(m.cantidad);
+                            invInicial += Math.abs(m.cantidad);
+                        } else if (m.tipo === 'ajuste') {
+                            if (m.cantidad > 0) {
+                                invInicial -= m.cantidad;
+                            } else if (m.cantidad < 0) {
+                                invInicial += Math.abs(m.cantidad);
+                            }
+                        }
+                    });
+
                     ventasDeSemana.forEach(v => {
                         v.productos.forEach(p => {
                             if(p.productoId === item.productoId) {
@@ -3168,7 +3074,6 @@
                     ]);
                 });
 
-                // Fila de totales
                 tableRowsFisico.push([
                     'TOTALES GLOBALES', 
                     '-', 
@@ -3186,11 +3091,9 @@
                     theme: 'grid',
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                     styles: { fontSize: 8, halign: 'center', cellPadding: 3 },
-                    columnStyles: { 
-                        0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } 
-                    },
+                    columnStyles: { 0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } },
                     willDrawCell: function(data) {
-                        if (data.row.index === tableRowsFisico.length - 1) { // Fila de totales
+                        if (data.row.index === tableRowsFisico.length - 1) { 
                             doc.setFillColor(230, 245, 235);
                             doc.setFont('helvetica', 'bold');
                             doc.setTextColor(0, 0, 0);
@@ -3200,13 +3103,11 @@
 
                 currentY = doc.lastAutoTable.finalY + 12;
 
-                // Si no hay espacio para la siguiente sección, creamos página nueva
                 if (currentY > doc.internal.pageSize.getHeight() - 60) {
                     doc.addPage();
                     currentY = 20;
                 }
 
-                // 💰 3. TABLA 2: RESUMEN DE COBROS DE LA SEMANA
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(7, 94, 84);
@@ -3214,8 +3115,6 @@
 
                 const tableRowsCobros = [];
                 let totalCobradoSemana = 0;
-
-                // Unir abonos de ventas de crédito y pagos del módulo de cobros
                 const todosLosPagos = [];
                 
                 abonosDeSemana.forEach(a => {
@@ -3242,7 +3141,6 @@
                     });
                 });
 
-                // Ordenar por fecha
                 todosLosPagos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
 
                 if (todosLosPagos.length === 0) {
@@ -3283,7 +3181,6 @@
                     currentY = 20;
                 }
 
-                // 📦 4. RESUMEN FINANCIERO Y VALOR A BORDO
                 doc.setFillColor(240, 247, 252);
                 doc.rect(14, currentY, doc.internal.pageSize.getWidth() - 28, 25, 'F');
                 
@@ -3297,12 +3194,10 @@
                 doc.text(`Venta Total Generada: ${formatoQ(granTotalVentasQ)}`, 20, currentY + 16);
                 doc.text(`Cobros Recuperados: ${formatoQ(totalCobradoSemana)}`, doc.internal.pageSize.getWidth() / 2 - 20, currentY + 16);
                 
-                // Gran total del inventario a bordo
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(7, 94, 84);
                 doc.text(`VALOR TOTAL DEL INVENTARIO A BORDO: ${formatoQ(valorTotalInventarioAbordo)}`, doc.internal.pageSize.getWidth() - 20, currentY + 16, { align: 'right' });
 
-                // ✍️ 5. FIRMAS AL FINAL
                 currentY += 45;
                 if (currentY > doc.internal.pageSize.getHeight() - 20) {
                     doc.addPage();
@@ -3319,7 +3214,6 @@
                 doc.line(doc.internal.pageSize.getWidth() - 110, currentY, doc.internal.pageSize.getWidth() - 40, currentY);
                 doc.text('Firma de Vo.Bo. (Recibe)', doc.internal.pageSize.getWidth() - 75, currentY + 5, { align: 'center' });
 
-                // Paginación
                 const totalPages = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     doc.setPage(i);
@@ -3845,14 +3739,14 @@
                 const diaSemana = hoy.getDay();
                 const diff = diaSemana === 0 ? 6 : diaSemana - 1;
                 inicio = new Date(hoy);
-		inicio.setDate(hoy.getDate() - diff);
-		inicio.setHours(0,0,0,0);
-		// Calcular el viernes de la misma semana
-		let diasHastaViernes = (5 - hoy.getDay() + 7) % 7;
-		if (diasHastaViernes === 0) diasHastaViernes = 7; // si hoy es viernes, ir al próximo? mejor mantener hoy
-		fin = new Date(hoy);
-		fin.setDate(hoy.getDate() + diasHastaViernes);
-		fin.setHours(23,59,59,999);
+        inicio.setDate(hoy.getDate() - diff);
+        inicio.setHours(0,0,0,0);
+        // Calcular el viernes de la misma semana
+        let diasHastaViernes = (5 - hoy.getDay() + 7) % 7;
+        if (diasHastaViernes === 0) diasHastaViernes = 7; // si hoy es viernes, ir al próximo? mejor mantener hoy
+        fin = new Date(hoy);
+        fin.setDate(hoy.getDate() + diasHastaViernes);
+        fin.setHours(23,59,59,999);
             } else {
                 inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
                 inicio.setHours(0,0,0,0);
@@ -4346,15 +4240,15 @@
                     saldoCreditoPendiente += (v.saldoPendiente || 0);
                 }
             });
-		const abonosPeriodo = abonos.filter(a => {
-   		 const venta = ventas.find(v => v.id === a.ventaId);
-    		if (!venta) return false;
-   		 const fechaVenta = new Date(venta.fecha);
-    		return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
+        const abonosPeriodo = abonos.filter(a => {
+         const venta = ventas.find(v => v.id === a.ventaId);
+        if (!venta) return false;
+         const fechaVenta = new Date(venta.fecha);
+        return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
 });
-		const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
-                       
-		 const pagosCobroPeriodo = pagosCobro.filter(p => {
+        const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+                        
+         const pagosCobroPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
                 return fecha >= fechaInicio && fecha <= fechaFin && p.tipo === 'propio';
             });
@@ -4571,7 +4465,7 @@
                        <table>
                          <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
                         <tbody id="cobrosBody"></tbody>
-                      </table>
+                       </table>
                 </div>
                 <div id="paginacionCobros" class="paginacion"></div>
             `;
