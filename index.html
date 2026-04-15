@@ -3,531 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📱 Droguería Marijose Jhire - Sistema de Gestión</title>
+    <title>📱 Marijose Jhire S.A. - Sistema de Gestión</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            background: #d9e9f5;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 12px;
-        }
-        .app {
-            max-width: 950px;
-            width: 100%;
-            background: white;
-            border-radius: 28px;
-            box-shadow: 0 10px 30px rgba(0,20,30,0.2);
-            overflow: hidden;
-            margin: 8px 0;
-        }
-        .header-main {
-            background: #075e54;
-            color: white;
-            padding: 20px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            border-bottom: 4px solid #25d366;
-        }
-        .header-main .logo {
-            font-size: 2.8rem;
-        }
-        .header-main .title-container h1 {
-            font-size: 1.6rem;
-            margin: 0 0 4px 0;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .header-main .title-container p {
-            font-size: 0.9rem;
-            margin: 0;
-            opacity: 0.9;
-        }
-        .tabs {
-            display: flex;
-            background: #f0f7fc;
-            border-bottom: 1px solid #cbddee;
-            flex-wrap: wrap;
-        }
-        .tab {
-            flex: 1 1 auto;
-            padding: 14px 8px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-align: center;
-            color: #1e3b4f;
-            cursor: pointer;
-            border-bottom: 4px solid transparent;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-        .tab.active {
-            color: #075e54;
-            border-bottom-color: #25d366;
-            background: #ffffff;
-        }
-        .content {
-            padding: 20px 24px;
-            background: #ffffff;
-        }
-        h2 {
-            font-size: 1.5rem;
-            margin: 0 0 16px 0;
-            font-weight: 600;
-            color: #075e54;
-            border-left: 6px solid #25d366;
-            padding-left: 14px;
-        }
-        fieldset {
-            border: 1px solid #c9ddec;
-            border-radius: 20px;
-            padding: 16px 14px;
-            margin-bottom: 20px;
-            background: #f5faff;
-        }
-        legend {
-            font-weight: 600;
-            background: white;
-            padding: 2px 16px;
-            border-radius: 40px;
-            border: 1px solid #25d366;
-            color: #075e54;
-            font-size: 0.9rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 14px;
-            font-weight: 500;
-            color: #1e3b4f;
-            font-size: 0.95rem;
-        }
-        input[type="text"], input[type="number"], input[type="date"], input[type="tel"], input[type="email"], select, textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #b0c7da;
-            border-radius: 40px;
-            font-size: 1rem;
-            margin-top: 4px;
-            background: white;
-        }
-        input:focus, select:focus {
-            border-color: #25d366;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(37,211,102,0.2);
-        }
-        button {
-            background: #25d366;
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 12px 20px;
-            border-radius: 40px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid #1a8a4a;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin: 4px 4px 4px 0;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            min-width: 150px; 
-        }
-        button.secondary {
-            background: #eaf0f6;
-            color: #1f3a57;
-            border: 1px solid #a0b9cf;
-        }
-        button.small {
-            padding: 8px 14px;
-            font-size: 0.85rem;
-            min-width: auto; 
-        }
-        button.danger {
-            background: #dc3545;
-            color: white;
-            border-color: #a71d2a;
-        }
-        .btn-upload-label {
-            background: #eaf0f6;
-            color: #1f3a57;
-            border: 1px solid #a0b9cf;
-            font-weight: 600;
-            padding: 11px 20px; 
-            border-radius: 40px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin: 4px 4px 4px 0;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            min-width: 150px;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-        .search-section {
-            background: #e3f0fa;
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .client-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border-radius: 20px;
-            background: white;
-            padding: 4px;
-        }
-        .client-item {
-            background: #ffffff;
-            border: 1px solid #cde0ed;
-            border-radius: 40px;
-            padding: 12px 16px;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .client-item:hover {
-            background: #e2f3e9;
-        }
-        .badge {
-            background: #d9f0e3;
-            color: #075e54;
-            border-radius: 40px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        th {
-            background: #c9ecdc;
-            color: #075e54;
-            padding: 12px 8px;
-            text-align: left;
-        }
-        td {
-            padding: 8px 8px;
-            border-bottom: 1px solid #dae6f0;
-            vertical-align: middle;
-        }
-        td input, td select {
-            padding: 8px 8px;
-            font-size: 0.85rem;
-            margin: 0;
-            min-width: unset;
-        }
-        .total-dia {
-            background: #e1f5fe;
-            border-radius: 24px;
-            padding: 16px;
-            margin: 20px 0 10px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            font-weight: 600;
-            text-align: center;
-        }
-        .total-item {
-            flex: 1 1 140px;
-            margin: 6px;
-            background: white;
-            border-radius: 40px;
-            padding: 12px 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        }
-        .total-item span {
-            font-size: 1.3rem;
-            color: #075e54;
-            display: block;
-        }
-        .edit-indicator {
-            background: #fef9e7;
-            border-radius: 40px;
-            padding: 8px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            border: 1px solid #f1c40f;
-        }
-        .multi-add {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 12px 0;
-            flex-wrap: wrap;
-        }
-        .multi-add input {
-            width: 80px;
-            margin: 0;
-        }
-        .stock-bajo {
-            background-color: #ffe5e5 !important;
-            font-weight: bold;
-        }
+        * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background: #d9e9f5; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 12px; }
+        .app { max-width: 950px; width: 100%; background: white; border-radius: 28px; box-shadow: 0 10px 30px rgba(0,20,30,0.2); overflow: hidden; margin: 8px 0; }
+        .header-main { background: #075e54; color: white; padding: 20px 24px; display: flex; align-items: center; justify-content: center; gap: 16px; border-bottom: 4px solid #25d366; }
+        .header-main .logo { font-size: 2.8rem; }
+        .header-main .title-container h1 { font-size: 1.6rem; margin: 0 0 4px 0; font-weight: 700; letter-spacing: 0.5px; }
+        .header-main .title-container p { font-size: 0.9rem; margin: 0; opacity: 0.9; }
+        .tabs { display: flex; background: #f0f7fc; border-bottom: 1px solid #cbddee; flex-wrap: wrap; }
+        .tab { flex: 1 1 auto; padding: 14px 8px; font-weight: 600; font-size: 0.95rem; text-align: center; color: #1e3b4f; cursor: pointer; border-bottom: 4px solid transparent; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .tab.active { color: #075e54; border-bottom-color: #25d366; background: #ffffff; }
+        .content { padding: 20px 24px; background: #ffffff; }
+        h2 { font-size: 1.5rem; margin: 0 0 16px 0; font-weight: 600; color: #075e54; border-left: 6px solid #25d366; padding-left: 14px; }
+        fieldset { border: 1px solid #c9ddec; border-radius: 20px; padding: 16px 14px; margin-bottom: 20px; background: #f5faff; }
+        legend { font-weight: 600; background: white; padding: 2px 16px; border-radius: 40px; border: 1px solid #25d366; color: #075e54; font-size: 0.9rem; }
+        label { display: block; margin-bottom: 14px; font-weight: 500; color: #1e3b4f; font-size: 0.95rem; }
+        input[type="text"], input[type="number"], input[type="date"], input[type="tel"], input[type="email"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid #b0c7da; border-radius: 40px; font-size: 1rem; margin-top: 4px; background: white; }
+        input:focus, select:focus { border-color: #25d366; outline: none; box-shadow: 0 0 0 3px rgba(37,211,102,0.2); }
+        button { background: #25d366; border: none; color: white; font-weight: 600; padding: 12px 20px; border-radius: 40px; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; border: 1px solid #1a8a4a; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin: 4px 4px 4px 0; display: inline-flex; justify-content: center; align-items: center; text-align: center; min-width: 150px; }
+        button.secondary { background: #eaf0f6; color: #1f3a57; border: 1px solid #a0b9cf; }
+        button.small { padding: 8px 14px; font-size: 0.85rem; min-width: auto; }
+        button.danger { background: #dc3545; color: white; border-color: #a71d2a; }
+        .btn-upload-label { background: #eaf0f6; color: #1f3a57; border: 1px solid #a0b9cf; font-weight: 600; padding: 11px 20px; border-radius: 40px; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; margin: 4px 4px 4px 0; display: inline-flex; justify-content: center; align-items: center; text-align: center; min-width: 150px; }
+        .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+        .search-section { background: #e3f0fa; border-radius: 24px; padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .client-list { max-height: 300px; overflow-y: auto; border-radius: 20px; background: white; padding: 4px; }
+        .client-item { background: #ffffff; border: 1px solid #cde0ed; border-radius: 40px; padding: 12px 16px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 0.9rem; }
+        .client-item:hover { background: #e2f3e9; }
+        .badge { background: #d9f0e3; color: #075e54; border-radius: 40px; padding: 8px 16px; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #c9ecdc; color: #075e54; padding: 12px 8px; text-align: left; }
+        td { padding: 8px 8px; border-bottom: 1px solid #dae6f0; vertical-align: middle; }
+        td input, td select { padding: 8px 8px; font-size: 0.85rem; margin: 0; min-width: unset; }
+        .total-dia { background: #e1f5fe; border-radius: 24px; padding: 16px; margin: 20px 0 10px; display: flex; flex-wrap: wrap; justify-content: space-around; font-weight: 600; text-align: center; }
+        .total-item { flex: 1 1 140px; margin: 6px; background: white; border-radius: 40px; padding: 12px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .total-item span { font-size: 1.3rem; color: #075e54; display: block; }
+        .edit-indicator { background: #fef9e7; border-radius: 40px; padding: 8px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; border: 1px solid #f1c40f; }
+        .multi-add { display: flex; align-items: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+        .multi-add input { width: 80px; margin: 0; }
+        .stock-bajo { background-color: #ffe5e5 !important; font-weight: bold; }
         .movimiento-positivo { color: green; }
         .movimiento-negativo { color: red; }
-        .paginacion {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .filtros-ventas {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            background: #eef7f0;
-            padding: 12px;
-            border-radius: 30px;
-            margin-bottom: 20px;
-        }
-        .filtros-ventas select, .filtros-ventas input {
-            width: auto;
-            flex: 1 1 120px;
-            margin: 0;
-        }
-        .trazabilidad-panel {
-            background: #f9f9f9;
-            border-radius: 24px;
-            padding: 16px;
-            margin-top: 20px;
-        }
-        .producto-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-        .valorizacion {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            background: #e0f2e9;
-            border-radius: 30px;
-            padding: 16px;
-            margin-top: 16px;
-            font-weight: 600;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .comision-input {
-            width: 80px;
-            padding: 8px;
-            border-radius: 20px;
-            border: 1px solid #a0b9cf;
-            text-align: center;
-        }
-        .comision-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            background: white;
-            padding: 8px 12px;
-            border-radius: 40px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-        .recordatorios {
-            background: #fff3cd;
-            border: 1px solid #ffeeba;
-            border-radius: 24px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            color: #856404;
-        }
-        .recordatorio-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin: 6px 0;
-        }
+        .paginacion { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .filtros-ventas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #eef7f0; padding: 12px; border-radius: 30px; margin-bottom: 20px; }
+        .filtros-ventas select, .filtros-ventas input { width: auto; flex: 1 1 120px; margin: 0; }
+        .trazabilidad-panel { background: #f9f9f9; border-radius: 24px; padding: 16px; margin-top: 20px; }
+        .producto-selector { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .valorizacion { display: flex; gap: 15px; flex-wrap: wrap; background: #e0f2e9; border-radius: 30px; padding: 16px; margin-top: 16px; font-weight: 600; align-items: center; justify-content: space-between; }
+        .comision-input { width: 80px; padding: 8px; border-radius: 20px; border: 1px solid #a0b9cf; text-align: center; }
+        .comision-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: white; padding: 8px 12px; border-radius: 40px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .recordatorios { background: #fff3cd; border: 1px solid #ffeeba; border-radius: 24px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.9rem; color: #856404; }
+        .recordatorio-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
         .vencido { color: #dc3545; font-weight: 600; }
         .proximo { color: #fd7e14; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 24px;
-            border-radius: 30px;
-            max-width: 550px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-        .flex-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin: 0;
-        }
-        .sub-tabs {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            background: #f0f7fc;
-            border-radius: 40px;
-            padding: 5px;
-        }
-        .sub-tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .sub-tab.active {
-            background: #25d366;
-            color: white;
-        }
-        .buscador {
-            margin-bottom: 15px;
-        }
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-bottom: 16px;
-            border: 1px solid #e1f5fe;
-            border-radius: 12px;
-            width: 100%;
-            display: block; 
-        }
-        .table-responsive table {
-            min-width: 800px; 
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 24px; border-radius: 30px; max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .flex-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .checkbox-label { display: flex; align-items: center; gap: 5px; margin: 0; }
+        .sub-tabs { display: flex; gap: 10px; margin: 15px 0; background: #f0f7fc; border-radius: 40px; padding: 5px; }
+        .sub-tab { flex: 1; text-align: center; padding: 10px; border-radius: 40px; cursor: pointer; font-weight: 600; }
+        .sub-tab.active { background: #25d366; color: white; }
+        .buscador { margin-bottom: 15px; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px; border: 1px solid #e1f5fe; border-radius: 12px; width: 100%; display: block; }
+        .table-responsive table { min-width: 800px; }
         @media (max-width: 768px) {
             .tab { font-size: 0.8rem; padding: 10px 4px; }
             button, .btn-upload-label { width: 100%; margin: 6px 0; }
             th, td { font-size: 0.8rem; padding: 6px 4px; }
             .total-item { flex: 1 1 100%; }
         }
-        #greeting {
-            background: #e8f5e9;
-            padding: 10px 20px;
-            text-align: right;
-            font-size: 0.95rem;
-            color: #075e54;
-            border-bottom: 1px solid #c8e6c9;
-            font-weight: 500;
-        }
-        .calificacion-star {
-            color: #ffc107;
-            font-size: 1rem;
-        }
-        .calificacion-lista {
-            margin-top: 8px;
-            font-size: 0.85rem;
-            background: #f8f9fa;
-            border-radius: 20px;
-            padding: 12px;
-        }
-        .calificacion-item {
-            border-bottom: 1px solid #dee2e6;
-            padding: 8px 0;
-        }
-        .anulada {
-            text-decoration: line-through;
-            color: #dc3545 !important;
-            background-color: #fff5f5;
-        }
-        .estado-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 20px;
-            background: #dc3545;
-            color: white;
-            display: inline-block;
-            font-weight: bold;
-            text-align: center;
-        }
+        #greeting { background: #e8f5e9; padding: 10px 20px; text-align: right; font-size: 0.95rem; color: #075e54; border-bottom: 1px solid #c8e6c9; font-weight: 500; }
+        .calificacion-star { color: #ffc107; font-size: 1rem; }
+        .calificacion-lista { margin-top: 8px; font-size: 0.85rem; background: #f8f9fa; border-radius: 20px; padding: 12px; }
+        .calificacion-item { border-bottom: 1px solid #dee2e6; padding: 8px 0; }
+        .anulada { text-decoration: line-through; color: #dc3545 !important; background-color: #fff5f5; }
+        .estado-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 20px; background: #dc3545; color: white; display: inline-block; font-weight: bold; text-align: center; }
         .vencimiento-rojo { background-color: #ffebee !important; color: #c62828; }
         .vencimiento-naranja { background-color: #fff3e0 !important; color: #ef6c00; }
         .vencimiento-verde { background-color: #e8f5e9 !important; color: #2e7d32; }
         .comportamiento-al-dia { color: #2e7d32; background-color: #e8f5e9; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
         .comportamiento-con-mora { color: #c62828; background-color: #ffebee; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
         .comportamiento-contado { color: #1976d2; background-color: #e3f2fd; display: inline-block; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        
-        .clientes-ejecutivos-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-        .clientes-ejecutivos-table th, .clientes-ejecutivos-table td {
-            border: 1px solid #cde0ed;
-            padding: 10px 8px;
-            text-align: left;
-            vertical-align: middle;
-        }
-        .clientes-ejecutivos-table th {
-            background: #075e54;
-            color: white;
-            font-weight: 600;
-        }
-        .clientes-ejecutivos-table tr:nth-child(even) {
-            background-color: #f5faff;
-        }
-        .reporte-fisico-container {
-            background: #fdfaf0;
-            border-radius: 24px;
-            padding: 16px;
-            margin-top: 20px;
-            border: 1px solid #e1e8e3;
-        }
+        .clientes-ejecutivos-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .clientes-ejecutivos-table th, .clientes-ejecutivos-table td { border: 1px solid #cde0ed; padding: 10px 8px; text-align: left; vertical-align: middle; }
+        .clientes-ejecutivos-table th { background: #075e54; color: white; font-weight: 600; }
+        .clientes-ejecutivos-table tr:nth-child(even) { background-color: #f5faff; }
+        .reporte-fisico-container { background: #fdfaf0; border-radius: 24px; padding: 16px; margin-top: 20px; border: 1px solid #e1e8e3; }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -538,7 +101,7 @@
     <div class="header-main">
         <div class="logo">🏥</div>
         <div class="title-container">
-            <h1>Droguería Marijose Jhire</h1>
+            <h1>Marijose Jhire S.A.</h1>
             <p>Sistema Integral de Gestión y Control Financiero</p>
         </div>
     </div>
@@ -916,73 +479,13 @@
             const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Cliente', telefono: '' };
             const correlativo = venta.id.substr(0,8);
             
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ format: 'a5', orientation: 'portrait' });
-            const fechaEmision = new Date().toLocaleString();
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.setTextColor(7, 94, 84);
-            doc.text('DROGUERÍA MARIJOSE JHIRE', 74, 15, { align: 'center' });
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100);
-            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 74, 20, { align: 'center' });
-            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 74, 24, { align: 'center' });
-
-            doc.setDrawColor(200);
-            doc.line(10, 30, 138, 30);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`RECORDATORIO DE PAGO`, 10, 38);
-            doc.text(`FACTURA: ${correlativo}`, 138, 38, { align: 'right' });
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Fecha/Hora: ${fechaEmision}`, 10, 43);
-            doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
-
-            doc.setFillColor(255, 243, 205);
-            doc.rect(10, 52, 128, 30, 'F');
-            doc.setFont('helvetica', 'bold');
-            doc.text('DATOS DEL CLIENTE:', 12, 57);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Razón Social: ${cliente.razonSocial}`, 12, 62);
-            doc.text(`NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || 'N/A'}`, 12, 67);
-            doc.text(`Dirección: ${cliente.direccion || 'Ciudad'}`, 12, 72);
-            doc.text(`Ruta/Zona: ${cliente.ruta || 'N/A'}`, 12, 77);
-
-            const body = venta.productos.map(p => [
-                p.unidades,
-                p.producto,
-                `Q${parseFloat(p.precioUnitario).toFixed(2)}`,
-                `Q${parseFloat(p.monto).toFixed(2)}`
-            ]);
-            doc.autoTable({
-                startY: 87,
-                head: [['Cant', 'Descripción', 'P/Unit', 'Subtotal']],
-                body: body,
-                theme: 'grid',
-                styles: { fontSize: 7, font: 'helvetica' },
-                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
-                columnStyles: {
-                    0: { cellWidth: 15 },
-                    1: { cellWidth: 'auto' },
-                    2: { cellWidth: 25, halign: 'right' },
-                    3: { cellWidth: 25, halign: 'right' }
-                },
-                didDrawPage: function(data) {
-                    let finalY = data.cursor.y + 10;
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(10);
-                    doc.text(`MONTO ORIGINAL: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
-                    doc.setTextColor(220, 53, 69);
-                    doc.text(`SALDO PENDIENTE: Q${parseFloat(venta.saldoPendiente).toFixed(2)}`, 138, finalY + 6, { align: 'right' });
-                }
-            });
-            doc.save(`Recordatorio_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
+            // Genera el mismo PDF de Comprobante, no es necesario hacer una función extra
+            generarComprobanteVenta(venta, cliente, correlativo);
 
             const saludo = obtenerSaludo();
             let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
             let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
-            const mensaje = `¡${saludo}! Esperamos que esté teniendo un excelente día.\n\nDe parte de *Droguería Marijose Jhire*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
+            const mensaje = `¡${saludo}! Esperamos que esté teniendo un excelente día.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
             
             window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
         }
@@ -1032,7 +535,7 @@
             localStorage.removeItem('borradorVenta');
         }
 
-        function generarReciboVentaContado(venta, cliente, correlativo) {
+        function generarComprobanteVenta(venta, cliente, correlativo) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ format: 'a5', orientation: 'portrait' });
             const fechaEmision = new Date().toLocaleString();
@@ -1041,7 +544,7 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
             doc.setTextColor(7, 94, 84);
-            doc.text('DROGUERÍA MARIJOSE JHIRE', 74, 15, { align: 'center' });
+            doc.text('MARIJOSE JHIRE S.A.', 74, 15, { align: 'center' });
             doc.setFontSize(8);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(100);
@@ -1051,10 +554,10 @@
             doc.setDrawColor(200);
             doc.line(10, 30, 138, 30);
             doc.setFont('helvetica', 'bold');
-            doc.text(`COMPROBANTE: ${correlativo}`, 10, 38);
-            doc.text(`AUDITORÍA: ${idReporte}`, 138, 38, { align: 'right' });
+            doc.text(`COMPROBANTE DE VENTA`, 10, 38);
+            doc.text(`TIPO: ${venta.tipoVenta.toUpperCase()}`, 138, 38, { align: 'right' });
             doc.setFont('helvetica', 'normal');
-            doc.text(`Fecha/Hora: ${fechaEmision}`, 10, 43);
+            doc.text(`Doc: ${correlativo} | Fecha: ${fechaEmision}`, 10, 43);
             doc.text(`Vendedor: ${nombreUsuario}`, 10, 48);
 
             doc.setFillColor(240, 247, 252);
@@ -1066,7 +569,6 @@
             doc.text(`NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || 'N/A'}`, 12, 67);
             doc.text(`Dirección: ${cliente.direccion || 'Ciudad'}`, 12, 72);
             if (cliente.telefono) doc.text(`Teléfono: ${cliente.telefono}`, 12, 77);
-            if (cliente.encargado) doc.text(`Encargado: ${cliente.encargado}`, 74, 77);
 
             const body = venta.productos.map(p => [
                 p.unidades,
@@ -1086,22 +588,35 @@
                     1: { cellWidth: 'auto' },
                     2: { cellWidth: 25, halign: 'right' },
                     3: { cellWidth: 25, halign: 'right' }
-                },
-                didDrawPage: function(data) {
-                    let finalY = data.cursor.y + 10;
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(10);
-                    doc.setTextColor(0);
-                    doc.text(`TOTAL A PAGAR: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
-                    
-                    doc.setFontSize(7);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setTextColor(150);
-                    doc.text('Nota: Este documento debe ser confrontado con la boleta de', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 12, { align: 'center' });
-                    doc.text('depósito o transferencia para validar su autenticidad.', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
                 }
             });
-            doc.save(`RECIBO_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`TOTAL DE LA VENTA: Q${parseFloat(venta.total).toFixed(2)}`, 138, finalY, { align: 'right' });
+            
+            if (venta.tipoVenta === 'Crédito') {
+                const fechaVctoFormateada = new Date(venta.fechaVencimiento).toLocaleDateString();
+                doc.setTextColor(220, 53, 69); 
+                doc.setFontSize(9);
+                doc.text(`CONDICIONES DE CRÉDITO:`, 10, finalY + 10);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.text(`• Fecha de vencimiento: ${fechaVctoFormateada}`, 10, finalY + 15);
+                doc.text(`• Transacción a crédito estipulada a ${venta.diasCredito} días.`, 10, finalY + 20);
+                doc.text(`• Si el pago excede los 60 días, se aplicará un recargo del 5% sobre el saldo.`, 10, finalY + 25);
+                doc.text(`Saldo pendiente actual: Q${parseFloat(venta.saldoPendiente).toFixed(2)}`, 10, finalY + 30);
+            } else {
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(150);
+                doc.text('Nota: Este documento debe ser confrontado con la boleta de', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 12, { align: 'center' });
+                doc.text('depósito o transferencia para validar su autenticidad.', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+            }
+
+            doc.save(`Comprobante_${correlativo}_${cliente.razonSocial.substring(0,10)}.pdf`);
         }
 
         // ========== PESTAÑA VENTA ==========
@@ -1220,7 +735,7 @@
             const cancelarEdicionBtn = document.getElementById('cancelarEdicionBtn');
 
             let clienteSeleccionado = null;
-            let isReseting = false; // Bandera para evitar que se guarde un borrador vacío al limpiar
+            let isReseting = false; // Bandera para evitar bucle
 
             if (ventaEditandoId) {
                 const venta = ventas.find(v => v.id === ventaEditandoId);
@@ -1441,6 +956,8 @@
             function guardarEstadoActual() {
                 if (ventaEditandoId || isReseting) return;
                 const filas = [];
+                let totalUnidades = 0;
+                
                 document.querySelectorAll('#productosBody tr').forEach(tr => {
                     const select = tr.querySelector('.prod-select');
                     const productoId = select.value;
@@ -1450,22 +967,29 @@
                     const monto = parseFloat(tr.querySelector('.prod-monto').value) || 0;
                     if (productoId && unidades > 0) {
                         filas.push({ productoId, producto: productoNombre, unidades, precioUnitario: precio, monto });
+                        totalUnidades += unidades;
                     }
                 });
+
+                if (!clienteSeleccionado && document.getElementById('razonSocial').value.trim() === '' && totalUnidades === 0) {
+                    eliminarBorrador();
+                    return; 
+                }
+
                 const tipoVenta = document.querySelector('input[name="tipoVenta"]:checked').value;
                 const diasCredito = document.getElementById('diasCredito').value;
-                const fecha = fechaVenta.value;
+                const fecha = document.getElementById('fechaVenta').value;
                 const estado = {
                     cliente: clienteSeleccionado,
-                    razonSocial: razonSocial.value,
-                    codigo: codigoCliente.value,
-                    nit: nit.value,
-                    direccion: direccion.value,
-                    telefono: telefono.value,
-                    correo: correo.value,
-                    categoria: categoria.value,
-                    ruta: ruta.value,
-                    limiteCredito: limiteCredito.value,
+                    razonSocial: document.getElementById('razonSocial').value,
+                    codigo: document.getElementById('codigoCliente').value,
+                    nit: document.getElementById('nit').value,
+                    direccion: document.getElementById('direccion').value,
+                    telefono: document.getElementById('telefono').value,
+                    correo: document.getElementById('correo').value,
+                    categoria: document.getElementById('categoria').value,
+                    ruta: document.getElementById('ruta').value,
+                    limiteCredito: document.getElementById('limiteCredito').value,
                     productos: filas,
                     tipoVenta,
                     diasCredito,
@@ -1524,38 +1048,38 @@
                 const razon = razonSocial.value.trim();
                 if (!razon) { alert('Razón social obligatoria'); return; }
                 
-                // --- NUEVA REGLA: 2 de Contado por 1 de Crédito (Mensual) ---
                 let tipoVenta = 'Crédito';
                 const radios = document.getElementsByName('tipoVenta');
                 for (let r of radios) if (r.checked) tipoVenta = r.value;
 
                 if (tipoVenta === 'Crédito') {
-                    const mesActual = new Date().getMonth();
-                    const anioActual = new Date().getFullYear();
-                    const ventasMes = ventas.filter(v => new Date(v.fecha).getMonth() === mesActual && new Date(v.fecha).getFullYear() === anioActual && v.estado === 'normal');
+                    const diaActual = new Date().getDate();
                     
-                    const cantContado = ventasMes.filter(v => v.tipoVenta === 'Contado').length;
-                    const cantCredito = ventasMes.filter(v => v.tipoVenta === 'Crédito').length;
-                    
-                    const contadoRequerido = (cantCredito * 2) + 2;
-                    if (cantContado < contadoRequerido) {
-                        alert(`⚠️ REGLA DE EFICIENCIA: Necesitas 2 ventas al contado por cada venta al crédito.\n\nEste mes llevas:\n- ${cantContado} ventas al contado\n- ${cantCredito} ventas al crédito\n\nDebes llegar a ${contadoRequerido} ventas al contado para habilitar otro crédito.`);
-                        return; // Bloquea la venta
+                    if (diaActual >= 20) {
+                        const mesActual = new Date().getMonth();
+                        const anioActual = new Date().getFullYear();
+                        const ventasMes = ventas.filter(v => new Date(v.fecha).getMonth() === mesActual && new Date(v.fecha).getFullYear() === anioActual && v.estado === 'normal');
+                        
+                        const cantContado = ventasMes.filter(v => v.tipoVenta === 'Contado').length;
+                        const cantCredito = ventasMes.filter(v => v.tipoVenta === 'Crédito').length;
+                        
+                        const contadoRequerido = (cantCredito * 2) + 2;
+                        if (cantContado < contadoRequerido) {
+                            alert(`⚠️ REGLA DE EFICIENCIA (Activa a partir del día 20):\nNecesitas 2 ventas al contado por cada venta al crédito.\n\nEste mes llevas:\n- ${cantContado} ventas al contado\n- ${cantCredito} ventas al crédito\n\nDebes llegar a ${contadoRequerido} ventas al contado para habilitar otro crédito.`);
+                            return; 
+                        }
                     }
                 }
 
-                // --- NUEVA REGLA: GPS para Créditos ---
                 let linkGPS = "";
-                if (tipoVenta === 'Crédito') {
-                    try {
-                        const position = await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-                        });
-                        linkGPS = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
-                    } catch (error) {
-                        alert("⚠️ No se pudo obtener la ubicación GPS. Asegúrate de tener el GPS encendido y darle permisos al navegador. La venta se guardará sin ubicación.");
-                        linkGPS = "Sin ubicación GPS";
-                    }
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                    });
+                    linkGPS = `http://maps.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+                } catch (error) {
+                    alert("⚠️ No se pudo obtener la ubicación GPS. Asegúrate de tener el GPS encendido. La venta se guardará sin ubicación exacta.");
+                    linkGPS = "Sin ubicación GPS";
                 }
 
                 const filas = [];
@@ -1644,10 +1168,32 @@
                     ventas.push(nuevaVenta);
                     ventaId = nuevaVenta.id;
                     alert('Venta guardada con éxito.');
-                    if (tipoVenta === 'Contado') generarReciboVentaContado(nuevaVenta, clienteFinal, obtenerCorrelativoRecibo());
+                    
+                    const correlativo = obtenerCorrelativoRecibo();
+                    generarComprobanteVenta(nuevaVenta, clienteFinal, correlativo);
+
+                    if (tipoVenta === 'Contado') {
+                        if (confirm("¿Deseas enviar el comprobante por WhatsApp al cliente?")) {
+                            const saludo = obtenerSaludo();
+                            let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
+                            let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+                            let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le compartimos el detalle de su compra:\n\n`;
+                            mensaje += `📄 *COMPROBANTE DE VENTA CONTADO*\n`;
+                            mensaje += `Doc: ${correlativo}\n`;
+                            mensaje += `Fecha: ${new Date(nuevaVenta.fecha).toLocaleDateString()}\n`;
+                            mensaje += `Cliente: ${clienteFinal.razonSocial}\n`;
+                            mensaje += `NIT: ${clienteFinal.nit || 'C/F'}\n`;
+                            mensaje += `\n*Productos:*\n`;
+                            nuevaVenta.productos.forEach(p => {
+                                mensaje += `- ${p.unidades} x ${p.producto} a Q${parseFloat(p.precioUnitario).toFixed(2)} c/u = Q${parseFloat(p.monto).toFixed(2)}\n`;
+                            });
+                            mensaje += `\n*Total Pagado: Q${parseFloat(nuevaVenta.total).toFixed(2)}*\n\n`;
+                            mensaje += `Le enviamos el PDF adjunto. ¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
+                            window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
+                        }
+                    }
                 }
 
-                // Descontar stock
                 filas.forEach(p => {
                     const itemInv = inventario.find(i => i.productoId === p.productoId);
                     if (itemInv) itemInv.stock -= p.unidades;
@@ -1995,7 +1541,7 @@
                         const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                         
                         const saludo = obtenerSaludo();
-                        let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *Droguería Marijose Jhire*, le compartimos el detalle de su compra:\n\n`;
+                        let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le compartimos el detalle de su compra:\n\n`;
                         mensaje += `📄 *DETALLE DE VENTA*\n`;
                         mensaje += `Fecha: ${new Date(venta.fecha).toLocaleDateString()}\n`;
                         mensaje += `Cliente: ${cliente.razonSocial}\n`;
@@ -2095,7 +1641,7 @@
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(7, 94, 84);
-                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 15);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(60, 60, 60);
@@ -2194,8 +1740,7 @@
                 window.open(url, '_blank');
             });
         }
-
-        function mostrarFormularioAbono(ventaId) {
+function mostrarFormularioAbono(ventaId) {
             const venta = ventas.find(v => v.id === ventaId);
             if (!venta) return;
             const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' };
@@ -2290,7 +1835,7 @@
                 ${mostrarRecordatorios()}
                 <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="exportarExcelBtn" class="secondary">📥 Exportar Excel</button>
-                    <button id="exportarPdfBtn" class="secondary">📄 Exportar PDF</button>
+                    <button id="exportarPdfBtn" class="secondary">📄 Exportar Directorio PDF</button>
                 </div>
                 <div class="buscador"><input type="text" id="buscarClienteCatalogo" placeholder="Buscar por nombre o código..."></div>
                 <div class="sub-tabs"><div class="sub-tab active" data-vista="todos">Todos</div><div class="sub-tab" data-vista="credito">Crédito</div><div class="sub-tab" data-vista="contado">Contado</div></div>
@@ -2314,7 +1859,7 @@
                 </div>
                 <div id="paginacionClientesCatalogo" class="paginacion" style="margin-top:20px;"></div>
             `;
-            contentEl.innerHTML = html;
+            document.getElementById('content').innerHTML = html;
 
             const tbody = document.getElementById('clientesTablaBody');
             const paginacionDiv = document.getElementById('paginacionClientesCatalogo');
@@ -2385,7 +1930,6 @@
                     const promedio = obtenerPromedioCalificaciones(cli.id);
                     const estrellas = promedio ? `<br><span style="font-size:0.75rem; color:#ffc107;">⭐ ${promedio.contado.toFixed(1)}</span>` : '<br><span style="font-size:0.7rem; color:#888;">Sin calif.</span>';
 
-                    // Calcular saldo pendiente y determinar el estado
                     const saldoTotalCliente = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     const estadoVenta = saldoTotalCliente > 0 
                         ? `<span style="color: #c62828; font-weight: 600;">Pendiente<br>(Q${saldoTotalCliente.toFixed(2)})</span>` 
@@ -2401,6 +1945,7 @@
                         <td>${estadoVenta}</td>
                         <td><span class="${comportamiento.clase}">${comportamiento.texto}</span></td>
                         <td>
+                            <button class="secondary small historialClienteBtn" data-id="${cli.id}" title="Historial de Compras" style="margin-bottom:2px; min-width:35px;">📜</button>
                             <button class="secondary small calificarClienteBtn" data-id="${cli.id}" title="Calificar" style="margin-bottom:2px; min-width:35px;">⭐</button>
                             <button class="secondary small editarClienteBtn" data-id="${cli.id}" title="Editar" style="margin-bottom:2px; min-width:35px;">✏️</button> 
                             <button class="secondary small estadoCuentaBtn" data-id="${cli.id}" title="Estado de Cuenta" style="margin-bottom:2px; min-width:35px;">📊</button> 
@@ -2422,7 +1967,12 @@
                 document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
                 document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
 
-                // Eventos de botones
+                document.querySelectorAll('.historialClienteBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        generarHistorialClientePDF(btn.dataset.id);
+                    });
+                });
+                
                 document.querySelectorAll('.calificarClienteBtn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         mostrarModalCalificacion(btn.dataset.id);
@@ -2506,7 +2056,6 @@
                 const tableRows = clientesFiltrados.map(c => {
                     const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     
-                    // Buscar el último crédito para sacar el GPS
                     const creditosCliente = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                     const gps = creditosCliente.length > 0 && creditosCliente[0].ubicacionGPS ? creditosCliente[0].ubicacionGPS : 'Sin registro';
 
@@ -2527,9 +2076,8 @@
                     theme: 'striped',
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                     styles: { fontSize: 8 },
-                    columnStyles: { 5: { textColor: [0, 0, 255], fontStyle: 'italic' } }, // Estilo de link para el GPS
+                    columnStyles: { 5: { textColor: [0, 0, 255], fontStyle: 'italic' } }, 
                     didDrawCell: function(data) {
-                        // Hace que el texto del GPS sea "cliqueable" en el PDF generado
                         if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin registro' && data.cell.raw !== 'Sin ubicación GPS') {
                             doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw });
                         }
@@ -2538,6 +2086,70 @@
 
                 doc.save(`Clientes_GPS_${new Date().toISOString().slice(0,10)}.pdf`);
             });
+        }
+
+        function generarHistorialClientePDF(clienteId) {
+            const cliente = clientes.find(c => c.id === clienteId);
+            if (!cliente) return;
+            
+            const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal').sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            if (ventasCliente.length === 0) { alert('Este cliente aún no tiene compras registradas.'); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+            
+            doc.setFillColor(7, 94, 84);
+            doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('HISTORIAL DE COMPRAS DEL CLIENTE', 14, 12);
+            
+            doc.setTextColor(0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Cliente: ${cliente.razonSocial}`, 14, 25);
+            doc.text(`Código: ${cliente.codigo || 'S/C'} | NIT: ${cliente.nit || 'C/F'}`, 14, 31);
+            doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+
+            let body = [];
+            let granTotal = 0;
+            let totalUnidades = 0;
+
+            ventasCliente.forEach(v => {
+                v.productos.forEach(p => {
+                    body.push([
+                        new Date(v.fecha).toLocaleDateString(),
+                        v.id.substr(0,8),
+                        v.tipoVenta,
+                        p.producto,
+                        p.unidades.toString(),
+                        formatoQ(p.precioUnitario),
+                        formatoQ(p.monto)
+                    ]);
+                    granTotal += (parseFloat(p.monto) || 0);
+                    totalUnidades += p.unidades;
+                });
+            });
+
+            body.push(['GRAN TOTAL', '', '', '', totalUnidades.toString(), '', formatoQ(granTotal)]);
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Fecha', 'ID Venta', 'Tipo', 'Producto', 'Cant.', 'Precio U.', 'Subtotal']],
+                body: body,
+                theme: 'striped',
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                styles: { fontSize: 8 },
+                willDrawCell: function(data) {
+                    if (data.row.index === body.length - 1) {
+                        doc.setFillColor(230, 245, 235);
+                        doc.setFont('helvetica', 'bold');
+                    }
+                }
+            });
+
+            doc.save(`Historial_${cliente.razonSocial.substring(0,10)}_${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
         function mostrarModalEditarCliente(cliente) {
@@ -2696,7 +2308,6 @@
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
-        // FUNCIONES DE CALIFICACIÓN RECUPERADAS
         function mostrarModalCalificacion(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (!cliente) return;
@@ -2775,7 +2386,6 @@
             return { contado: sumContado / califs.length, credito: sumCredito / califs.length, total: califs.length };
         }
 
-        // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
             let html = `<h2>📦 Catálogo de productos y Lotes</h2>${mostrarRecordatorios()}<div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
                     <table>
@@ -2849,7 +2459,6 @@
             }
             render();
 
-            // Lógica para el Modal de Nuevo Producto
             const modalNP = document.getElementById('nuevoProductoModal');
             const npNombre = document.getElementById('npNombre');
             const npLote = document.getElementById('npLote');
@@ -2902,7 +2511,6 @@
             };
         }
 
-        // ========== PESTAÑA INVENTARIO ==========
         function renderInventario() {
             const hoy = new Date();
             const fechaInicioPorDefecto = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
@@ -3052,7 +2660,7 @@
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
-                doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 12);
                 doc.setFontSize(10);
                 doc.text('CORTE SEMANAL MAESTRO', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
 
@@ -3071,8 +2679,6 @@
 
                 let currentY = 46;
 
-                // --- MODIFICACIÓN DE LA TABLA Y EL VALOR A BORDO ---
-                // 1. Calculamos el valor a bordo primero
                 let valorTotalInventarioAbordo = 0;
                 inventario.forEach(item => {
                     valorTotalInventarioAbordo += (item.stock * item.precioUnitario);
@@ -3131,7 +2737,6 @@
                     granTotalVentasQ += ventasProductoRealQ;
                     granTotalDescuentosQ += descuentoConcedido;
 
-                    // Formatear Lote y Vencimiento para que se vea a la par
                     let loteVcto = (item.lote ? item.lote : 'S/L') + '\n' + (item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString() : 'N/A');
 
                     tableRowsFisico.push([
@@ -3162,9 +2767,7 @@
                     theme: 'grid',
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 },
                     styles: { fontSize: 8, halign: 'center', cellPadding: 3 },
-                    columnStyles: { 
-                        0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } 
-                    },
+                    columnStyles: { 0: { halign: 'left', cellWidth: 'auto', fontStyle: 'bold' } },
                     willDrawCell: function(data) {
                         if (data.row.index === tableRowsFisico.length - 1) { 
                             doc.setFillColor(230, 245, 235);
@@ -3511,7 +3114,7 @@
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(7, 94, 84);
-                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 15);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
                 doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
@@ -3568,7 +3171,6 @@
             document.getElementById('ajusteManualBtn').addEventListener('click', () => {
                 if (catalogoProductos.length === 0) { alert('No hay productos en el inventario.'); return; }
 
-                // Crear la ventana (Modal) si no existe
                 let modal = document.getElementById('modalAjusteMasivo');
                 if (!modal) {
                     modal = document.createElement('div');
@@ -3577,7 +3179,6 @@
                     document.body.appendChild(modal);
                 }
 
-                // Generar la lista de productos
                 let filasHtml = inventario.map(item => `
                     <tr style="border-bottom: 1px solid #e1f5fe;">
                         <td style="padding: 10px;"><strong>${item.nombre}</strong><br><span style="font-size:0.85rem; color:#075e54;">Stock actual: <b>${item.stock}</b></span></td>
@@ -3608,13 +3209,11 @@
                 `;
                 modal.style.display = 'flex';
 
-                // Botón Cancelar
                 document.getElementById('cerrarAjusteMasivoBtn').onclick = () => modal.style.display = 'none';
 
-               // Botón Guardar
                 document.getElementById('guardarAjusteMasivoBtn').onclick = () => {
                     let cambiosRealizados = 0;
-                    let detallesParaPDF = []; // <-- Guardamos los detalles para el reporte
+                    let detallesParaPDF = []; 
                     
                     const inputsCant = modal.querySelectorAll('.ajuste-cant');
                     const inputsMotivo = modal.querySelectorAll('.ajuste-motivo');
@@ -3662,7 +3261,6 @@
                         renderMovimientos();
                         alert(`✅ ¡Listo! Se registraron cambios en ${cambiosRealizados} productos.`);
                         
-                        // Generar el PDF Automáticamente
                         if (confirm("¿Deseas descargar el comprobante PDF de esta recarga?")) {
                             generarPDFRecargaMasiva(detallesParaPDF);
                         }
@@ -3671,7 +3269,6 @@
                 };
             });
 
-            // 🖨️ NUEVA FUNCIÓN: PDF PROFESIONAL DE RECARGAS
             function generarPDFRecargaMasiva(detalles) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
@@ -3679,13 +3276,12 @@
                 const fechaHora = new Date().toLocaleString();
                 let telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
 
-                // 🎨 Encabezado Simétrico
                 doc.setFillColor(7, 94, 84);
                 doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
-                doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 12);
                 doc.setFontSize(10);
                 doc.text('COMPROBANTE DE RECARGA/AJUSTE', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
 
@@ -3700,7 +3296,6 @@
                 doc.setDrawColor(200);
                 doc.line(14, 34, doc.internal.pageSize.getWidth() - 14, 34);
 
-                // 📊 Tabla de Productos
                 const tableBody = detalles.map(d => [
                     d.producto,
                     d.anterior,
@@ -3719,7 +3314,6 @@
                     columnStyles: { 0: { halign: 'left', cellWidth: 60 }, 4: { halign: 'left' } }
                 });
 
-                // 💰 Cálculo del Gran Total a Bordo
                 let totalValorVenta = 0;
                 inventario.forEach(item => { totalValorVenta += item.stock * item.precioUnitario; });
 
@@ -3729,7 +3323,6 @@
                 doc.setTextColor(7, 94, 84);
                 doc.text(`VALOR TOTAL DEL INVENTARIO A BORDO: ${formatoQ(totalValorVenta)}`, doc.internal.pageSize.getWidth() - 14, currentY, { align: 'right' });
 
-                // ✍️ Firmas Simétricas
                 currentY += 35;
                 if (currentY > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); currentY = 40; }
                 
@@ -3772,7 +3365,112 @@
                 XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
             });
 
-            document.getElementById('resumenSemanalBtn').addEventListener('click', () => mostrarResumenVentas('semana'));
+            // EL NUEVO BOTÓN DE RESUMEN SEMANAL EN MATRIZ LUN-VIE
+            document.getElementById('resumenSemanalBtn').addEventListener('click', generarPDFResumenSemanalInventario);
+
+            function generarPDFResumenSemanalInventario() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+                const giraStr = document.getElementById('giraInventario')?.value.trim() || 'No especificada';
+                const fechas = calcularFechasReporteFisico(); 
+                
+                const dias = [];
+                for(let i=0; i<5; i++) {
+                    let d = new Date(fechas.inicio);
+                    d.setDate(d.getDate() + i);
+                    dias.push(d);
+                }
+
+                doc.setFillColor(7, 94, 84);
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('RESUMEN SEMANAL DE MOVIMIENTOS', 14, 12);
+                
+                doc.setTextColor(0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Colaborador: ${nombreUsuario} | Gira/Ruta: ${giraStr}`, 14, 25);
+                doc.text(`Semana del: ${dias[0].toLocaleDateString()} al ${dias[4].toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+
+                let body = [];
+                let totalesDiaMonto = [0,0,0,0,0];
+                let totalesDiaCant = [0,0,0,0,0];
+                let granTotalMontoGlobal = 0;
+                let granTotalCantGlobal = 0;
+
+                catalogoProductos.forEach(prod => {
+                    let row = [prod.nombre];
+                    let prodSumaCant = 0;
+                    let prodSumaMonto = 0;
+
+                    dias.forEach((dia, idx) => {
+                        let cantDia = 0;
+                        let montoDia = 0;
+                        
+                        ventas.forEach(v => {
+                            if(v.estado === 'normal' && new Date(v.fecha).toDateString() === dia.toDateString()) {
+                                v.productos.forEach(p => {
+                                    if(p.productoId === prod.id) {
+                                        cantDia += p.unidades;
+                                        montoDia += (parseFloat(p.monto) || 0);
+                                    }
+                                });
+                            }
+                        });
+
+                        row.push(`${cantDia} (Q${montoDia.toFixed(2)})`);
+                        prodSumaCant += cantDia;
+                        prodSumaMonto += montoDia;
+                        totalesDiaCant[idx] += cantDia;
+                        totalesDiaMonto[idx] += montoDia;
+                    });
+                    
+                    row.push(`${prodSumaCant} (Q${prodSumaMonto.toFixed(2)})`);
+                    granTotalCantGlobal += prodSumaCant;
+                    granTotalMontoGlobal += prodSumaMonto;
+                    
+                    body.push(row);
+                });
+
+                let totalRow = ['GRAN TOTAL DIARIO'];
+                for(let i=0; i<5; i++) {
+                    totalRow.push(`${totalesDiaCant[i]} (Q${totalesDiaMonto[i].toFixed(2)})`);
+                }
+                totalRow.push(`${granTotalCantGlobal} (Q${granTotalMontoGlobal.toFixed(2)})`);
+                body.push(totalRow);
+
+                const encabezadosColumnas = ['Producto'];
+                const nombresDias = ['Lunes', 'Martes', 'Miérc.', 'Jueves', 'Viernes'];
+                for(let i=0; i<5; i++) {
+                    encabezadosColumnas.push(`${nombresDias[i]} ${dias[i].getDate()}/${dias[i].getMonth()+1}`);
+                }
+                encabezadosColumnas.push('Total Semanal');
+
+                doc.autoTable({
+                    startY: 32,
+                    head: [encabezadosColumnas],
+                    body: body,
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 211, 102], textColor: 255, halign: 'center' },
+                    styles: { fontSize: 7, halign: 'center', cellPadding: 2 },
+                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } },
+                    willDrawCell: function(data) {
+                        if (data.row.index === body.length - 1) { 
+                            doc.setFillColor(230, 245, 235);
+                            doc.setFont('helvetica', 'bold');
+                        }
+                    }
+                });
+
+                let finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(11);
+                doc.text(`TOTAL PRODUCTOS VENDIDOS ESTA SEMANA: ${granTotalCantGlobal} Unidades`, 14, finalY);
+                doc.text(`TOTAL DINERO GENERADO: ${formatoQ(granTotalMontoGlobal)}`, 14, finalY + 6);
+
+                doc.save(`Resumen_Semanal_${dias[0].toISOString().slice(0,10)}.pdf`);
+            }
             
             document.getElementById('resumenMensualBtn').addEventListener('click', () => {
                 const hoy = new Date();
@@ -3810,9 +3508,8 @@
                 inicio = new Date(hoy);
         inicio.setDate(hoy.getDate() - diff);
         inicio.setHours(0,0,0,0);
-        // Calcular el viernes de la misma semana
         let diasHastaViernes = (5 - hoy.getDay() + 7) % 7;
-        if (diasHastaViernes === 0) diasHastaViernes = 7; // si hoy es viernes, ir al próximo? mejor mantener hoy
+        if (diasHastaViernes === 0) diasHastaViernes = 7; 
         fin = new Date(hoy);
         fin.setDate(hoy.getDate() + diasHastaViernes);
         fin.setHours(23,59,59,999);
@@ -3831,13 +3528,12 @@
             const correlativo = obtenerCorrelativoReporte();
             const fechaHora = new Date().toLocaleString();
 
-            // 🎨 ENCABEZADO SIMÉTRICO
             doc.setFillColor(7, 94, 84);
             doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(16);
             doc.setFont('helvetica', 'bold');
-            doc.text('DROGUERÍA MARIJOSE JHIRE', 14, 12);
+            doc.text('MARIJOSE JHIRE S.A.', 14, 12);
             doc.setFontSize(10);
             doc.text(titulo, doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
 
@@ -3858,7 +3554,6 @@
                 return f >= fechaInicio && f <= fechaFin;
             });
 
-            // Variables matemáticas para la validación precisa
             const desgloseProductos = {};
             let totalContado = 0, totalCredito = 0;
 
@@ -3868,12 +3563,10 @@
                 const condiciones = v.tipoVenta === 'Contado' ? 'Contado' : `Crédito`;
                 const facturadoStr = v.facturado ? 'Sí' : 'No';
                 
-                // Calcular matemáticas exactas
                 const totalVenta = parseFloat(v.total) || 0;
                 if (v.tipoVenta === 'Contado') totalContado += totalVenta;
                 else totalCredito += totalVenta;
 
-                // Agrupar por producto y tipo de venta
                 v.productos.forEach(p => {
                     if (!desgloseProductos[p.producto]) {
                         desgloseProductos[p.producto] = { contadoUds: 0, contadoMonto: 0, creditoUds: 0, creditoMonto: 0 };
@@ -3903,7 +3596,6 @@
                 ];
             });
 
-            // 1. TABLA GENERAL DE VENTAS
             doc.autoTable({
                 startY: 40,
                 head: [['Fecha', 'Código', 'Cliente', 'NIT', 'Doc', 'Detalle', 'Tipo', 'Facturado', 'Total']],
@@ -3914,7 +3606,6 @@
                 columnStyles: { 5: { cellWidth: 50 }, 8: { halign: 'right' } }
             });
 
-            // Cuadro de Resumen General
             let finalY = doc.lastAutoTable.finalY + 10;
             doc.setFillColor(240, 247, 252);
             doc.rect(14, finalY, 100, 25, 'F');
@@ -3925,7 +3616,6 @@
             doc.setTextColor(7, 94, 84);
             doc.text(`TOTAL GENERAL: ${formatoQ(totalContado + totalCredito)}`, 18, finalY + 21);
 
-            // 2. NUEVA TABLA DE DESGLOSE MATEMÁTICO (Contado vs Crédito)
             doc.addPage();
             doc.setTextColor(0);
             doc.setFontSize(12);
@@ -3946,7 +3636,6 @@
                 ];
             });
 
-            // Fila de gran total matemático
             rowsDesglose.push([
                 'GRAN TOTAL', 
                 '-', 
@@ -3973,7 +3662,6 @@
                 }
             });
 
-            // Paginación
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
@@ -3984,6 +3672,7 @@
 
             doc.save(`${titulo.replace(/ /g, '_')}_${nombreUsuario.replace(/\s+/g,'_')}_${fechaInicio.toISOString().slice(0,10)}.pdf`);
         }
+
         function generarResumenComisiones() {
             const inicio = document.getElementById('fechaInicioComision')?.value;
             const fin = document.getElementById('fechaFinComision')?.value;
@@ -4125,7 +3814,7 @@
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(7, 94, 84);
-                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 15);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
                 doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
@@ -4206,7 +3895,7 @@
                 doc.text(`TOTAL BASE DE COMISIÓN: ${formatoQ(granTotal)}`, 14, y);
                 doc.setFontSize(9);
                 doc.setTextColor(100);
-                doc.text(`(Total productos al contado: ${totalUnidadesContado} units = ${formatoQ(totalMontoContadoCalculado)})`, 14, y + 6);
+                doc.text(`(Total productos al contado: ${totalUnidadesContado} unidades = ${formatoQ(totalMontoContadoCalculado)})`, 14, y + 6);
                 y += 15;
 
                 doc.setFontSize(12);
@@ -4332,26 +4021,212 @@
                 const abonosHasta = abonos.filter(a => a.ventaId === v.id && new Date(a.fecha) <= fechaFin);
                 const totalAbonado = abonosHasta.reduce((acc, a) => acc + (a.monto || 0), 0);
                 const saldo = Math.max(0, (v.total || 0) - totalAbonado);
-                        if (saldo === 0) return;
-                        const vencimiento = new Date(v.fechaVencimiento);
-                        const diasMora = Math.ceil((fechaFin - vencimiento) / (1000*60*60*24));
-                        if (diasMora <= 30) saldosPorRango['0-30'] += saldo;
-                        else if (diasMora <= 45) saldosPorRango['31-45'] += saldo;
-                        else if (diasMora <= 60) saldosPorRango['46-60'] += saldo;
-                        else saldosPorRango['>60'] += saldo;
-                    });
+                if (saldo === 0) return;
+                const vencimiento = new Date(v.fechaVencimiento);
+                const diasMora = Math.ceil((fechaFin - vencimiento) / (1000*60*60*24));
+                if (diasMora <= 30) saldosPorRango['0-30'] += saldo;
+                else if (diasMora <= 45) saldosPorRango['31-45'] += saldo;
+                else if (diasMora <= 60) saldosPorRango['46-60'] += saldo;
+                else saldosPorRango['>60'] += saldo;
+            });
 
-                const ventasPorProducto = {};
-                ventasQ.forEach(v => {
-                    v.productos.forEach(p => {
-                        const nom = p.producto;
-                        ventasPorProducto[nom] = (ventasPorProducto[nom] || 0) + (p.unidades || 0);
-                    });
+            const ventasPorProducto = {};
+            ventasQ.forEach(v => {
+                v.productos.forEach(p => {
+                    const nom = p.producto;
+                    ventasPorProducto[nom] = (ventasPorProducto[nom] || 0) + (p.unidades || 0);
                 });
-                const ranking = Object.entries(ventasPorProducto).sort((a,b) => b[1] - a[1]);
-                const top10 = ranking.slice(0, 10);
-                const bottom5 = ranking.slice(-5).reverse();
+            });
+            const ranking = Object.entries(ventasPorProducto).sort((a,b) => b[1] - a[1]);
+            const top10 = ranking.slice(0, 10);
+            const bottom5 = ranking.slice(-5).reverse();
 
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+            const correlativo = obtenerCorrelativoReporte();
+            const fechaHora = new Date().toLocaleString();
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(7, 94, 84);
+            doc.text('MARIJOSE JHIRE S.A.', 14, 15);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
+            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
+            doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
+            doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
+            doc.setDrawColor(37, 211, 102);
+            doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
+
+            doc.setFontSize(14);
+            doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+            doc.setFontSize(10);
+            doc.autoTable({
+                startY: 48,
+                head: [['KPI / Indicador Financiero', 'Valor']],
+                body: [
+                    ['Volumen de Ventas (Contado)', formatoQ(totalContado)],
+                    ['Volumen de Ventas (Crédito)', formatoQ(totalCredito)],
+                    ['Total de Ingresos Generados (Ingreso Bruto)', formatoQ(totalVentas)],
+                    ['Meses Operativos Detectados en Trimestre', `${mesesActivos} mes(es)`],
+                    ['Costo Variable Estimado (21%)', `- ${formatoQ(totalVentas * 0.21)}`],
+                    ['Gastos Fijos Dinámicos (Q12,500 x mes activo)', `- ${formatoQ(12500 * mesesActivos)}`],
+                    ['RESULTADO NETO ESTIMADO', formatoQ(totalVentas - (totalVentas * 0.21) - (12500 * mesesActivos))],
+                    ['Ticket Promedio de Venta', formatoQ(ticketPromedio)],
+                    ['Porcentaje de Descuento Promedio', porcentajeDescuento.toFixed(2) + '%'],
+                    ['Monto total de descuentos (Fuga)', formatoQ(fugaTotal)],
+                    ['Saldo de créditos pendiente', formatoQ(saldoCreditoPendiente)],
+                    ['Eficiencia de Cobro', eficienciaCobro.toFixed(2) + '%']
+                ],
+                theme: 'grid',
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 }
+            });
+
+            doc.text("Análisis de Mora por Días de Crédito", 14, doc.lastAutoTable.finalY + 15);
+            const agingBody = [
+                ['0 - 30 días', formatoQ(saldosPorRango['0-30']), 'Verde'],
+                ['31 - 45 días', formatoQ(saldosPorRango['31-45']), 'Naranja'],
+                ['46 - 60 días', formatoQ(saldosPorRango['46-60']), 'Naranja'],
+                ['Más de 60 días', formatoQ(saldosPorRango['>60']), 'Rojo']
+            ];
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 20,
+                head: [['Rango', 'Saldo Pendiente', 'Estado']],
+                body: agingBody,
+                theme: 'striped',
+                headStyles: { fillColor: [37, 211, 102] }
+            });
+
+            if (top10.length > 0) {
+                doc.text("Top 10 Productos Más Vendidos", 14, doc.lastAutoTable.finalY + 15);
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 20,
+                    head: [['Producto', 'Cantidad']],
+                    body: top10,
+                    headStyles: { fillColor: [37, 211, 102] }
+                });
+            }
+
+            if (bottom5.length > 0) {
+                doc.text("Bottom 5 Productos Menos Vendidos", 14, doc.lastAutoTable.finalY + 15);
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 20,
+                    head: [['Producto', 'Cantidad']],
+                    body: bottom5,
+                    headStyles: { fillColor: [220, 53, 69] }
+                });
+            }
+
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor(7, 94, 84);
+            doc.text("Top Productos por Ruta/Región", 14, 20);
+
+            let rutaY = 30;
+            Object.keys(ventasPorRuta).sort().forEach(ruta => {
+                if (rutaY > doc.internal.pageSize.getHeight() - 40) {
+                    doc.addPage();
+                    rutaY = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setTextColor(0);
+                doc.text(`Ruta: ${ruta}`, 14, rutaY);
+                
+                const prodsRuta = Object.entries(ventasPorRuta[ruta])
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 5); 
+
+                doc.autoTable({
+                    startY: rutaY + 3,
+                    head: [['Producto', 'Unidades Vendidas']],
+                    body: prodsRuta,
+                    theme: 'plain',
+                    headStyles: { fillColor: [240, 247, 252], textColor: 0 },
+                    margin: { left: 14 },
+                    tableWidth: 120
+                });
+                
+                rutaY = doc.lastAutoTable.finalY + 10;
+            });
+
+            const unidadesContado = {}, unidadesCredito = {};
+            ventasQ.forEach(v => {
+                v.productos.forEach(p => {
+                    const nom = p.producto;
+                    const unidades = p.unidades || 0;
+                    if (v.tipoVenta === 'Contado') {
+                        unidadesContado[nom] = (unidadesContado[nom] || 0) + unidades;
+                    } else {
+                        unidadesCredito[nom] = (unidadesCredito[nom] || 0) + unidades;
+                    }
+                });
+            });
+            const todosProductos = new Set([...Object.keys(unidadesContado), ...Object.keys(unidadesCredito)]);
+            const desgloseRows = Array.from(todosProductos).sort().map(prod => [
+                prod,
+                unidadesContado[prod] || 0,
+                unidadesCredito[prod] || 0,
+                (unidadesContado[prod] || 0) + (unidadesCredito[prod] || 0)
+            ]);
+            if (desgloseRows.length > 0) {
+                doc.addPage();
+                doc.setFontSize(12);
+                doc.text('Desglose de Unidades por Tipo de Venta (Contado vs Crédito)', 14, 15);
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Producto', 'Unidades Contado', 'Unidades Crédito', 'Total Unidades']],
+                    body: desgloseRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [37, 211, 102] }
+                });
+            }
+
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+            }
+            doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
+        }
+
+        // ========== PESTAÑA COBROS ==========
+        function renderCobros() {
+            let html = `
+                <h2>💰 Cobros recuperados</h2>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="exportarCobrosPdfBtn" class="secondary">📄 Exportar PDF</button>
+                    <button id="eliminarTodosCobrosBtn" class="danger" style="margin-left:auto;">🗑️ Eliminar todos los cobros</button>
+                </div>
+                ${mostrarRecordatorios()}
+                <fieldset><legend>Registrar nuevo cobro</legend>
+                    <div class="search-section"><label>🔍 Buscar cliente</label><input type="text" id="buscarClienteCobro" placeholder="Nombre, NIT o código"><button class="secondary small" id="limpiarBusquedaCobroBtn" style="align-self:flex-start;">Limpiar</button></div>
+                    <div id="clienteSeleccionadoCobroContainer"></div><div id="listaClientesCobroResultado" class="client-list"></div><div id="paginacionClientesCobro" class="paginacion"></div>
+                    <label>Código: <input type="text" id="codigoClienteCobro" placeholder="Código"></label><label>Nombre/Razón Social: <input type="text" id="razonSocialCobro" required></label>
+                    <label>NIT: <input type="text" id="nitCobro" placeholder="C/F"></label><label>Dirección: <input type="text" id="direccionCobro"></label>
+                    <label>Teléfono: <input type="tel" id="telefonoCobro"></label><label>Encargado: <input type="text" id="encargadoCobro"></label>
+                    <label>Número de documento: <input type="text" id="numeroDocumentoCobro" required></label><label>Fecha: <input type="date" id="fechaCobro" value="${new Date().toISOString().slice(0,10)}"></label>
+                    <label>Monto total: <input type="number" id="montoTotalCobro" step="0.01" min="0" required></label>
+                    <div class="action-buttons" style="justify-content: flex-start;"><button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button></div>
+                </fieldset>
+                <div id="ventasDelDiaContainer" style="margin-top: 20px;"></div>
+                <h3>Lista de cobros</h3>
+                <div class="table-responsive">
+                       <table>
+                         <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
+                        <tbody id="cobrosBody"></tbody>
+                       </table>
+                </div>
+                <div id="paginacionCobros" class="paginacion"></div>
+            `;
+            document.getElementById('content').innerHTML = html;
+
+            document.getElementById('exportarCobrosPdfBtn').addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
                 const correlativo = obtenerCorrelativoReporte();
@@ -4360,9 +4235,10 @@
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(12);
                 doc.setTextColor(7, 94, 84);
-                doc.text('Droguería Marijose Jhire', 14, 15);
+                doc.text('MARIJOSE JHIRE S.A.', 14, 15);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
+                doc.setTextColor(60, 60, 60);
                 doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
                 doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
                 doc.setFont('helvetica', 'bold');
@@ -4373,129 +4249,32 @@
                 doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
 
                 doc.setFontSize(14);
-                doc.text(`REPORTE GERENCIAL - ${trimestre} ${anio}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
-                doc.setFontSize(10);
+                doc.setTextColor(7, 94, 84);
+                doc.text(`REPORTE DE COBROS`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+
+                const tableBody = cobros.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
+                    const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?', codigo: '', nit: '', direccion: '' };
+                    return [
+                        new Date(c.fecha).toLocaleDateString(),
+                        c.numeroDocumento,
+                        cliente.codigo || '—',
+                        cliente.razonSocial,
+                        cliente.nit || 'C/F',
+                        cliente.direccion || '—',
+                        formatoQ(c.montoTotal),
+                        formatoQ(c.saldoPendiente),
+                        c.saldoPendiente > 0 ? 'Pendiente' : 'Cancelado'
+                    ];
+                });
+
                 doc.autoTable({
                     startY: 48,
-                    head: [['KPI / Indicador Financiero', 'Valor']],
-                    body: [
-                        ['Volumen de Ventas (Contado)', formatoQ(totalContado)],
-                        ['Volumen de Ventas (Crédito)', formatoQ(totalCredito)],
-                        ['Total de Ingresos Generados (Ingreso Bruto)', formatoQ(totalVentas)],
-                        ['Meses Operativos Detectados en Trimestre', `${mesesActivos} mes(es)`],
-                        ['Costo Variable Estimado (21%)', `- ${formatoQ(totalVentas * 0.21)}`],
-                        ['Gastos Fijos Dinámicos (Q12,500 x mes activo)', `- ${formatoQ(12500 * mesesActivos)}`],
-                        ['RESULTADO NETO ESTIMADO', formatoQ(totalVentas - (totalVentas * 0.21) - (12500 * mesesActivos))],
-                        ['Ticket Promedio de Venta', formatoQ(ticketPromedio)],
-                        ['Porcentaje de Descuento Promedio', porcentajeDescuento.toFixed(2) + '%'],
-                        ['Monto total de descuentos (Fuga)', formatoQ(fugaTotal)],
-                        ['Saldo de créditos pendiente', formatoQ(saldoCreditoPendiente)],
-                        ['Eficiencia de Cobro', eficienciaCobro.toFixed(2) + '%']
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [7, 94, 84], textColor: 255 }
-                });
-
-                doc.text("Análisis de Mora por Días de Crédito", 14, doc.lastAutoTable.finalY + 15);
-                const agingBody = [
-                    ['0 - 30 días', formatoQ(saldosPorRango['0-30']), 'Verde'],
-                    ['31 - 45 días', formatoQ(saldosPorRango['31-45']), 'Naranja'],
-                    ['46 - 60 días', formatoQ(saldosPorRango['46-60']), 'Naranja'],
-                    ['Más de 60 días', formatoQ(saldosPorRango['>60']), 'Rojo']
-                ];
-                doc.autoTable({
-                    startY: doc.lastAutoTable.finalY + 20,
-                    head: [['Rango', 'Saldo Pendiente', 'Estado']],
-                    body: agingBody,
+                    head: [['Fecha', 'Documento', 'Código', 'Cliente', 'NIT', 'Dirección', 'Monto Total', 'Saldo', 'Estado']],
+                    body: tableBody,
                     theme: 'striped',
-                    headStyles: { fillColor: [37, 211, 102] }
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8 }
                 });
-
-                if (top10.length > 0) {
-                    doc.text("Top 10 Productos Más Vendidos", 14, doc.lastAutoTable.finalY + 15);
-                    doc.autoTable({
-                        startY: doc.lastAutoTable.finalY + 20,
-                        head: [['Producto', 'Cantidad']],
-                        body: top10,
-                        headStyles: { fillColor: [37, 211, 102] }
-                    });
-                }
-
-                if (bottom5.length > 0) {
-                    doc.text("Bottom 5 Productos Menos Vendidos", 14, doc.lastAutoTable.finalY + 15);
-                    doc.autoTable({
-                        startY: doc.lastAutoTable.finalY + 20,
-                        head: [['Producto', 'Cantidad']],
-                        body: bottom5,
-                        headStyles: { fillColor: [220, 53, 69] }
-                    });
-                }
-
-                // --- TABLAS DE PRODUCTOS POR RUTA ---
-                doc.addPage();
-                doc.setFontSize(14);
-                doc.setTextColor(7, 94, 84);
-                doc.text("Top Productos por Ruta/Región", 14, 20);
-
-                let rutaY = 30;
-                Object.keys(ventasPorRuta).sort().forEach(ruta => {
-                    if (rutaY > doc.internal.pageSize.getHeight() - 40) {
-                        doc.addPage();
-                        rutaY = 20;
-                    }
-                    
-                    doc.setFontSize(11);
-                    doc.setTextColor(0);
-                    doc.text(`Ruta: ${ruta}`, 14, rutaY);
-                    
-                    const prodsRuta = Object.entries(ventasPorRuta[ruta])
-                        .sort((a,b) => b[1] - a[1])
-                        .slice(0, 5);
-
-                    doc.autoTable({
-                        startY: rutaY + 3,
-                        head: [['Producto', 'Unidades Vendidas']],
-                        body: prodsRuta,
-                        theme: 'plain',
-                        headStyles: { fillColor: [240, 247, 252], textColor: 0 },
-                        margin: { left: 14 },
-                        tableWidth: 120
-                    });
-                    
-                    rutaY = doc.lastAutoTable.finalY + 10;
-                });
-
-                const unidadesContado = {}, unidadesCredito = {};
-                ventasQ.forEach(v => {
-                    v.productos.forEach(p => {
-                        const nom = p.producto;
-                        const unidades = p.unidades || 0;
-                        if (v.tipoVenta === 'Contado') {
-                            unidadesContado[nom] = (unidadesContado[nom] || 0) + unidades;
-                        } else {
-                            unidadesCredito[nom] = (unidadesCredito[nom] || 0) + unidades;
-                        }
-                    });
-                });
-                const todosProductos = new Set([...Object.keys(unidadesContado), ...Object.keys(unidadesCredito)]);
-                const desgloseRows = Array.from(todosProductos).sort().map(prod => [
-                    prod,
-                    unidadesContado[prod] || 0,
-                    unidadesCredito[prod] || 0,
-                    (unidadesContado[prod] || 0) + (unidadesCredito[prod] || 0)
-                ]);
-                if (desgloseRows.length > 0) {
-                    doc.addPage();
-                    doc.setFontSize(12);
-                    doc.text('Desglose de Unidades por Tipo de Venta (Contado vs Crédito)', 14, 15);
-                    doc.autoTable({
-                        startY: 20,
-                        head: [['Producto', 'Unidades Contado', 'Unidades Crédito', 'Total Unidades']],
-                        body: desgloseRows,
-                        theme: 'striped',
-                        headStyles: { fillColor: [37, 211, 102] }
-                    });
-                }
 
                 const totalPages = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
@@ -4504,428 +4283,337 @@
                     doc.setTextColor(100);
                     doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
                 }
-                doc.save(`ANALISIS_GERENCIAL_${trimestre}_${anio}.pdf`);
+                doc.save(`Reporte_Cobros_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+
+            document.getElementById('eliminarTodosCobrosBtn').addEventListener('click', () => {
+                if (cobros.length === 0) { alert('No hay cobros para eliminar.'); return; }
+                if (confirm('¿Estás seguro de eliminar TODOS los cobros y sus pagos? Esta acción no se puede deshacer.')) {
+                    cobros = [];
+                    pagosCobro = [];
+                    saveData();
+                    renderCobros();
+                    alert('Todos los cobros han sido eliminados.');
+                }
+            });
+
+            const buscarInput = document.getElementById('buscarClienteCobro');
+            const listaResultado = document.getElementById('listaClientesCobroResultado');
+            const paginacionDiv = document.getElementById('paginacionClientesCobro');
+            const clienteSelContainer = document.getElementById('clienteSeleccionadoCobroContainer');
+            const codigoCliente = document.getElementById('codigoClienteCobro');
+            const razonSocial = document.getElementById('razonSocialCobro');
+            const nit = document.getElementById('nitCobro');
+            const direccion = document.getElementById('direccionCobro');
+            const telefono = document.getElementById('telefonoCobro');
+            const encargado = document.getElementById('encargadoCobro');
+            const numeroDocumento = document.getElementById('numeroDocumentoCobro');
+            const fechaCobro = document.getElementById('fechaCobro');
+            const montoTotal = document.getElementById('montoTotalCobro');
+            const guardarBtn = document.getElementById('guardarCobroBtn');
+            const ventasDelDiaContainer = document.getElementById('ventasDelDiaContainer');
+
+            let clienteSeleccionado = null;
+            let resultadosFiltrados = [];
+            let paginaActual = 0;
+            const itemsPorPagina = 5;
+
+            function renderBusqueda(termino) {
+                const term = termino.toLowerCase().trim();
+                resultadosFiltrados = clientes.filter(c => 
+                    c.razonSocial.toLowerCase().includes(term) || 
+                    (c.nit && c.nit.toLowerCase().includes(term)) || 
+                    (c.codigo && c.codigo.toLowerCase().includes(term))
+                );
+                paginaActual = 0;
+                mostrarPagina();
             }
 
-            // ========== PESTAÑA COBROS ==========
-            function renderCobros() {
-                let html = `
-                    <h2>💰 Cobros recuperados</h2>
-                    <div class="action-buttons" style="justify-content: flex-start;">
-                        <button id="exportarCobrosPdfBtn" class="secondary">📄 Exportar PDF</button>
-                        <button id="eliminarTodosCobrosBtn" class="danger" style="margin-left:auto;">🗑️ Eliminar todos los cobros</button>
-                    </div>
-                    ${mostrarRecordatorios()}
-                    <fieldset><legend>Registrar nuevo cobro</legend>
-                        <div class="search-section"><label>🔍 Buscar cliente</label><input type="text" id="buscarClienteCobro" placeholder="Nombre, NIT o código"><button class="secondary small" id="limpiarBusquedaCobroBtn" style="align-self:flex-start;">Limpiar</button></div>
-                        <div id="clienteSeleccionadoCobroContainer"></div><div id="listaClientesCobroResultado" class="client-list"></div><div id="paginacionClientesCobro" class="paginacion"></div>
-                        <label>Código: <input type="text" id="codigoClienteCobro" placeholder="Código"></label><label>Nombre/Razón Social: <input type="text" id="razonSocialCobro" required></label>
-                        <label>NIT: <input type="text" id="nitCobro" placeholder="C/F"></label><label>Dirección: <input type="text" id="direccionCobro"></label>
-                        <label>Teléfono: <input type="tel" id="telefonoCobro"></label><label>Encargado: <input type="text" id="encargadoCobro"></label>
-                        <label>Número de documento: <input type="text" id="numeroDocumentoCobro" required></label><label>Fecha: <input type="date" id="fechaCobro" value="${new Date().toISOString().slice(0,10)}"></label>
-                        <label>Monto total: <input type="number" id="montoTotalCobro" step="0.01" min="0" required></label>
-                        <div class="action-buttons" style="justify-content: flex-start;"><button id="guardarCobroBtn" class="secondary">💾 Guardar cobro</button></div>
-                    </fieldset>
-                    <div id="ventasDelDiaContainer" style="margin-top: 20px;"></div>
-                    <h3>Lista de cobros</h3>
-                    <div class="table-responsive">
-                           <table>
-                             <thead><tr><th>Fecha</th><th>Documento</th><th>Cliente</th><th>Monto total</th><th>Saldo pendiente</th><th>Acciones</th></tr></thead>
-                            <tbody id="cobrosBody"></tbody>
-                           </table>
-                    </div>
-                    <div id="paginacionCobros" class="paginacion"></div>
-                `;
-                contentEl.innerHTML = html;
+            function mostrarPagina() {
+                const inicio = paginaActual * itemsPorPagina;
+                const fin = inicio + itemsPorPagina;
+                const paginaResultados = resultadosFiltrados.slice(inicio, fin);
 
-                document.getElementById('exportarCobrosPdfBtn').addEventListener('click', () => {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
-                    const correlativo = obtenerCorrelativoReporte();
-                    const fechaHora = new Date().toLocaleString();
-
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(12);
-                    doc.setTextColor(7, 94, 84);
-                    doc.text('Droguería Marijose Jhire', 14, 15);
-                    doc.setFontSize(9);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setTextColor(60, 60, 60);
-                    doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 21);
-                    doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 27);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() - 14, 15, { align: 'right' });
-                    doc.text(`ID Reporte: ${correlativo}`, doc.internal.pageSize.getWidth() - 14, 21, { align: 'right' });
-                    doc.text(`Fecha/Hora: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 27, { align: 'right' });
-                    doc.setDrawColor(37, 211, 102);
-                    doc.line(10, 32, doc.internal.pageSize.getWidth() - 10, 32);
-
-                    doc.setFontSize(14);
-                    doc.setTextColor(7, 94, 84);
-                    doc.text(`REPORTE DE COBROS`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
-
-                    const tableBody = cobros.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
-                        const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: '?', codigo: '', nit: '', direccion: '' };
-                        return [
-                            new Date(c.fecha).toLocaleDateString(),
-                            c.numeroDocumento,
-                            cliente.codigo || '—',
-                            cliente.razonSocial,
-                            cliente.nit || 'C/F',
-                            cliente.direccion || '—',
-                            formatoQ(c.montoTotal),
-                            formatoQ(c.saldoPendiente),
-                            c.saldoPendiente > 0 ? 'Pendiente' : 'Cancelado'
-                        ];
+                if (paginaResultados.length === 0) {
+                    listaResultado.innerHTML = '<div class="client-item">(ningún cliente coincide)</div>';
+                } else {
+                    let items = '';
+                    paginaResultados.forEach(c => {
+                        items += `<div class="client-item" data-id="${c.id}"><span>${c.razonSocial} ${c.codigo ? '· '+c.codigo : ''}</span><span class="client-code">${c.nit || 'sin NIT'}</span></div>`;
                     });
-
-                    doc.autoTable({
-                        startY: 48,
-                        head: [['Fecha', 'Documento', 'Código', 'Cliente', 'NIT', 'Dirección', 'Monto Total', 'Saldo', 'Estado']],
-                        body: tableBody,
-                        theme: 'striped',
-                        headStyles: { fillColor: [7, 94, 84], textColor: 255 },
-                        styles: { fontSize: 8 }
-                    });
-
-                    const totalPages = doc.internal.getNumberOfPages();
-                    for (let i = 1; i <= totalPages; i++) {
-                        doc.setPage(i);
-                        doc.setFontSize(8);
-                        doc.setTextColor(100);
-                        doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
-                    }
-                    doc.save(`Reporte_Cobros_${new Date().toISOString().slice(0,10)}.pdf`);
-                });
-
-                document.getElementById('eliminarTodosCobrosBtn').addEventListener('click', () => {
-                    if (cobros.length === 0) { alert('No hay cobros para eliminar.'); return; }
-                    if (confirm('¿Estás seguro de eliminar TODOS los cobros y sus pagos? Esta acción no se puede deshacer.')) {
-                        cobros = [];
-                        pagosCobro = [];
-                        saveData();
-                        renderCobros();
-                        alert('Todos los cobros han sido eliminados.');
-                    }
-                });
-
-                const buscarInput = document.getElementById('buscarClienteCobro');
-                const listaResultado = document.getElementById('listaClientesCobroResultado');
-                const paginacionDiv = document.getElementById('paginacionClientesCobro');
-                const clienteSelContainer = document.getElementById('clienteSeleccionadoCobroContainer');
-                const codigoCliente = document.getElementById('codigoClienteCobro');
-                const razonSocial = document.getElementById('razonSocialCobro');
-                const nit = document.getElementById('nitCobro');
-                const direccion = document.getElementById('direccionCobro');
-                const telefono = document.getElementById('telefonoCobro');
-                const encargado = document.getElementById('encargadoCobro');
-                const numeroDocumento = document.getElementById('numeroDocumentoCobro');
-                const fechaCobro = document.getElementById('fechaCobro');
-                const montoTotal = document.getElementById('montoTotalCobro');
-                const guardarBtn = document.getElementById('guardarCobroBtn');
-                const ventasDelDiaContainer = document.getElementById('ventasDelDiaContainer');
-
-                let clienteSeleccionado = null;
-                let resultadosFiltrados = [];
-                let paginaActual = 0;
-                const itemsPorPagina = 5;
-
-                function renderBusqueda(termino) {
-                    const term = termino.toLowerCase().trim();
-                    resultadosFiltrados = clientes.filter(c => 
-                        c.razonSocial.toLowerCase().includes(term) || 
-                        (c.nit && c.nit.toLowerCase().includes(term)) || 
-                        (c.codigo && c.codigo.toLowerCase().includes(term))
-                    );
-                    paginaActual = 0;
-                    mostrarPagina();
+                    listaResultado.innerHTML = items;
                 }
 
-                function mostrarPagina() {
-                    const inicio = paginaActual * itemsPorPagina;
-                    const fin = inicio + itemsPorPagina;
-                    const paginaResultados = resultadosFiltrados.slice(inicio, fin);
+                let paginacionHtml = '';
+                const totalPaginas = Math.ceil(resultadosFiltrados.length / itemsPorPagina);
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaAnteriorCobro" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                    paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaSiguienteCobro" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
 
-                    if (paginaResultados.length === 0) {
-                        listaResultado.innerHTML = '<div class="client-item">(ningún cliente coincide)</div>';
-                    } else {
-                        let items = '';
-                        paginaResultados.forEach(c => {
-                            items += `<div class="client-item" data-id="${c.id}"><span>${c.razonSocial} ${c.codigo ? '· '+c.codigo : ''}</span><span class="client-code">${c.nit || 'sin NIT'}</span></div>`;
-                        });
-                        listaResultado.innerHTML = items;
-                    }
+                document.querySelectorAll('.client-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const id = el.dataset.id;
+                        const cliente = clientes.find(c => c.id === id);
+                        if (cliente) {
+                            clienteSeleccionado = cliente;
+                            codigoCliente.value = cliente.codigo || '';
+                            razonSocial.value = cliente.razonSocial;
+                            nit.value = cliente.nit || '';
+                            direccion.value = cliente.direccion || '';
+                            telefono.value = cliente.telefono || '';
+                            encargado.value = cliente.encargado || '';
+                            clienteSelContainer.innerHTML = `<div class="badge">✅ Cliente: ${cliente.razonSocial} ${cliente.codigo ? '('+cliente.codigo+')' : ''}<button id="quitarSeleccionCobroBtn" class="small secondary">✕ Quitar</button></div>`;
+                            document.getElementById('quitarSeleccionCobroBtn')?.addEventListener('click', () => limpiarCliente());
+                            renderBusqueda('');
+                            buscarInput.value = '';
 
+                            const hoy = new Date().toDateString();
+                            const ventasClienteHoy = ventas.filter(v => v.clienteId === cliente.id && new Date(v.fecha).toDateString() === hoy && v.estado === 'normal');
+                            if (ventasClienteHoy.length === 0) {
+                                ventasDelDiaContainer.innerHTML = '<p>No hay ventas registradas hoy para este cliente.</p>';
+                            } else {
+                                let html = `<fieldset><legend>Ventas del día de este cliente</legend><div class="table-responsive">
+                                       <table>
+                                         <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead><tbody>`;
+                                ventasClienteHoy.forEach(v => {
+                                    const docId = v.id.substr(0,8);
+                                    const saldoOriginal = parseFloat(v.total).toFixed(2);
+                                    const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
+                                    const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
+                                    html += `<tr><td>${docId}</td><td>${formatoQ(saldoOriginal)}</td><td>${formatoQ(saldoPendiente)}</td><td>${estado}</td></tr>`;
+                                });
+                                html += `</tbody></table></div></fieldset>`;
+                                ventasDelDiaContainer.innerHTML = html;
+                            }
+                        }
+                    });
+                });
+
+                const btnAnterior = document.getElementById('paginaAnteriorCobro');
+                const btnSiguiente = document.getElementById('paginaSiguienteCobro');
+                if (btnAnterior) btnAnterior.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; mostrarPagina(); } });
+                if (btnSiguiente) btnSiguiente.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; mostrarPagina(); } });
+            }
+
+            function limpiarCliente() {
+                codigoCliente.value = ''; razonSocial.value = ''; nit.value = ''; direccion.value = ''; telefono.value = ''; encargado.value = '';
+                clienteSeleccionado = null;
+                clienteSelContainer.innerHTML = '';
+                renderBusqueda(buscarInput.value);
+                ventasDelDiaContainer.innerHTML = '';
+            }
+
+            buscarInput.addEventListener('input', () => renderBusqueda(buscarInput.value));
+            document.getElementById('limpiarBusquedaCobroBtn').addEventListener('click', () => { buscarInput.value = ''; renderBusqueda(''); });
+
+            guardarBtn.addEventListener('click', () => {
+                const razon = razonSocial.value.trim();
+                if (!razon) { alert('Razón social obligatoria'); return; }
+                const doc = numeroDocumento.value.trim();
+                if (!doc) { alert('Número de documento obligatorio'); return; }
+                const monto = parseFloat(montoTotal.value);
+                if (isNaN(monto) || monto <= 0) { alert('Monto total inválido'); return; }
+
+                let clienteFinal = clienteSeleccionado;
+                const datosForm = {
+                    codigo: codigoCliente.value.trim() || null,
+                    razonSocial: razon,
+                    nit: nit.value.trim() || null,
+                    direccion: direccion.value.trim(),
+                    telefono: telefono.value.trim(),
+                    encargado: encargado.value.trim()
+                };
+
+                if (!clienteFinal) {
+                    clienteFinal = { 
+                        id: generarIdCliente(),
+                        ...datosForm,
+                        codigo: datosForm.codigo || '',
+                        correo: '',
+                        fechaCreacion: new Date().toISOString(),
+                        categoria: '',
+                        ruta: '',
+                        limiteCredito: null
+                    };
+                    clientes.push(clienteFinal);
+                } else {
+                    Object.assign(clienteFinal, datosForm);
+                }
+                saveData();
+
+                const nuevoCobro = {
+                    id: generarIdCobro(),
+                    numeroDocumento: doc,
+                    fecha: new Date(fechaCobro.value + 'T12:00:00').toISOString(),
+                    montoTotal: monto,
+                    clienteId: clienteFinal.id,
+                    saldoPendiente: monto,
+                    fechaCreacion: new Date().toISOString()
+                };
+                cobros.push(nuevoCobro);
+                saveData();
+
+                alert('Cobro registrado');
+                limpiarCliente();
+                numeroDocumento.value = '';
+                fechaCobro.value = new Date().toISOString().slice(0,10);
+                montoTotal.value = '';
+                renderListaCobros();
+            });
+
+            function renderListaCobros() {
+                const tbody = document.getElementById('cobrosBody');
+                const paginacionCobros = document.getElementById('paginacionCobros');
+                if (!tbody) return;
+
+                const cobrosOrdenados = [...cobros].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                let paginaCobros = 0;
+                const itemsPorPaginaCobros = 5;
+
+                function mostrarPaginaCobros() {
+                    const inicio = paginaCobros * itemsPorPaginaCobros;
+                    const fin = inicio + itemsPorPaginaCobros;
+                    const pagina = cobrosOrdenados.slice(inicio, fin);
+
+                    tbody.innerHTML = '';
+                    pagina.forEach(c => {
+                        const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: 'Desconocido' };
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                              <td>${new Date(c.fecha).toLocaleDateString()}</td>
+                              <td>${c.numeroDocumento}</td>
+                              <td>${cliente.razonSocial}</td>
+                              <td>${formatoQ(c.montoTotal)}</td>
+                              <td>${formatoQ(c.saldoPendiente)}</td>
+                              <td><button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button><button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button><button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    const totalPaginas = Math.ceil(cobrosOrdenados.length / itemsPorPaginaCobros);
                     let paginacionHtml = '';
-                    const totalPaginas = Math.ceil(resultadosFiltrados.length / itemsPorPagina);
                     if (totalPaginas > 1) {
-                        paginacionHtml += `<button class="secondary small" id="paginaAnteriorCobro" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
-                        paginacionHtml += `<span> Página ${paginaActual+1} de ${totalPaginas} </span>`;
-                        paginacionHtml += `<button class="secondary small" id="paginaSiguienteCobro" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
+                        paginacionHtml += `<button class="secondary small" id="paginaCobrosAnterior" ${paginaCobros === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
+                        paginacionHtml += `<span> Página ${paginaCobros+1} de ${totalPaginas} </span>`;
+                        paginacionHtml += `<button class="secondary small" id="paginaCobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
                     }
-                    paginacionDiv.innerHTML = paginacionHtml;
+                    paginacionCobros.innerHTML = paginacionHtml;
 
-                    document.querySelectorAll('.client-item').forEach(el => {
-                        el.addEventListener('click', () => {
-                            const id = el.dataset.id;
-                            const cliente = clientes.find(c => c.id === id);
-                            if (cliente) {
-                                clienteSeleccionado = cliente;
-                                codigoCliente.value = cliente.codigo || '';
-                                razonSocial.value = cliente.razonSocial;
-                                nit.value = cliente.nit || '';
-                                direccion.value = cliente.direccion || '';
-                                telefono.value = cliente.telefono || '';
-                                encargado.value = cliente.encargado || '';
-                                clienteSelContainer.innerHTML = `<div class="badge">✅ Cliente: ${cliente.razonSocial} ${cliente.codigo ? '('+cliente.codigo+')' : ''}<button id="quitarSeleccionCobroBtn" class="small secondary">✕ Quitar</button></div>`;
-                                document.getElementById('quitarSeleccionCobroBtn')?.addEventListener('click', () => limpiarCliente());
-                                renderBusqueda('');
-                                buscarInput.value = '';
+                    document.getElementById('paginaCobrosAnterior')?.addEventListener('click', () => {
+                        if (paginaCobros > 0) { paginaCobros--; mostrarPaginaCobros(); }
+                    });
+                    document.getElementById('paginaCobrosSiguiente')?.addEventListener('click', () => {
+                        if (paginaCobros < totalPaginas-1) { paginaCobros++; mostrarPaginaCobros(); }
+                    });
 
-                                const hoy = new Date().toDateString();
-                                const ventasClienteHoy = ventas.filter(v => v.clienteId === cliente.id && new Date(v.fecha).toDateString() === hoy && v.estado === 'normal');
-                                if (ventasClienteHoy.length === 0) {
-                                    ventasDelDiaContainer.innerHTML = '<p>No hay ventas registradas hoy para este cliente.</p>';
-                                } else {
-                                    let html = `<fieldset><legend>Ventas del día de este cliente</legend><div class="table-responsive">
-                                           <table>
-                                             <thead><tr><th>Documento (ID)</th><th>Saldo original</th><th>Saldo pendiente</th><th>Estado</th></tr></thead><tbody>`;
-                                    ventasClienteHoy.forEach(v => {
-                                        const docId = v.id.substr(0,8);
-                                        const saldoOriginal = parseFloat(v.total).toFixed(2);
-                                        const saldoPendiente = v.tipoVenta === 'Crédito' ? (v.saldoPendiente || 0).toFixed(2) : '0.00';
-                                        const estado = (v.tipoVenta === 'Contado' || v.saldoPendiente === 0) ? 'Cancelado' : `Pendiente: Q${saldoPendiente}`;
-                                        html += `<tr><td>${docId}</td><td>${formatoQ(saldoOriginal)}</td><td>${formatoQ(saldoPendiente)}</td><td>${estado}</td></tr>`;
-                                    });
-                                    html += `</tbody></table></div></fieldset>`;
-                                    ventasDelDiaContainer.innerHTML = html;
-                                }
+                    document.querySelectorAll('.verEstadoCobroBtn, .agregarPagoCobroBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobroId = btn.dataset.id;
+                            mostrarEstadoCuentaCobro(cobroId);
+                        });
+                    });
+                    document.querySelectorAll('.eliminarCobroBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobroId = btn.dataset.id;
+                            if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
+                                cobros = cobros.filter(c => c.id !== cobroId);
+                                pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
+                                saveData();
+                                renderListaCobros();
                             }
                         });
                     });
-
-                    const btnAnterior = document.getElementById('paginaAnteriorCobro');
-                    const btnSiguiente = document.getElementById('paginaSiguienteCobro');
-                    if (btnAnterior) btnAnterior.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; mostrarPagina(); } });
-                    if (btnSiguiente) btnSiguiente.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; mostrarPagina(); } });
                 }
-
-                function limpiarCliente() {
-                    codigoCliente.value = ''; razonSocial.value = ''; nit.value = ''; direccion.value = ''; telefono.value = ''; encargado.value = '';
-                    clienteSeleccionado = null;
-                    clienteSelContainer.innerHTML = '';
-                    renderBusqueda(buscarInput.value);
-                    ventasDelDiaContainer.innerHTML = '';
-                }
-
-                buscarInput.addEventListener('input', () => renderBusqueda(buscarInput.value));
-                document.getElementById('limpiarBusquedaCobroBtn').addEventListener('click', () => { buscarInput.value = ''; renderBusqueda(''); });
-
-                guardarBtn.addEventListener('click', () => {
-                    const razon = razonSocial.value.trim();
-                    if (!razon) { alert('Razón social obligatoria'); return; }
-                    const doc = numeroDocumento.value.trim();
-                    if (!doc) { alert('Número de documento obligatorio'); return; }
-                    const monto = parseFloat(montoTotal.value);
-                    if (isNaN(monto) || monto <= 0) { alert('Monto total inválido'); return; }
-
-                    let clienteFinal = clienteSeleccionado;
-                    const datosForm = {
-                        codigo: codigoCliente.value.trim() || null,
-                        razonSocial: razon,
-                        nit: nit.value.trim() || null,
-                        direccion: direccion.value.trim(),
-                        telefono: telefono.value.trim(),
-                        encargado: encargado.value.trim()
-                    };
-
-                    if (!clienteFinal) {
-                        clienteFinal = { 
-                            id: generarIdCliente(),
-                            ...datosForm,
-                            codigo: datosForm.codigo || '',
-                            correo: '',
-                            fechaCreacion: new Date().toISOString(),
-                            categoria: '',
-                            ruta: '',
-                            limiteCredito: null
-                        };
-                        clientes.push(clienteFinal);
-                    } else {
-                        Object.assign(clienteFinal, datosForm);
-                    }
-                    saveData();
-
-                    const nuevoCobro = {
-                        id: generarIdCobro(),
-                        numeroDocumento: doc,
-                        fecha: new Date(fechaCobro.value + 'T12:00:00').toISOString(),
-                        montoTotal: monto,
-                        clienteId: clienteFinal.id,
-                        saldoPendiente: monto,
-                        fechaCreacion: new Date().toISOString()
-                    };
-                    cobros.push(nuevoCobro);
-                    saveData();
-
-                    alert('Cobro registrado');
-                    limpiarCliente();
-                    numeroDocumento.value = '';
-                    fechaCobro.value = new Date().toISOString().slice(0,10);
-                    montoTotal.value = '';
-                    renderListaCobros();
-                });
-
-                function renderListaCobros() {
-                    const tbody = document.getElementById('cobrosBody');
-                    const paginacionCobros = document.getElementById('paginacionCobros');
-                    if (!tbody) return;
-
-                    const cobrosOrdenados = [...cobros].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                    let paginaCobros = 0;
-                    const itemsPorPaginaCobros = 5;
-
-                    function mostrarPaginaCobros() {
-                        const inicio = paginaCobros * itemsPorPaginaCobros;
-                        const fin = inicio + itemsPorPaginaCobros;
-                        const pagina = cobrosOrdenados.slice(inicio, fin);
-
-                        tbody.innerHTML = '';
-                        pagina.forEach(c => {
-                            const cliente = clientes.find(cl => cl.id === c.clienteId) || { razonSocial: 'Desconocido' };
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                  <td>${new Date(c.fecha).toLocaleDateString()}</td>
-                                  <td>${c.numeroDocumento}</td>
-                                  <td>${cliente.razonSocial}</td>
-                                  <td>${formatoQ(c.montoTotal)}</td>
-                                  <td>${formatoQ(c.saldoPendiente)}</td>
-                                  <td><button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button><button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button><button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button></td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
-
-                        const totalPaginas = Math.ceil(cobrosOrdenados.length / itemsPorPaginaCobros);
-                        let paginacionHtml = '';
-                        if (totalPaginas > 1) {
-                            paginacionHtml += `<button class="secondary small" id="paginaCobrosAnterior" ${paginaCobros === 0 ? 'disabled' : ''}>⬅ Anterior</button>`;
-                            paginacionHtml += `<span> Página ${paginaCobros+1} de ${totalPaginas} </span>`;
-                            paginacionHtml += `<button class="secondary small" id="paginaCobrosSiguiente" ${paginaCobros >= totalPaginas-1 ? 'disabled' : ''}>Siguiente ➔</button>`;
-                        }
-                        paginacionCobros.innerHTML = paginacionHtml;
-
-                        document.getElementById('paginaCobrosAnterior')?.addEventListener('click', () => {
-                            if (paginaCobros > 0) { paginaCobros--; mostrarPaginaCobros(); }
-                        });
-                        document.getElementById('paginaCobrosSiguiente')?.addEventListener('click', () => {
-                            if (paginaCobros < totalPaginas-1) { paginaCobros++; mostrarPaginaCobros(); }
-                        });
-
-                        document.querySelectorAll('.verEstadoCobroBtn, .agregarPagoCobroBtn').forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                const cobroId = btn.dataset.id;
-                                mostrarEstadoCuentaCobro(cobroId);
-                            });
-                        });
-                        document.querySelectorAll('.eliminarCobroBtn').forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                const cobroId = btn.dataset.id;
-                                if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
-                                    cobros = cobros.filter(c => c.id !== cobroId);
-                                    pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
-                                    saveData();
-                                    renderListaCobros();
-                                }
-                            });
-                        });
-                    }
-                    mostrarPaginaCobros();
-                }
-                renderListaCobros();
+                mostrarPaginaCobros();
             }
+            renderListaCobros();
+        }
 
-            function mostrarEstadoCuentaCobro(cobroId) {
-                const cobro = cobros.find(c => c.id === cobroId);
-                if (!cobro) return;
-                const cliente = clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' };
-                const pagos = pagosCobro.filter(p => p.cobroId === cobroId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+        function mostrarEstadoCuentaCobro(cobroId) {
+            const cobro = cobros.find(c => c.id === cobroId);
+            if (!cobro) return;
+            const cliente = clientes.find(c => c.id === cobro.clienteId) || { razonSocial: '?' };
+            const pagos = pagosCobro.filter(p => p.cobroId === cobroId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
-                let html = `<h3>Estado de cobro: ${cobro.numeroDocumento}</h3><p>Cliente: ${cliente.razonSocial}</p><p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p><div style="margin-bottom: 10px;"><button id="eliminarCobroDesdeModalBtn" class="danger small">🗑 Eliminar este cobro</button></div><h4>Pagos realizados</h4><div class="table-responsive">
-                       <table>
-                         <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th><th>Método de pago</th></tr></thead><tbody>`;
-                if (pagos.length === 0) {
-                    html += '<tr><td colspan="5">No hay pagos registrados.</td></tr>';
-                } else {
-                    pagos.forEach(p => {
-                        html += `<tr><td>${new Date(p.fecha).toLocaleDateString()}</td><td>${formatoQ(p.monto)}</td><td>${p.tipo}</td><td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td><td>${p.metodoPago}</td></tr>`;
-                    });
-                }
-                html += `</tbody></table></div><h4>Registrar nuevo pago</h4><label>Monto: <input type="number" id="pagoMontoCobro" step="0.01" min="0.01" max="${cobro.saldoPendiente}"></label><label>Tipo: <select id="pagoTipoCobro"><option value="propio">Propio</option><option value="ajeno">Ajeno</option></select></label><div id="porcentajeContainerCobro" style="display:none; margin-top:10px;"><label>Porcentaje base para comisión (0-100): <input type="number" id="pagoPorcentajeCobro" value="100" min="0" max="100" step="0.1"></label></div><label>Método de pago: <select id="pagoMetodoCobro"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label><label>Fecha del pago: <input type="date" id="pagoFechaCobro" value="${new Date().toISOString().slice(0,10)}"></label><div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarPagoCobroBtn" class="secondary">Guardar pago</button><button id="cancelarPagoCobroBtn" class="secondary small">Cancelar</button></div>`;
-
-                const modal = document.getElementById('estadoCobroModal');
-                const modalContent = document.getElementById('estadoCobroContent');
-                modalContent.innerHTML = html;
-                modal.style.display = 'flex';
-
-                document.getElementById('eliminarCobroDesdeModalBtn').addEventListener('click', () => {
-                    if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
-                        cobros = cobros.filter(c => c.id !== cobroId);
-                        pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
-                        saveData();
-                        modal.style.display = 'none';
-                        if (document.querySelector('.tab.active').dataset.tab === 'cobros') renderCobros();
-                    }
+            let html = `<h3>Estado de cobro: ${cobro.numeroDocumento}</h3><p>Cliente: ${cliente.razonSocial}</p><p>Monto total: ${formatoQ(cobro.montoTotal)} | Saldo pendiente: ${formatoQ(cobro.saldoPendiente)}</p><div style="margin-bottom: 10px;"><button id="eliminarCobroDesdeModalBtn" class="danger small">🗑 Eliminar este cobro</button></div><h4>Pagos realizados</h4><div class="table-responsive">
+                   <table>
+                     <thead><tr><th>Fecha</th><th>Monto</th><th>Tipo</th><th>% base</th><th>Método de pago</th></tr></thead><tbody>`;
+            if (pagos.length === 0) {
+                html += '<tr><td colspan="5">No hay pagos registrados.</td></tr>';
+            } else {
+                pagos.forEach(p => {
+                    html += `<tr><td>${new Date(p.fecha).toLocaleDateString()}</td><td>${formatoQ(p.monto)}</td><td>${p.tipo}</td><td>${p.tipo === 'ajeno' ? p.porcentaje + '%' : '100%'}</td><td>${p.metodoPago}</td></tr>`;
                 });
+            }
+            html += `</tbody></table></div><h4>Registrar nuevo pago</h4><label>Monto: <input type="number" id="pagoMontoCobro" step="0.01" min="0.01" max="${cobro.saldoPendiente}"></label><label>Tipo: <select id="pagoTipoCobro"><option value="propio">Propio</option><option value="ajeno">Ajeno</option></select></label><div id="porcentajeContainerCobro" style="display:none; margin-top:10px;"><label>Porcentaje base para comisión (0-100): <input type="number" id="pagoPorcentajeCobro" value="100" min="0" max="100" step="0.1"></label></div><label>Método de pago: <select id="pagoMetodoCobro"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label><label>Fecha del pago: <input type="date" id="pagoFechaCobro" value="${new Date().toISOString().slice(0,10)}"></label><div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarPagoCobroBtn" class="secondary">Guardar pago</button><button id="cancelarPagoCobroBtn" class="secondary small">Cancelar</button></div>`;
 
-                const tipoSelect = document.getElementById('pagoTipoCobro');
-                const porcentajeDiv = document.getElementById('porcentajeContainerCobro');
-                tipoSelect.addEventListener('change', () => {
-                    porcentajeDiv.style.display = tipoSelect.value === 'ajeno' ? 'block' : 'none';
-                });
+            const modal = document.getElementById('estadoCobroModal');
+            const modalContent = document.getElementById('estadoCobroContent');
+            modalContent.innerHTML = html;
+            modal.style.display = 'flex';
 
-                document.getElementById('guardarPagoCobroBtn').addEventListener('click', () => {
-                    const monto = parseFloat(document.getElementById('pagoMontoCobro').value);
-                    if (isNaN(monto) || monto <= 0 || monto > cobro.saldoPendiente) {
-                        alert('Monto inválido');
-                        return;
-                    }
-                    const tipo = tipoSelect.value;
-                    let porcentaje = 100;
-                    if (tipo === 'ajeno') {
-                        porcentaje = parseFloat(document.getElementById('pagoPorcentajeCobro').value);
-                        if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-                            alert('Porcentaje debe ser entre 0 y 100');
-                            return;
-                        }
-                    }
-                    const metodo = document.getElementById('pagoMetodoCobro').value;
-                    const fecha = document.getElementById('pagoFechaCobro').value;
-                    if (!fecha) { alert('Fecha requerida'); return; }
-
-                    const nuevoPago = {
-                        id: generarIdPagoCobro(),
-                        cobroId: cobro.id,
-                        fecha: new Date(fecha + 'T12:00:00').toISOString(),
-                        monto,
-                        tipo,
-                        porcentaje: tipo === 'ajeno' ? porcentaje : 100,
-                        metodoPago: metodo
-                    };
-                    pagosCobro.push(nuevoPago);
-                    cobro.saldoPendiente = redondearDinero(cobro.saldoPendiente - monto);
+            document.getElementById('eliminarCobroDesdeModalBtn').addEventListener('click', () => {
+                if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
+                    cobros = cobros.filter(c => c.id !== cobroId);
+                    pagosCobro = pagosCobro.filter(p => p.cobroId !== cobroId);
                     saveData();
-
-                    alert('Pago registrado');
                     modal.style.display = 'none';
                     if (document.querySelector('.tab.active').dataset.tab === 'cobros') renderCobros();
-                });
+                }
+            });
 
-                document.getElementById('cancelarPagoCobroBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-                modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-            }
+            const tipoSelect = document.getElementById('pagoTipoCobro');
+            const porcentajeDiv = document.getElementById('porcentajeContainerCobro');
+            tipoSelect.addEventListener('change', () => {
+                porcentajeDiv.style.display = tipoSelect.value === 'ajeno' ? 'block' : 'none';
+            });
 
-            showTab('venta');
-        })();
-    </script>
+            document.getElementById('guardarPagoCobroBtn').addEventListener('click', () => {
+                const monto = parseFloat(document.getElementById('pagoMontoCobro').value);
+                if (isNaN(monto) || monto <= 0 || monto > cobro.saldoPendiente) {
+                    alert('Monto inválido');
+                    return;
+                }
+                const tipo = tipoSelect.value;
+                let porcentaje = 100;
+                if (tipo === 'ajeno') {
+                    porcentaje = parseFloat(document.getElementById('pagoPorcentajeCobro').value);
+                    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                        alert('Porcentaje debe ser entre 0 y 100');
+                        return;
+                    }
+                }
+                const metodo = document.getElementById('pagoMetodoCobro').value;
+                const fecha = document.getElementById('pagoFechaCobro').value;
+                if (!fecha) { alert('Fecha requerida'); return; }
+
+                const nuevoPago = {
+                    id: generarIdPagoCobro(),
+                    cobroId: cobro.id,
+                    fecha: new Date(fecha + 'T12:00:00').toISOString(),
+                    monto,
+                    tipo,
+                    porcentaje: tipo === 'ajeno' ? porcentaje : 100,
+                    metodoPago: metodo
+                };
+                pagosCobro.push(nuevoPago);
+                cobro.saldoPendiente = redondearDinero(cobro.saldoPendiente - monto);
+                saveData();
+
+                alert('Pago registrado');
+                modal.style.display = 'none';
+                if (document.querySelector('.tab.active').dataset.tab === 'cobros') renderCobros();
+            });
+
+            document.getElementById('cancelarPagoCobroBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
+
+        showTab('venta');
+    })();
+</script>
 </body>
 </html>
