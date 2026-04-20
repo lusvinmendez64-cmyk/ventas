@@ -2531,8 +2531,9 @@ function mostrarFormularioAbono(ventaId) {
                 <div class="reporte-fisico-container">
                     <h3>📄 Gestión de Giras y Reportes Físicos</h3>
                     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
-                        <label style="flex: 1 1 200px;">Gira a realizar: <input type="text" id="giraInventario" placeholder="Ej: Occidente, Ruta 2..."></label>
-                        <label class="checkbox-label" style="flex: 1 1 200px; padding-top:25px;"><input type="checkbox" id="cambioMesInventario"> La semana incluye cambio de mes</label>
+                        <label style="flex: 1 1 100%;">Gira a realizar: <input type="text" id="giraInventario" placeholder="Ej: Occidente, Ruta 2..."></label>
+                        <label style="flex: 1 1 45%;">Desde (Lunes inicial): <input type="date" id="fechaInicioFisico"></label>
+                        <label style="flex: 1 1 45%;">Hasta (Día del corte): <input type="date" id="fechaFinFisico"></label>
                     </div>
                     <label style="margin-top:10px;">Observaciones: <textarea id="observacionesInventario" rows="2" placeholder="Observaciones manuales para el reporte..."></textarea></label>
                     <div style="display:flex; gap:10px; margin-top:10px;">
@@ -2591,6 +2592,16 @@ function mostrarFormularioAbono(ventaId) {
             `;
             document.getElementById('content').innerHTML = html;
 
+            // Configurar fechas por defecto para el reporte físico (Lunes a Hoy)
+            const hoyCorte = new Date();
+            const diaSemCorte = hoyCorte.getDay();
+            let diffALunesCorte = diaSemCorte === 1 ? 7 : (diaSemCorte === 0 ? 6 : diaSemCorte - 1);
+            const lunesDefault = new Date(hoyCorte);
+            lunesDefault.setDate(hoyCorte.getDate() - diffALunesCorte);
+            
+            document.getElementById('fechaInicioFisico').value = lunesDefault.toISOString().slice(0, 10);
+            document.getElementById('fechaFinFisico').value = hoyCorte.toISOString().slice(0, 10);
+
             const inventarioBody = document.getElementById('inventarioBody');
             const movimientosBody = document.getElementById('movimientosBody');
             const selectorProducto = document.getElementById('selectorProducto');
@@ -2609,39 +2620,6 @@ function mostrarFormularioAbono(ventaId) {
             const itemsPorPagina = 5;
             let inventarioFiltrado = [...inventario];
 
-            function calcularFechasReporteFisico() {
-                const dateHoy = new Date();
-                const diaSem = dateHoy.getDay(); // 0 = Domingo, 1 = Lunes...
-
-                let diffALunes;
-                let diffAlFin;
-
-                // Si hoy es Lunes (1), asumimos que el corte es de la semana que acaba de terminar
-                if (diaSem === 1) {
-                    diffALunes = 7; // Retrocede 7 días para llegar al lunes pasado
-                    diffAlFin = 1;  // El fin del reporte es ayer domingo
-                } else {
-                    // Si es de Martes a Domingo, es el corte de la semana actual
-                    diffALunes = diaSem === 0 ? 6 : diaSem - 1;
-                    diffAlFin = 0; // El fin del reporte es hoy
-                }
-
-                const lunes = new Date(dateHoy);
-                lunes.setDate(dateHoy.getDate() - diffALunes);
-                lunes.setHours(0, 0, 0, 0);
-
-                let finSemana = new Date(dateHoy);
-                finSemana.setDate(dateHoy.getDate() - diffAlFin);
-                
-                if (document.getElementById('cambioMesInventario') && document.getElementById('cambioMesInventario').checked) {
-                    // Si hay cambio de mes, terminamos el último día del mes del lunes inicial
-                    finSemana = new Date(lunes.getFullYear(), lunes.getMonth() + 1, 0);
-                }
-                finSemana.setHours(23, 59, 59, 999);
-
-                return { inicio: lunes, fin: finSemana };
-            }
-
             document.getElementById('btnCorteSemanaUnificado').addEventListener('click', () => {
                 let telVendedor = localStorage.getItem('telefonoVendedor_App');
                 if (!telVendedor) {
@@ -2657,9 +2635,20 @@ function mostrarFormularioAbono(ventaId) {
             });
 
             function generarPDFInventarioFisicoUnificado() {
+                const strInicio = document.getElementById('fechaInicioFisico').value;
+                const strFin = document.getElementById('fechaFinFisico').value;
+                
+                if(!strInicio || !strFin) {
+                    alert("Por favor selecciona las fechas de inicio y fin para el corte.");
+                    return;
+                }
+
+                const fechaInicio = new Date(strInicio + 'T00:00:00');
+                const fechaFin = new Date(strFin + 'T23:59:59');
+                const fechas = { inicio: fechaInicio, fin: fechaFin };
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
-                const fechas = calcularFechasReporteFisico();
                 const giraStr = document.getElementById('giraInventario').value.trim() || 'No especificada';
                 const telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
                 const correlativo = obtenerCorrelativoReporte();
@@ -2675,7 +2664,7 @@ function mostrarFormularioAbono(ventaId) {
                 doc.setFont('helvetica', 'bold');
                 doc.text('MARIJOSE JHIRE S.A.', 14, 12);
                 doc.setFontSize(10);
-                doc.text('CORTE SEMANAL MAESTRO', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+                doc.text('CORTE MAESTRO DE INVENTARIO Y VENTAS', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
 
                 doc.setTextColor(0, 0, 0);
                 doc.setFontSize(9);
@@ -2718,10 +2707,10 @@ function mostrarFormularioAbono(ventaId) {
                     let ventasProductoRealQ = 0;
                     let ventasProductoIdealQ = 0;
 
+                    // Reversamos desde la fecha de inicio hasta HOY, para encontrar el inventario inicial exacto
                     const movsParaReversa = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
 
                     movsParaReversa.forEach(m => {
-                        // 1. Reversamos TODOS los movimientos para hallar con cuánto inventario iniciaste el lunes anterior
                         if (m.tipo === 'venta') {
                             invInicial += Math.abs(m.cantidad);
                         } else if (m.tipo === 'ajuste') {
@@ -2732,7 +2721,7 @@ function mostrarFormularioAbono(ventaId) {
                             }
                         }
                         
-                        // 2. PERO para las "Unidades Vendidas" del reporte, SOLO sumamos las que ocurrieron dentro del periodo de la semana evaluada.
+                        // Solo sumamos ventas si ocurrieron dentro del límite del periodo configurado
                         if (m.tipo === 'venta' && new Date(m.fecha) <= fechas.fin) {
                             udsVendidas += Math.abs(m.cantidad);
                         }
@@ -2805,7 +2794,7 @@ function mostrarFormularioAbono(ventaId) {
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(7, 94, 84);
-                doc.text('2. RECUPERACIÓN Y COBROS DE LA SEMANA', 14, currentY);
+                doc.text('2. RECUPERACIÓN Y COBROS DEL PERÍODO', 14, currentY);
 
                 const tableRowsCobros = [];
                 let totalCobradoSemana = 0;
@@ -2838,7 +2827,7 @@ function mostrarFormularioAbono(ventaId) {
                 todosLosPagos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
 
                 if (todosLosPagos.length === 0) {
-                    tableRowsCobros.push(['-', 'No se registraron cobros ni abonos en esta semana', '-', '-', '-']);
+                    tableRowsCobros.push(['-', 'No se registraron cobros ni abonos en este período', '-', '-', '-']);
                 } else {
                     todosLosPagos.forEach(p => {
                         totalCobradoSemana += p.monto;
@@ -2850,7 +2839,7 @@ function mostrarFormularioAbono(ventaId) {
                             formatoQ(p.monto)
                         ]);
                     });
-                    tableRowsCobros.push(['', 'TOTAL RECUPERADO EN LA SEMANA', '', '', formatoQ(totalCobradoSemana)]);
+                    tableRowsCobros.push(['', 'TOTAL RECUPERADO EN EL PERÍODO', '', '', formatoQ(totalCobradoSemana)]);
                 }
 
                 doc.autoTable({
@@ -3060,29 +3049,31 @@ function mostrarFormularioAbono(ventaId) {
                     historialContainer.innerHTML = '<p>No hay movimientos para este producto.</p>';
                     return;
                 }
-                const hoy = new Date();
-                const diaSemana = hoy.getDay();
-                const diff = diaSemana === 0 ? 6 : diaSemana - 1;
-                const lunes = new Date(hoy);
-                lunes.setDate(hoy.getDate() - diff);
-                lunes.setHours(0,0,0,0);
-                const viernes = new Date(lunes);
-                viernes.setDate(lunes.getDate() + 4);
-                viernes.setHours(23,59,59,999);
-                const finSemana = hoy < viernes ? hoy : viernes;
-                const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-                inicioMes.setHours(0,0,0,0);
-                const finMes = hoy;
+                
+                // Se reutiliza la lógica de las fechas visuales para mostrar el historial con el mismo contexto
+                const strInicio = document.getElementById('fechaInicioFisico').value;
+                const strFin = document.getElementById('fechaFinFisico').value;
+                let fechaInicio = new Date();
+                fechaInicio.setDate(fechaInicio.getDate() - 7); // Default
+                let fechaFin = new Date();
+                
+                if(strInicio && strFin) {
+                    fechaInicio = new Date(strInicio + 'T00:00:00');
+                    fechaFin = new Date(strFin + 'T23:59:59');
+                }
 
-                const movsSemana = movs.filter(m => new Date(m.fecha) >= lunes && new Date(m.fecha) <= finSemana);
-                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= finMes);
+                const movsSemana = movs.filter(m => new Date(m.fecha) >= fechaInicio && new Date(m.fecha) <= fechaFin);
+                
+                const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                inicioMes.setHours(0,0,0,0);
+                const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= new Date());
 
                 const ventasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
                 const recargasSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
                 const ventasMes = movsMes.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
                 const recargasMes = movsMes.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
 
-                let html = `<div style="background: #e8f5e9; padding: 10px; border-radius: 20px; margin-bottom: 10px;"><strong>Resumen semana:</strong> Ventas: ${ventasSemana} | Recargas: ${recargasSemana}<br><strong>Resumen mes:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}</div><div class="table-responsive">
+                let html = `<div style="background: #e8f5e9; padding: 10px; border-radius: 20px; margin-bottom: 10px;"><strong>Resumen del período seleccionado:</strong> Ventas: ${ventasSemana} | Recargas: ${recargasSemana}<br><strong>Resumen mes actual:</strong> Ventas: ${ventasMes} | Recargas: ${recargasMes}</div><div class="table-responsive">
                        <table>
                          <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th><th>Motivo</th></tr></thead><tbody>`;
                 movs.forEach(m => {
@@ -3103,22 +3094,23 @@ function mostrarFormularioAbono(ventaId) {
                 const itemInv = inventario.find(i => i.productoId === prodId);
                 const stockActual = itemInv ? itemInv.stock : 0;
 
-                const hoy = new Date();
-                const diaSemana = hoy.getDay();
-                const diff = diaSemana === 0 ? 6 : diaSemana - 1;
-                const lunes = new Date(hoy);
-                lunes.setDate(hoy.getDate() - diff);
-                lunes.setHours(0,0,0,0);
-                const viernes = new Date(lunes);
-                viernes.setDate(lunes.getDate() + 4);
-                viernes.setHours(23,59,59,999);
-                const finSemana = hoy < viernes ? hoy : viernes;
-                const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                const strInicio = document.getElementById('fechaInicioFisico').value;
+                const strFin = document.getElementById('fechaFinFisico').value;
+                let fechaInicio = new Date();
+                fechaInicio.setDate(fechaInicio.getDate() - 7); 
+                let fechaFin = new Date();
+                
+                if(strInicio && strFin) {
+                    fechaInicio = new Date(strInicio + 'T00:00:00');
+                    fechaFin = new Date(strFin + 'T23:59:59');
+                }
+                
+                const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
                 inicioMes.setHours(0,0,0,0);
-                const finMes = hoy;
+                const finMes = new Date();
 
                 const movs = movimientosInventario.filter(m => m.productoId === prodId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                const movsSemana = movs.filter(m => new Date(m.fecha) >= lunes && new Date(m.fecha) <= finSemana);
+                const movsSemana = movs.filter(m => new Date(m.fecha) >= fechaInicio && new Date(m.fecha) <= fechaFin);
                 const movsMes = movs.filter(m => new Date(m.fecha) >= inicioMes && new Date(m.fecha) <= finMes);
                 const ventasSemana = movsSemana.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Math.abs(m.cantidad), 0);
                 const recargasSemana = movsSemana.filter(m => m.tipo === 'ajuste' && m.cantidad > 0).reduce((acc, m) => acc + m.cantidad, 0);
@@ -3147,15 +3139,15 @@ function mostrarFormularioAbono(ventaId) {
                 doc.setFontSize(10);
                 doc.text(`Historial de ${producto.nombre}`, 14, 40);
                 doc.text(`Stock actual: ${stockActual}`, 14, 46);
-                doc.text(`Periodo semana (lunes a ${finSemana === viernes ? 'viernes' : 'hoy'}): ${lunes.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`, 14, 52);
+                doc.text(`Período seleccionado: ${fechaInicio.toLocaleDateString()} - ${fechaFin.toLocaleDateString()}`, 14, 52);
                 doc.text(`Periodo mes: ${inicioMes.toLocaleDateString()} - ${finMes.toLocaleDateString()}`, 14, 58);
-                doc.text(`Resumen semana: Ventas: ${ventasSemana} | Recargas: ${recargasSemana} | Neto: ${ventasSemana - recargasSemana}`, 14, 64);
+                doc.text(`Resumen período: Ventas: ${ventasSemana} | Recargas: ${recargasSemana} | Neto: ${ventasSemana - recargasSemana}`, 14, 64);
 
                 if (movsSemana.length > 0) {
                     const semanaRows = movsSemana.map(m => [new Date(m.fecha).toLocaleString(), m.tipo, m.cantidad, m.stockResultante, m.motivo || '']);
                     doc.autoTable({ startY: 70, head: [['Fecha', 'Tipo', 'Cantidad', 'Stock', 'Motivo']], body: semanaRows, margin: { left: 14 }, styles: { fontSize: 8 } });
                 } else {
-                    doc.text('No hay movimientos en la semana.', 14, 70);
+                    doc.text('No hay movimientos en el período.', 14, 70);
                 }
                 let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 76;
                 doc.text(`Resumen mes: Ventas: ${ventasMes} | Recargas: ${recargasMes} | Neto: ${ventasMes - recargasMes}`, 14, finalY);
@@ -3356,6 +3348,7 @@ function mostrarFormularioAbono(ventaId) {
 
                 doc.save(`Recarga_${new Date().toISOString().slice(0,10)}.pdf`);
             } 
+            
             document.getElementById('exportarInventarioBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
                 const inventarioData = inventario.map(i => ({
@@ -3383,20 +3376,27 @@ function mostrarFormularioAbono(ventaId) {
                 XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
             });
 
-            // EL NUEVO BOTÓN DE RESUMEN SEMANAL EN MATRIZ LUN-VIE
             document.getElementById('resumenSemanalBtn').addEventListener('click', generarPDFResumenSemanalInventario);
 
             function generarPDFResumenSemanalInventario() {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
                 const giraStr = document.getElementById('giraInventario')?.value.trim() || 'No especificada';
-                const fechas = calcularFechasReporteFisico(); 
+                
+                const strInicio = document.getElementById('fechaInicioFisico').value;
+                const strFin = document.getElementById('fechaFinFisico').value;
+                if(!strInicio || !strFin) {
+                    alert("Por favor selecciona las fechas de inicio y fin.");
+                    return;
+                }
+                const fechaInicio = new Date(strInicio + 'T00:00:00');
+                const fechaFin = new Date(strFin + 'T23:59:59');
                 
                 const dias = [];
-                for(let i=0; i<5; i++) {
-                    let d = new Date(fechas.inicio);
-                    d.setDate(d.getDate() + i);
-                    dias.push(d);
+                let dTemp = new Date(fechaInicio);
+                while(dTemp <= fechaFin && dias.length < 7) { 
+                    dias.push(new Date(dTemp));
+                    dTemp.setDate(dTemp.getDate() + 1);
                 }
 
                 doc.setFillColor(7, 94, 84);
@@ -3410,11 +3410,11 @@ function mostrarFormularioAbono(ventaId) {
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
                 doc.text(`Colaborador: ${nombreUsuario} | Gira/Ruta: ${giraStr}`, 14, 25);
-                doc.text(`Semana del: ${dias[0].toLocaleDateString()} al ${dias[4].toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+                doc.text(`Del: ${dias[0].toLocaleDateString()} al ${dias[dias.length-1].toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
 
                 let body = [];
-                let totalesDiaMonto = [0,0,0,0,0];
-                let totalesDiaCant = [0,0,0,0,0];
+                let totalesDiaMonto = new Array(dias.length).fill(0);
+                let totalesDiaCant = new Array(dias.length).fill(0);
                 let granTotalMontoGlobal = 0;
                 let granTotalCantGlobal = 0;
 
@@ -3453,18 +3453,18 @@ function mostrarFormularioAbono(ventaId) {
                 });
 
                 let totalRow = ['GRAN TOTAL DIARIO'];
-                for(let i=0; i<5; i++) {
+                for(let i=0; i<dias.length; i++) {
                     totalRow.push(`${totalesDiaCant[i]} (Q${totalesDiaMonto[i].toFixed(2)})`);
                 }
                 totalRow.push(`${granTotalCantGlobal} (Q${granTotalMontoGlobal.toFixed(2)})`);
                 body.push(totalRow);
 
                 const encabezadosColumnas = ['Producto'];
-                const nombresDias = ['Lunes', 'Martes', 'Miérc.', 'Jueves', 'Viernes'];
-                for(let i=0; i<5; i++) {
-                    encabezadosColumnas.push(`${nombresDias[i]} ${dias[i].getDate()}/${dias[i].getMonth()+1}`);
+                const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                for(let i=0; i<dias.length; i++) {
+                    encabezadosColumnas.push(`${nombresDias[dias[i].getDay()]} ${dias[i].getDate()}/${dias[i].getMonth()+1}`);
                 }
-                encabezadosColumnas.push('Total Semanal');
+                encabezadosColumnas.push('Total Período');
 
                 doc.autoTable({
                     startY: 32,
@@ -3484,7 +3484,7 @@ function mostrarFormularioAbono(ventaId) {
 
                 let finalY = doc.lastAutoTable.finalY + 10;
                 doc.setFontSize(11);
-                doc.text(`TOTAL PRODUCTOS VENDIDOS ESTA SEMANA: ${granTotalCantGlobal} Unidades`, 14, finalY);
+                doc.text(`TOTAL PRODUCTOS VENDIDOS EN PERÍODO: ${granTotalCantGlobal} Unidades`, 14, finalY);
                 doc.text(`TOTAL DINERO GENERADO: ${formatoQ(granTotalMontoGlobal)}`, 14, finalY + 6);
 
                 doc.save(`Resumen_Semanal_${dias[0].toISOString().slice(0,10)}.pdf`);
