@@ -672,7 +672,7 @@
                           <tr><th>Producto</th><th>Unid</th><th>P/U (Q)</th><th>Monto (Q)</th><th>Stock actual</th><th></th></tr>
                         </thead>
                         <tbody id="productosBody"></tbody>
-                      </table>
+                        </table>
                     </div>
                     <div class="multi-add">
                         <span>Agregar</span>
@@ -2611,20 +2611,33 @@ function mostrarFormularioAbono(ventaId) {
 
             function calcularFechasReporteFisico() {
                 const dateHoy = new Date();
-                const diaSem = dateHoy.getDay();
-                const diffALunes = diaSem === 0 ? 6 : diaSem - 1;
-                
+                const diaSem = dateHoy.getDay(); // 0 = Domingo, 1 = Lunes...
+
+                let diffALunes;
+                let diffAlFin;
+
+                // Si hoy es Lunes (1), asumimos que el corte es de la semana que acaba de terminar
+                if (diaSem === 1) {
+                    diffALunes = 7; // Retrocede 7 días para llegar al lunes pasado
+                    diffAlFin = 1;  // El fin del reporte es ayer domingo
+                } else {
+                    // Si es de Martes a Domingo, es el corte de la semana actual
+                    diffALunes = diaSem === 0 ? 6 : diaSem - 1;
+                    diffAlFin = 0; // El fin del reporte es hoy
+                }
+
                 const lunes = new Date(dateHoy);
                 lunes.setDate(dateHoy.getDate() - diffALunes);
-                lunes.setHours(0,0,0,0);
+                lunes.setHours(0, 0, 0, 0);
 
-                let finSemana = new Date(lunes);
-                if (document.getElementById('cambioMesInventario').checked) {
-                    finSemana = new Date(dateHoy.getFullYear(), dateHoy.getMonth() + 1, 0);
-                } else {
-                    finSemana.setDate(lunes.getDate() + 4);
+                let finSemana = new Date(dateHoy);
+                finSemana.setDate(dateHoy.getDate() - diffAlFin);
+                
+                if (document.getElementById('cambioMesInventario') && document.getElementById('cambioMesInventario').checked) {
+                    // Si hay cambio de mes, terminamos el último día del mes del lunes inicial
+                    finSemana = new Date(lunes.getFullYear(), lunes.getMonth() + 1, 0);
                 }
-                finSemana.setHours(23,59,59,999);
+                finSemana.setHours(23, 59, 59, 999);
 
                 return { inicio: lunes, fin: finSemana };
             }
@@ -2705,11 +2718,11 @@ function mostrarFormularioAbono(ventaId) {
                     let ventasProductoRealQ = 0;
                     let ventasProductoIdealQ = 0;
 
-                    const movsSemana = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
-                    
-                    movsSemana.forEach(m => {
+                    const movsParaReversa = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
+
+                    movsParaReversa.forEach(m => {
+                        // 1. Reversamos TODOS los movimientos para hallar con cuánto inventario iniciaste el lunes anterior
                         if (m.tipo === 'venta') {
-                            udsVendidas += Math.abs(m.cantidad);
                             invInicial += Math.abs(m.cantidad);
                         } else if (m.tipo === 'ajuste') {
                             if (m.cantidad > 0) {
@@ -2717,6 +2730,11 @@ function mostrarFormularioAbono(ventaId) {
                             } else if (m.cantidad < 0) {
                                 invInicial += Math.abs(m.cantidad);
                             }
+                        }
+                        
+                        // 2. PERO para las "Unidades Vendidas" del reporte, SOLO sumamos las que ocurrieron dentro del periodo de la semana evaluada.
+                        if (m.tipo === 'venta' && new Date(m.fecha) <= fechas.fin) {
+                            udsVendidas += Math.abs(m.cantidad);
                         }
                     });
 
@@ -4004,9 +4022,9 @@ function mostrarFormularioAbono(ventaId) {
          const fechaVenta = new Date(venta.fecha);
         return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
 });
-        const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
+        const totalAbonos = abonosPeriodo.reduce((acc, a ) => acc + (a.monto || 0), 0);
                         
-         const pagosCobroPeriodo = pagosCobro.filter(p => {
+            const pagosCobroPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
                 return fecha >= fechaInicio && fecha <= fechaFin && p.tipo === 'propio';
             });
