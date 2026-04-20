@@ -479,7 +479,6 @@
             const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: 'Cliente', telefono: '' };
             const correlativo = venta.id.substr(0,8);
             
-            // Genera el mismo PDF de Comprobante, no es necesario hacer una función extra
             generarComprobanteVenta(venta, cliente, correlativo);
 
             const saludo = obtenerSaludo();
@@ -2087,8 +2086,7 @@ function mostrarFormularioAbono(ventaId) {
                 doc.save(`Clientes_GPS_${new Date().toISOString().slice(0,10)}.pdf`);
             });
         }
-
-        function generarHistorialClientePDF(clienteId) {
+function generarHistorialClientePDF(clienteId) {
             const cliente = clientes.find(c => c.id === clienteId);
             if (!cliente) return;
             
@@ -2643,6 +2641,7 @@ function mostrarFormularioAbono(ventaId) {
                     return;
                 }
 
+                // Asegurar que abarque desde el inicio del primer día hasta el final del último
                 const fechaInicio = new Date(strInicio + 'T00:00:00');
                 const fechaFin = new Date(strFin + 'T23:59:59');
                 const fechas = { inicio: fechaInicio, fin: fechaFin };
@@ -2653,6 +2652,7 @@ function mostrarFormularioAbono(ventaId) {
                 const telVendedor = localStorage.getItem('telefonoVendedor_App') || '—';
                 const correlativo = obtenerCorrelativoReporte();
                 
+                // 1. Filtrar los documentos (ventas, abonos, pagos) que caen dentro del rango
                 const ventasDeSemana = ventas.filter(v => v.estado === 'normal' && new Date(v.fecha) >= fechas.inicio && new Date(v.fecha) <= fechas.fin);
                 const abonosDeSemana = abonos.filter(a => new Date(a.fecha) >= fechas.inicio && new Date(a.fecha) <= fechas.fin);
                 const pagosCobroDeSemana = pagosCobro.filter(p => new Date(p.fecha) >= fechas.inicio && new Date(p.fecha) <= fechas.fin);
@@ -2701,35 +2701,34 @@ function mostrarFormularioAbono(ventaId) {
                 let granTotalInicial = 0, granTotalVendidas = 0, granTotalRetorno = 0;
                 let granTotalVentasQ = 0, granTotalDescuentosQ = 0;
 
+                // 2. Procesamiento por cada producto en el inventario
                 inventario.forEach(item => {
-                    let invInicial = item.stock;
                     let udsVendidas = 0;
                     let ventasProductoRealQ = 0;
                     let ventasProductoIdealQ = 0;
+                    
+                    // El "Stock de Retorno" es el stock actual.
+                    let invRetorno = item.stock; 
 
-                    // Reversamos desde la fecha de inicio hasta HOY, para encontrar el inventario inicial exacto
-                    const movsParaReversa = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio && new Date(m.fecha) <= new Date());
+                    // Para calcular el Inventario Inicial, partimos del stock actual y REVERTIMOS los movimientos 
+                    // que ocurrieron DESPUÉS del inicio del reporte.
+                    let invInicial = item.stock;
+                    
+                    const movsRevertir = movimientosInventario.filter(m => m.productoId === item.productoId && new Date(m.fecha) >= fechas.inicio);
 
-                    movsParaReversa.forEach(m => {
+                    movsRevertir.forEach(m => {
                         if (m.tipo === 'venta') {
-                            invInicial += Math.abs(m.cantidad);
+                            invInicial += Math.abs(m.cantidad); 
                         } else if (m.tipo === 'ajuste') {
-                            if (m.cantidad > 0) {
-                                invInicial -= m.cantidad;
-                            } else if (m.cantidad < 0) {
-                                invInicial += Math.abs(m.cantidad);
-                            }
-                        }
-                        
-                        // Solo sumamos ventas si ocurrieron dentro del límite del periodo configurado
-                        if (m.tipo === 'venta' && new Date(m.fecha) <= fechas.fin) {
-                            udsVendidas += Math.abs(m.cantidad);
+                            invInicial -= m.cantidad;
                         }
                     });
 
+                    // Calculamos las ventas específicas de ESTE PERÍODO
                     ventasDeSemana.forEach(v => {
                         v.productos.forEach(p => {
                             if(p.productoId === item.productoId) {
+                                udsVendidas += p.unidades;
                                 ventasProductoRealQ += parseFloat(p.monto) || 0;
                                 ventasProductoIdealQ += p.unidades * item.precioUnitario;
                             }
@@ -2740,7 +2739,7 @@ function mostrarFormularioAbono(ventaId) {
 
                     granTotalInicial += invInicial;
                     granTotalVendidas += udsVendidas;
-                    granTotalRetorno += item.stock;
+                    granTotalRetorno += invRetorno;
                     granTotalVentasQ += ventasProductoRealQ;
                     granTotalDescuentosQ += descuentoConcedido;
 
@@ -2751,7 +2750,7 @@ function mostrarFormularioAbono(ventaId) {
                         loteVcto,
                         invInicial, 
                         udsVendidas, 
-                        item.stock,
+                        invRetorno,
                         formatoQ(ventasProductoRealQ),
                         formatoQ(descuentoConcedido)
                     ]);
@@ -3050,11 +3049,10 @@ function mostrarFormularioAbono(ventaId) {
                     return;
                 }
                 
-                // Se reutiliza la lógica de las fechas visuales para mostrar el historial con el mismo contexto
                 const strInicio = document.getElementById('fechaInicioFisico').value;
                 const strFin = document.getElementById('fechaFinFisico').value;
                 let fechaInicio = new Date();
-                fechaInicio.setDate(fechaInicio.getDate() - 7); // Default
+                fechaInicio.setDate(fechaInicio.getDate() - 7); 
                 let fechaFin = new Date();
                 
                 if(strInicio && strFin) {
@@ -3376,6 +3374,7 @@ function mostrarFormularioAbono(ventaId) {
                 XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
             });
 
+            // EL NUEVO BOTÓN DE RESUMEN SEMANAL EN MATRIZ LUN-VIE
             document.getElementById('resumenSemanalBtn').addEventListener('click', generarPDFResumenSemanalInventario);
 
             function generarPDFResumenSemanalInventario() {
@@ -3626,7 +3625,7 @@ function mostrarFormularioAbono(ventaId) {
 
             let finalY = doc.lastAutoTable.finalY + 10;
             doc.setFillColor(240, 247, 252);
-            doc.rect(14, finalY, 100, 25, 'F');
+            doc.rect(14,finalY, 100, 25, 'F');
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
             doc.text(`Total Ventas Contado: ${formatoQ(totalContado)}`, 18, finalY + 7);
@@ -4016,13 +4015,13 @@ function mostrarFormularioAbono(ventaId) {
                     saldoCreditoPendiente += (v.saldoPendiente || 0);
                 }
             });
-        const abonosPeriodo = abonos.filter(a => {
-         const venta = ventas.find(v => v.id === a.ventaId);
-        if (!venta) return false;
-         const fechaVenta = new Date(venta.fecha);
-        return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
-});
-        const totalAbonos = abonosPeriodo.reduce((acc, a ) => acc + (a.monto || 0), 0);
+            const abonosPeriodo = abonos.filter(a => {
+                const venta = ventas.find(v => v.id === a.ventaId);
+                if (!venta) return false;
+                const fechaVenta = new Date(venta.fecha);
+                return fechaVenta >= fechaInicio && fechaVenta <= fechaFin;
+            });
+            const totalAbonos = abonosPeriodo.reduce((acc, a) => acc + (a.monto || 0), 0);
                         
             const pagosCobroPeriodo = pagosCobro.filter(p => {
                 const fecha = new Date(p.fecha);
@@ -4630,6 +4629,7 @@ function mostrarFormularioAbono(ventaId) {
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
+        // Inicializar la pestaña principal al arrancar
         showTab('venta');
     })();
 </script>
