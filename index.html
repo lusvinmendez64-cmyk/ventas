@@ -453,7 +453,18 @@
             const saludo = obtenerSaludo();
             let numTel = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
             let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
-            const mensaje = `¡${saludo}! Esperamos que esté teniendo un excelente día.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le escribimos amigablemente para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
+            
+            // Contador dinámico de días
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const venc = new Date(venta.fechaVencimiento); venc.setHours(0,0,0,0);
+            const diasDiff = Math.ceil((venc - hoy) / (1000*60*60*24));
+            
+            let estadoDias = '';
+            if (diasDiff < 0) estadoDias = ` *(Factura con ${Math.abs(diasDiff)} días de atraso)*`;
+            else if (diasDiff === 0) estadoDias = ` *(Factura vence HOY)*`;
+            else estadoDias = ` *(Vence en ${diasDiff} días)*`;
+
+            const mensaje = `¡${saludo}! Esperamos que esté teniendo un excelente día.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le escribimos para compartirle el recordatorio de su factura pendiente con saldo de *${formatoQ(venta.saldoPendiente)}* a nombre de ${cliente.razonSocial}${estadoDias}.\n\nLe adjuntamos el detalle en PDF. Cualquier duda o consulta, estamos a sus enteras órdenes. ¡Muchas gracias por su confianza!`;
             
             window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
         }
@@ -944,9 +955,12 @@
                 let linkGPS = "Sin ubicación GPS";
                 if ("geolocation" in navigator) {
                     try {
-                        const position = await new Promise((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 2000 }); });
-                        linkGPS = `http://googleusercontent.com/maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
-                    } catch (error) { /* Silencioso, no interrumpe el guardado si falla el GPS */ }
+                       
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                    });
+                    linkGPS = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+                } catch (error) { /* Silencioso, no interrumpe el guardado si falla el GPS */ }
                 }
 
                 const filas = [];
@@ -1016,10 +1030,27 @@
                 
                 filas.forEach(p => {
                     const itemInv = inventario.find(i => i.productoId === p.productoId);
-                    if (itemInv) itemInv.stock -= p.unidades;
+                    if (itemInv) {
+                        itemInv.stock -= p.unidades;
+                        
+                        // PARCHE: Anotar la salida en la bitácora para que el Inventario Inicial cuadre exacto
+                        movimientosInventario.push({
+                            id: generarIdMovimiento(),
+                            fecha: new Date().toISOString(),
+                            productoId: p.productoId,
+                            productoNombre: p.producto,
+                            tipo: 'venta',
+                            cantidad: -Math.abs(p.unidades),
+                            motivo: 'Venta',
+                            stockResultante: itemInv.stock,
+                            usuario: nombreUsuario,
+                            documento: ventaEditandoId ? 'Edición Factura' : 'Nueva Factura'
+                        });
+                    }
                 });
-                saveData();
 
+                saveData();
+                ventaEditandoId = null;
                 alert('Venta guardada con éxito.');
                 
                 const correlativo = obtenerCorrelativoRecibo();
@@ -1140,6 +1171,7 @@
                     <button id="exportarVentasBtn" class="secondary">📥 Exportar Excel</button>
                     <button id="exportarVentasPdfBtn" class="secondary">📄 Exportar PDF</button>
                     <button id="enviarResumenMensualBtn" class="secondary">📲 WhatsApp Mensual</button>
+                    <button id="corregirGpsBtn" class="danger">🛠️ Corregir GPS Antiguos</button>
                 </div>
                 <div class="filtros-ventas">
                     <select id="filtroMes">
@@ -1424,6 +1456,33 @@
                 generarReporteDetalladoPDF('mes', fInicio, fFin);
             });
 
+            // --- INICIO DEL PARCHE TEMPORAL PARA CORREGIR GPS ---
+            document.getElementById('corregirGpsBtn')?.addEventListener('click', () => {
+                let corregidos = 0;
+                
+                ventas.forEach(v => {
+                    if (v.ubicacionGPS && (v.ubicacionGPS.includes('0{') || v.ubicacionGPS.includes('googleusercontent.com'))) {
+                        // Limpiamos el error viejo y ponemos el enlace oficial de Google Maps
+                        let linkLimpio = v.ubicacionGPS.replace('http://maps.google.com/maps?q=${', 'https://maps.google.com/?q=');
+                        linkLimpio = linkLimpio.replace('http://googleusercontent.com/maps.google.com/', 'https://maps.google.com/?q=');
+                        
+                        if (v.ubicacionGPS !== linkLimpio) {
+                            v.ubicacionGPS = linkLimpio;
+                            corregidos++;
+                        }
+                    }
+                });
+
+                if (corregidos > 0) {
+                    saveData(); 
+                    alert(`✅ ¡Listo! Se encontraron y corrigieron ${corregidos} registros. Los enlaces de esas ventas ya abren en Google Maps.`);
+                    aplicarFiltro(); 
+                } else {
+                    alert('No se encontraron registros con errores en el GPS.');
+                }
+            });
+            // --- FIN DEL PARCHE TEMPORAL ---
+
             document.getElementById('enviarResumenMensualBtn').addEventListener('click', () => {
                 const mes = parseInt(filtroMes.value);
                 const anio = parseInt(filtroAnio.value);
@@ -1518,9 +1577,16 @@
                 abonos.push(nuevoAbono);
 
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
-                if (venta.saldoPendiente < 0) venta.saldoPendiente = 0;
-                if (venta.saldoPendiente === 0 && !venta.fechaCancelacion) {
-                    venta.fechaCancelacion = new Date().toISOString();
+                if (venta.saldoPendiente <= 0) { 
+                    venta.saldoPendiente = 0; 
+                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
+                    
+                    // REGLA INTELIGENTE: Convertir a Contado si se liquida en la misma semana
+                    const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
+                    if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
+                        venta.tipoVenta = 'Contado';
+                        venta.diasCredito = 0;
+                    }
                 }
 
                 saveData();
@@ -1811,49 +1877,47 @@
             doc.save(`Historial_${cliente.razonSocial.substring(0,10)}.pdf`);
         }
 
-        // BLOQUEO INTELIGENTE DE CAMPOS AL EDITAR (Desbloquea solo si están vacíos o nulos)
         function mostrarModalEditarCliente(cliente) {
             const modal = document.getElementById('editarClienteModal');
             const content = document.getElementById('editarClienteContent');
             
-            const isCatLocked = !!cliente.categoria ? 'disabled' : '';
-            const isRutaLocked = !!cliente.ruta ? 'readonly' : '';
-            const isTelLocked = !!cliente.telefono ? 'readonly' : '';
-            const isDirLocked = !!cliente.direccion ? 'readonly' : '';
-
             content.innerHTML = `
-                <h3>Editar cliente (Protección activa)</h3>
-                <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Solo puedes llenar los campos que el cliente aún no tenga registrados. Para modificaciones mayores, contacta al administrador.</p>
-                <label>Código: <input type="text" id="editCodigo" value="${cliente.codigo || ''}" readonly></label>
-                <label>Razón Social <span class="req">*</span>: <input type="text" id="editRazon" value="${cliente.razonSocial}" readonly></label>
-                <label>NIT: <input type="text" id="editNit" value="${cliente.nit || 'C/F'}" readonly></label>
-                <label>Dirección <span class="req">*</span>: <input type="text" id="editDireccion" value="${cliente.direccion || ''}" ${isDirLocked}></label>
-                <label>Teléfono <span class="req">*</span>: <input type="tel" id="editTelefono" value="${cliente.telefono || ''}" ${isTelLocked}></label>
+                <h3>Editar cliente</h3>
+                <label>Código: <input type="text" id="editCodigo" value="${cliente.codigo || ''}"></label>
+                <label>Razón Social <span class="req">*</span>: <input type="text" id="editRazon" value="${cliente.razonSocial}"></label>
+                <label>NIT: <input type="text" id="editNit" value="${cliente.nit || 'C/F'}"></label>
+                <label>Dirección <span class="req">*</span>: <input type="text" id="editDireccion" value="${cliente.direccion || ''}"></label>
+                <label>Teléfono <span class="req">*</span>: <input type="tel" id="editTelefono" value="${cliente.telefono || ''}"></label>
                 <label>Correo: <input type="email" id="editCorreo" value="${cliente.correo || ''}"></label>
-                <label>Categoría <span class="req">*</span>: <select id="editCategoria" ${isCatLocked}><option value="">Seleccionar</option><option value="Clínica" ${cliente.categoria === 'Clínica' ? 'selected' : ''}>Clínica</option><option value="Farmacia" ${cliente.categoria === 'Farmacia' ? 'selected' : ''}>Farmacia</option><option value="Hospital" ${cliente.categoria === 'Hospital' ? 'selected' : ''}>Hospital</option><option value="Otro" ${cliente.categoria === 'Otro' ? 'selected' : ''}>Otro</option></select></label>
-                <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="editRuta" value="${cliente.ruta || ''}" ${isRutaLocked}></label>
+                <label>Categoría <span class="req">*</span>: <select id="editCategoria"><option value="">Seleccionar</option><option value="Clínica" ${cliente.categoria === 'Clínica' ? 'selected' : ''}>Clínica</option><option value="Farmacia" ${cliente.categoria === 'Farmacia' ? 'selected' : ''}>Farmacia</option><option value="Hospital" ${cliente.categoria === 'Hospital' ? 'selected' : ''}>Hospital</option><option value="Otro" ${cliente.categoria === 'Otro' ? 'selected' : ''}>Otro</option></select></label>
+                <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="editRuta" value="${cliente.ruta || ''}"></label>
                 <label>Límite de crédito (Q): <input type="number" id="editLimiteCredito" step="0.01" value="${cliente.limiteCredito !== null ? cliente.limiteCredito : ''}"></label>
                 <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarEdicionCliente" class="secondary">Guardar</button><button id="cancelarEdicionCliente" class="secondary small">Cancelar</button></div>
             `;
             modal.style.display = 'flex';
 
             document.getElementById('guardarEdicionCliente').addEventListener('click', () => {
+                const razon = document.getElementById('editRazon').value.trim();
                 const dir = document.getElementById('editDireccion').value.trim();
                 const tel = document.getElementById('editTelefono').value.trim();
                 const cat = document.getElementById('editCategoria').value;
                 const ruta = document.getElementById('editRuta').value.trim();
 
-                if (!dir || !tel || !cat || !ruta) {
+                if (!razon || !dir || !tel || !cat || !ruta) {
                     alert('Por favor completa todos los campos obligatorios (*).');
                     return;
                 }
 
+                cliente.codigo = document.getElementById('editCodigo').value.trim();
+                cliente.razonSocial = razon;
+                cliente.nit = document.getElementById('editNit').value.trim();
                 cliente.direccion = dir;
                 cliente.telefono = tel;
                 cliente.correo = document.getElementById('editCorreo').value.trim();
                 cliente.categoria = cat;
                 cliente.ruta = ruta;
                 cliente.limiteCredito = document.getElementById('editLimiteCredito').value ? parseFloat(document.getElementById('editLimiteCredito').value) : null;
+                
                 saveData();
                 modal.style.display = 'none';
                 renderCatalogo();
@@ -2012,7 +2076,17 @@
                 const nuevoAbono = { id: generarIdAbono(), ventaId, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
                 abonos.push(nuevoAbono);
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
-                if (venta.saldoPendiente <= 0) { venta.saldoPendiente = 0; venta.fechaCancelacion = new Date().toISOString(); }
+                if (venta.saldoPendiente <= 0) { 
+                    venta.saldoPendiente = 0; 
+                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
+                    
+                    // REGLA INTELIGENTE: Convertir a Contado si se liquida en la misma semana
+                    const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
+                    if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
+                        venta.tipoVenta = 'Contado';
+                        venta.diasCredito = 0;
+                    }
+                }
                 saveData();
                 alert('Abono registrado');
                 modal.style.display = 'none';
@@ -2627,10 +2701,26 @@
                 montoComisionSpan.innerText = formatoQ(base * porcentaje / 100);
             }
 
+            function calcularClaseVencimiento(fechaVencimiento) {
+                if (!fechaVencimiento) return '';
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0);
+                const venc = new Date(fechaVencimiento);
+                const diffDays = Math.ceil((venc - hoy) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays < 0) return 'vencimiento-rojo'; // Vencido
+                if (diffDays <= 90) return 'vencimiento-rojo'; // Menos de 3 meses
+                if (diffDays <= 180) return 'vencimiento-naranja'; // 3 a 6 meses
+                return 'vencimiento-verde'; // Sano
+            }
+
             function renderInventarioTabla() {
                 const inicio = paginaActual * itemsPorPagina;
                 const fin = inicio + itemsPorPagina;
-                const inventarioPagina = inventario.slice(inicio, fin);
+                
+                // Ordenar alfabéticamente para que sea fácil de encontrar
+                const inventarioOrdenado = [...inventario].sort((a,b) => a.nombre.localeCompare(b.nombre));
+                const inventarioPagina = inventarioOrdenado.slice(inicio, fin);
 
                 inventarioBody.innerHTML = '';
                 let totalValorVenta = 0;
@@ -2638,36 +2728,49 @@
                 valorInventarioSpan.innerText = formatoQ(totalValorVenta);
 
                 inventarioPagina.forEach(item => {
+                    const claseVenc = calcularClaseVencimiento(item.fechaVencimiento);
+                    const stockClass = item.stock < 5 ? 'stock-bajo' : ''; // Alerta roja si quedan menos de 5
+                    
                     const tr = document.createElement('tr');
+                    tr.className = claseVenc; // Semáforo de fila
                     tr.innerHTML = `
                         <td>${item.nombre}</td>
-                        <td>${item.stock}</td>
+                        <td class="${stockClass}">${item.stock}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
                         <td><input type="date" class="fecha-vencimiento" data-id="${item.productoId}" value="${item.fechaVencimiento || ''}" style="width:120px;"></td>
-                        <td>Vigente</td>
+                        <td>${claseVenc === 'vencimiento-rojo' ? '🔴 Vence pronto' : (claseVenc === 'vencimiento-naranja' ? '🟠 Precaución' : '🟢 Vigente')}</td>
                     `;
                     inventarioBody.appendChild(tr);
                 });
 
                 document.querySelectorAll('.fecha-vencimiento').forEach(input => {
-                    input.addEventListener('change', () => {
-                        const item = inventario.find(i => i.productoId === input.dataset.id);
-                        if (item && input.value) { item.fechaVencimiento = input.value; saveData(); }
+                    input.addEventListener('change', (e) => {
+                        const prodId = input.dataset.id;
+                        const newDate = input.value;
+                        const item = inventario.find(i => i.productoId === prodId);
+                        if (item && newDate) {
+                            item.fechaVencimiento = newDate;
+                            saveData();
+                            renderInventarioTabla();
+                        }
                     });
                 });
                 actualizarComision();
                 
-                const totalPaginas = Math.ceil(inventario.length / itemsPorPagina);
+                const totalPaginas = Math.ceil(inventarioOrdenado.length / itemsPorPagina);
                 if (totalPaginas > 1) {
                     paginacionDiv.innerHTML = `<button class="secondary small" id="paginaInventarioAnterior" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Ant</button><span> Pág ${paginaActual+1} de ${totalPaginas} </span><button class="secondary small" id="paginaInventarioSiguiente" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Sig ➔</button>`;
                     document.getElementById('paginaInventarioAnterior')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderInventarioTabla(); } });
                     document.getElementById('paginaInventarioSiguiente')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderInventarioTabla(); } });
+                } else {
+                    paginacionDiv.innerHTML = '';
                 }
             }
 
             function renderMovimientos() {
                 movimientosBody.innerHTML = '';
-                const ultimos = movimientosInventario.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 20);
+                // PARCHE: Filtrar estrictamente a los últimos 10 movimientos
+                const ultimos = movimientosInventario.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 10);
                 ultimos.forEach(m => {
                     const tr = document.createElement('tr');
                     const claseCant = m.cantidad > 0 ? 'movimiento-positivo' : (m.cantidad < 0 ? 'movimiento-negativo' : '');
@@ -2675,7 +2778,6 @@
                     movimientosBody.appendChild(tr);
                 });
             }
-
             function mostrarHistorialProducto(prodId) {
                 if (!prodId) { historialContainer.innerHTML = '<p>Seleccione un producto</p>'; return; }
                 const movs = movimientosInventario.filter(m => m.productoId === prodId).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
@@ -3675,7 +3777,7 @@
                         tr.innerHTML = `
                             <td>${new Date(c.fecha).toLocaleDateString()}</td><td>${c.numeroDocumento}</td><td>${cliente.razonSocial}</td>
                             <td>${formatoQ(c.montoTotal)}</td><td>${formatoQ(c.saldoPendiente)}</td>
-                            <td><button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button><button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button><button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button></td>
+                            <td><button class="secondary small verEstadoCobroBtn" data-id="${c.id}">📊 Estado</button><button class="secondary small agregarPagoCobroBtn" data-id="${c.id}">💰 Pago</button><button class="secondary small whatsappCobroFisicoBtn" data-id="${c.id}">📲</button><button class="danger small eliminarCobroBtn" data-id="${c.id}">🗑 Eliminar</button></td>
                         `;
                         tbody.appendChild(tr);
                     });
@@ -3688,6 +3790,22 @@
                     } else { paginacionCobros.innerHTML = ''; }
 
                     document.querySelectorAll('.verEstadoCobroBtn, .agregarPagoCobroBtn').forEach(btn => btn.addEventListener('click', () => mostrarEstadoCuentaCobro(btn.dataset.id)));
+                    document.querySelectorAll('.whatsappCobroFisicoBtn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const cobro = cobros.find(c => c.id === btn.dataset.id);
+                            if (!cobro) return;
+                            const cli = clientes.find(c => c.id === cobro.clienteId) || { razonSocial: 'Cliente', telefono: '' };
+                            const numTel = cli.telefono ? cli.telefono.replace(/\D/g, '') : '';
+                            const baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+                            
+                            const emision = new Date(cobro.fecha); emision.setHours(0,0,0,0);
+                            const hoy = new Date(); hoy.setHours(0,0,0,0);
+                            const diasTranscurridos = Math.ceil((hoy - emision) / (1000*60*60*24));
+                            
+                            const mensaje = `¡${obtenerSaludo()}!\n\nDe parte de *MARIJOSE JHIRE S.A.*, le escribimos para recordarle cordialmente el cobro físico registrado bajo el documento *${cobro.numeroDocumento}* emitido hace ${diasTranscurridos} día(s).\n\nActualmente presenta un saldo pendiente de *${formatoQ(cobro.saldoPendiente)}*. Agradecemos mucho su atención y preferencia.`;
+                            window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
+                        });
+                    });
                     document.querySelectorAll('.eliminarCobroBtn').forEach(btn => {
                         btn.addEventListener('click', () => {
                             if (confirm('¿Estás seguro de eliminar este cobro y todos sus pagos?')) {
