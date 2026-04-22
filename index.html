@@ -954,12 +954,12 @@
 
                 let linkGPS = "Sin ubicación GPS";
                 if ("geolocation" in navigator) {
-                    try {
-                       
+                   try {
                     const position = await new Promise((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
                     });
-                    linkGPS = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+                    // Genera el enlace oficial y universal de Google Maps
+                    linkGPS = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
                 } catch (error) { /* Silencioso, no interrumpe el guardado si falla el GPS */ }
                 }
 
@@ -1456,29 +1456,35 @@
                 generarReporteDetalladoPDF('mes', fInicio, fFin);
             });
 
-            // --- INICIO DEL PARCHE TEMPORAL PARA CORREGIR GPS ---
+           // --- INICIO DEL PARCHE TEMPORAL PARA CORREGIR GPS ---
             document.getElementById('corregirGpsBtn')?.addEventListener('click', () => {
                 let corregidos = 0;
                 
                 ventas.forEach(v => {
-                    if (v.ubicacionGPS && (v.ubicacionGPS.includes('0{') || v.ubicacionGPS.includes('googleusercontent.com'))) {
-                        // Limpiamos el error viejo y ponemos el enlace oficial de Google Maps
-                        let linkLimpio = v.ubicacionGPS.replace('http://maps.google.com/maps?q=${', 'https://maps.google.com/?q=');
-                        linkLimpio = linkLimpio.replace('http://googleusercontent.com/maps.google.com/', 'https://maps.google.com/?q=');
+                    // Si el enlace tiene la estructura vieja o no empieza con el formato oficial
+                    if (v.ubicacionGPS && (v.ubicacionGPS.includes('googleusercontent') || !v.ubicacionGPS.startsWith('https://www.google.com/maps'))) {
                         
-                        if (v.ubicacionGPS !== linkLimpio) {
-                            v.ubicacionGPS = linkLimpio;
-                            corregidos++;
+                        // Extraemos estrictamente los números de las coordenadas (latitud y longitud)
+                        const coordenadasMatch = v.ubicacionGPS.match(/-?\d+\.\d+,-?\d+\.\d+/);
+                        
+                        if (coordenadasMatch) {
+                            // Construimos el enlace oficial, limpio y sin caracteres extraños
+                            let linkLimpio = `https://www.google.com/maps?q=${coordenadasMatch[0]}`;
+                            
+                            if (v.ubicacionGPS !== linkLimpio) {
+                                v.ubicacionGPS = linkLimpio;
+                                corregidos++;
+                            }
                         }
                     }
                 });
 
                 if (corregidos > 0) {
                     saveData(); 
-                    alert(`✅ ¡Listo! Se encontraron y corrigieron ${corregidos} registros. Los enlaces de esas ventas ya abren en Google Maps.`);
+                    alert(`✅ ¡Sincronización perfecta! Se reconstruyeron ${corregidos} enlaces. Ahora todos abren directamente en Google Maps.`);
                     aplicarFiltro(); 
                 } else {
-                    alert('No se encontraron registros con errores en el GPS.');
+                    alert('No se encontraron registros con errores en el GPS o ya fueron corregidos.');
                 }
             });
             // --- FIN DEL PARCHE TEMPORAL ---
@@ -2214,6 +2220,7 @@
                     <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
                     <button id="resumenComisionesBtn" class="secondary">📊 Resumen comisiones</button>
                     <button id="abrirModalTrimestralBtn" class="secondary">📈 Reporte Trimestral</button>
+                    <button id="sincronizarInventarioBtn" class="danger">🔄 Sincronizar Historial</button>
                 </div>
 
                 <div class="reporte-fisico-container">
@@ -2647,6 +2654,42 @@
             });
 
             document.getElementById('resumenComisionesBtn').addEventListener('click', () => generarResumenComisiones());
+
+            // --- INICIO DEL PARCHE TEMPORAL: SINCRONIZADOR DE INVENTARIO ---
+            document.getElementById('sincronizarInventarioBtn')?.addEventListener('click', () => {
+                if (confirm('Esto reconstruirá el historial de ventas pasadas para que el Corte Semanal cuadre. ¿Deseas continuar?')) {
+                    // 1. Conservar los ajustes manuales (esos siempre estuvieron bien)
+                    const soloAjustes = movimientosInventario.filter(m => m.tipo !== 'venta');
+                    
+                    // 2. Reconstruir todos los movimientos de las ventas reales
+                    const movsReconstruidos = [];
+                    ventas.forEach(v => {
+                        if (v.estado === 'normal') {
+                            v.productos.forEach(p => {
+                                movsReconstruidos.push({
+                                    id: generarIdMovimiento() + Math.floor(Math.random() * 1000),
+                                    fecha: v.fecha,
+                                    productoId: p.productoId,
+                                    productoNombre: p.producto,
+                                    tipo: 'venta',
+                                    cantidad: -Math.abs(p.unidades),
+                                    motivo: 'Venta',
+                                    stockResultante: '—',
+                                    usuario: 'Sistema',
+                                    documento: v.id ? v.id.substr(0,8) : 'Factura'
+                                });
+                            });
+                        }
+                    });
+                    
+                    // 3. Unir ambos mundos
+                    movimientosInventario = [...soloAjustes, ...movsReconstruidos];
+                    saveData();
+                    alert(`✅ ¡Sincronización completa! Se reconstruyeron ${movsReconstruidos.length} movimientos de ventas pasadas. Tu Inventario Inicial ahora calculará correctamente.`);
+                    renderMovimientos();
+                }
+            });
+            // --- FIN DEL PARCHE TEMPORAL ---
 
             document.getElementById('abrirModalTrimestralBtn').addEventListener('click', () => {
                 document.getElementById('trimestralModal').style.display = 'flex';
