@@ -105,13 +105,28 @@
         .clientes-ejecutivos-table tr:nth-child(even) { background-color: #f5faff; }
         .reporte-fisico-container { background: #fdfaf0; border-radius: 24px; padding: 16px; margin-top: 20px; border: 1px solid #e1e8e3; }
         .req { color: red; font-weight: bold; }
+        /* Loader Global Anti-Doble Clic */
+        .global-loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(2px); }
+        .spinner { border: 6px solid #e1f5fe; border-top: 6px solid #25d366; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-text { margin-top: 15px; color: #075e54; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+<div id="globalLoader" class="global-loader">
+    <div class="spinner"></div>
+    <div class="loader-text">Procesando...</div>
+</div>
+
 <div class="app" id="app">
+<script>
+    // Controladores globales del Loader
+    window.showLoader = () => document.getElementById('globalLoader').style.display = 'flex';
+    window.hideLoader = () => document.getElementById('globalLoader').style.display = 'none';
+</script>
     <div class="header-main">
         <div class="logo">🏥</div>
         <div class="title-container">
@@ -932,7 +947,17 @@
                     }
                     if (borrador.productos && borrador.productos.length) {
                         productosBody.innerHTML = '';
-                        borrador.productos.forEach(p => agregarFilaProducto(p.unidades, p.productoId, p.precioUnitario, p.monto));
+                        let productosValidos = 0;
+                        borrador.productos.forEach(p => {
+                            // Validar que el producto del borrador aún exista en el catálogo real
+                            const existeEnCatalogo = catalogoProductos.some(cat => cat.id === p.productoId);
+                            if (existeEnCatalogo) {
+                                agregarFilaProducto(p.unidades, p.productoId, p.precioUnitario, p.monto);
+                                productosValidos++;
+                            }
+                        });
+                        // Si todos los productos del borrador fueron eliminados del catálogo
+                        if (productosValidos === 0) agregarFilaProducto();
                     } else { agregarFilaProducto(); }
                     
                     const radio = document.querySelector(`input[name="tipoVenta"][value="${borrador.tipoVenta || 'Crédito'}"]`);
@@ -945,10 +970,11 @@
             cargarBorrador();
 
             async function guardarVenta() {
+                showLoader(); // 🔒 BLOQUEO INICIADO
                 const datosForm = {
                     codigo: codigoCliente.value.trim() || null,
                     razonSocial: razonSocial.value.trim(),
-                    nit: nit.value.trim() || 'C/F', // C/F POR DEFECTO SI ESTÁ VACÍO
+                    nit: nit.value.trim() || 'C/F',
                     direccion: direccion.value.trim(),
                     telefono: telefono.value.trim(),
                     correo: correo.value.trim(),
@@ -958,7 +984,8 @@
                 };
 
                 if (!datosForm.razonSocial || !datosForm.direccion || !datosForm.telefono || !datosForm.categoria || !datosForm.ruta) {
-                    alert('⚠️ Por favor completa TODOS los campos obligatorios del cliente (Razón Social, Dirección, Teléfono, Categoría y Ruta).');
+                    alert('⚠️ Por favor completa TODOS los campos obligatorios del cliente.');
+                    hideLoader(); // 🔓 DESBLOQUEO
                     return;
                 }
 
@@ -970,11 +997,14 @@
                 if ("geolocation" in navigator) {
                    try {
                     const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000 });
                     });
-                    // Genera el enlace oficial y universal de Google Maps
-                    linkGPS = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
-                } catch (error) { /* Silencioso, no interrumpe el guardado si falla el GPS */ }
+                    // FIX: Variable literal de JS corregida ($ faltante)
+                    linkGPS = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+                } catch (error) { 
+                    // FIX Observación 4: Advertencia controlada sin detener el sistema
+                    console.warn("⚠️ GPS Denegado o sin señal. Se guardará sin ubicación. Detalle:", error.message); 
+                }
                 }
 
                 const filas = [];
@@ -992,9 +1022,16 @@
 
                     if (prodId && unidades > 0) {
                         const itemInv = inventario.find(i => i.productoId === prodId);
-                        if (itemInv && itemInv.stock < unidades) {
-                            stockSuficiente = false; erroresStock.push(`${prodNombre} (stock: ${itemInv.stock}, requerido: ${unidades})`);
+                        
+                        // FIX Observación 2: Validar si el producto fue borrado del inventario
+                        if (!itemInv) {
+                            stockSuficiente = false; 
+                            erroresStock.push(`${prodNombre} (⚠️ Error: No existe registro en inventario)`);
+                        } else if (itemInv.stock < unidades) {
+                            stockSuficiente = false; 
+                            erroresStock.push(`${prodNombre} (stock: ${itemInv.stock}, requerido: ${unidades})`);
                         }
+
                         if (itemInv && itemInv.fechaVencimiento) {
                             const hoy = new Date(); hoy.setHours(0,0,0,0);
                             const venc = new Date(itemInv.fechaVencimiento);
@@ -1002,12 +1039,12 @@
                         }
                         filas.push({ productoId: prodId, producto: prodNombre, unidades, precioUnitario: precio || '0', monto: monto || '0' });
                     } else if (prodNombre !== 'Otro' || unidades > 0 || precio || monto) {
-                        if (!prodId) { alert('Hay filas sin producto seleccionado.'); return; }
+                        if (!prodId) { alert('Hay filas sin producto seleccionado.'); hideLoader(); return; }
                     }
                 });
 
-                if (!stockSuficiente) { alert('Stock insuficiente o vencido:\n' + erroresStock.join('\n')); return; }
-                if (filas.length === 0) { alert('Debe agregar al menos un producto.'); return; }
+                if (!stockSuficiente) { alert('Stock insuficiente o vencido:\n' + erroresStock.join('\n')); hideLoader(); return; }
+                if (filas.length === 0) { alert('Debe agregar al menos un producto.'); hideLoader(); return; }
 
                 const total = Math.round((parseFloat(document.getElementById('totalVentaCalc').innerText.replace('Q','')) || 0) * 100) / 100;
                 let fechaSeleccionada = document.getElementById('fechaVenta').value || new Date().toISOString().slice(0,10);
@@ -1028,13 +1065,13 @@
                 } else {
                     Object.assign(clienteFinal, datosForm);
                 }
-                saveData();
 
                 let diasCredito = tipoVenta === 'Crédito' ? (parseInt(document.getElementById('diasCredito').value) || 30) : null;
                 if (tipoVenta === 'Crédito' && clienteFinal.limiteCredito !== null) {
                     const saldoActualCliente = ventas.filter(v => v.clienteId === clienteFinal.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     if (saldoActualCliente + total > clienteFinal.limiteCredito) {
                         alert(`El cliente superaría su límite de crédito de Q${clienteFinal.limiteCredito.toFixed(2)}. Saldo actual: Q${saldoActualCliente.toFixed(2)}.`);
+                        hideLoader(); // 🔓 DESBLOQUEO
                         return;
                     }
                 }
@@ -1046,8 +1083,6 @@
                     const itemInv = inventario.find(i => i.productoId === p.productoId);
                     if (itemInv) {
                         itemInv.stock -= p.unidades;
-                        
-                        // PARCHE: Anotar la salida en la bitácora para que el Inventario Inicial cuadre exacto
                         movimientosInventario.push({
                             id: generarIdMovimiento(),
                             fecha: new Date().toISOString(),
@@ -1058,20 +1093,19 @@
                             motivo: 'Venta',
                             stockResultante: itemInv.stock,
                             usuario: nombreUsuario,
-                            documento: ventaEditandoId ? 'Edición Factura' : 'Nueva Factura'
+                            documento: 'Nueva Factura'
                         });
                     }
                 });
 
                 saveData();
                 ventaEditandoId = null;
-                alert('Venta guardada con éxito.');
                 
                 const correlativo = obtenerCorrelativoRecibo();
                 generarComprobanteVenta(nuevaVenta, clienteFinal, correlativo);
 
                 if (tipoVenta === 'Contado') {
-                    if (confirm("¿Deseas enviar el comprobante por WhatsApp al cliente?")) {
+                    if (confirm("Venta Exitosa.\n¿Deseas enviar el comprobante por WhatsApp al cliente?")) {
                         const saludo = obtenerSaludo();
                         let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
                         let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
@@ -1080,10 +1114,13 @@
                         mensaje += `\n*Total Pagado: Q${parseFloat(nuevaVenta.total).toFixed(2)}*\n\nLe enviamos el PDF adjunto. ¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
                         window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
                     }
+                } else {
+                    alert('Venta guardada con éxito.');
                 }
 
                 limpiarFormularioCompleto();
                 mostrarTotalesDia();
+                hideLoader(); // 🔓 DESBLOQUEO FINAL EXITOSO
             }
 
             guardarBtn.addEventListener('click', guardarVenta);
@@ -1562,9 +1599,11 @@
             radioChequeFuturo.addEventListener('change', () => { fechaChequeContainer.style.display = 'block'; });
 
             document.getElementById('guardarAbonoBtn').addEventListener('click', () => {
+                showLoader();
                 const monto = parseFloat(document.getElementById('abonoMonto').value);
                 if (isNaN(monto) || monto <= 0 || monto > venta.saldoPendiente) {
                     alert('Monto no válido');
+                    hideLoader();
                     return;
                 }
                 const tipo = tipoPago.value;
@@ -1576,6 +1615,7 @@
                         fechaCobro = document.getElementById('fechaCheque').value;
                         if (!fechaCobro) {
                             alert('Debe ingresar fecha de cobro para cheque posfechado');
+                            hideLoader();
                             return;
                         }
                         estado = 'pendiente';
@@ -1585,15 +1625,7 @@
                     }
                 }
 
-                const nuevoAbono = {
-                    id: generarIdAbono(),
-                    ventaId: venta.id,
-                    fecha: new Date().toISOString(),
-                    monto,
-                    tipoPago: tipo,
-                    fechaCobro,
-                    estado
-                };
+                const nuevoAbono = { id: generarIdAbono(), ventaId: venta.id, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
                 abonos.push(nuevoAbono);
 
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
@@ -1601,7 +1633,6 @@
                     venta.saldoPendiente = 0; 
                     if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
                     
-                    // REGLA INTELIGENTE: Convertir a Contado si se liquida en la misma semana
                     const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
                     if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
                         venta.tipoVenta = 'Contado';
@@ -1610,13 +1641,14 @@
                 }
 
                 saveData();
-                alert('Abono registrado');
+                alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
                 
                 const activeTab = document.querySelector('.tab.active').dataset.tab;
                 if (activeTab === 'ventas') renderVentasHistorial();
                 if (activeTab === 'inventario') renderInventario();
                 if (activeTab === 'catalogo') renderCatalogo();
+                hideLoader();
             });
 
             document.getElementById('cancelarAbonoBtn').addEventListener('click', () => { modal.style.display = 'none'; });
@@ -2072,21 +2104,22 @@
             radioFuturo.addEventListener('change', () => { fechaChequeContainer.style.display = 'block'; });
 
             document.getElementById('guardarAbonoModalBtn').addEventListener('click', () => {
+                showLoader();
                 const ventaId = document.getElementById('abonoVentaId').value;
                 const monto = parseFloat(document.getElementById('abonoMonto').value);
                 const tipo = tipoPago.value;
-                if (!ventaId || isNaN(monto) || monto <= 0) { alert('Seleccione una factura y monto válido'); return; }
+                if (!ventaId || isNaN(monto) || monto <= 0) { alert('Seleccione una factura y monto válido'); hideLoader(); return; }
                 
                 const venta = ventas.find(v => v.id === ventaId);
-                if (!venta) return;
-                if (monto > venta.saldoPendiente) { alert('El monto no puede ser mayor al saldo pendiente'); return; }
+                if (!venta) { hideLoader(); return; }
+                if (monto > venta.saldoPendiente) { alert('El monto no puede ser mayor al saldo pendiente'); hideLoader(); return; }
 
                 let fechaCobro = null;
                 let estado = 'cobrado';
                 if (tipo === 'cheque') {
                     if (radioFuturo.checked) {
                         fechaCobro = document.getElementById('fechaChequeModal').value;
-                        if (!fechaCobro) { alert('Debe ingresar fecha de cobro'); return; }
+                        if (!fechaCobro) { alert('Debe ingresar fecha de cobro'); hideLoader(); return; }
                         estado = 'pendiente';
                     } else {
                         fechaCobro = new Date().toISOString().slice(0,10);
@@ -2100,7 +2133,6 @@
                     venta.saldoPendiente = 0; 
                     if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
                     
-                    // REGLA INTELIGENTE: Convertir a Contado si se liquida en la misma semana
                     const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
                     if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
                         venta.tipoVenta = 'Contado';
@@ -2108,9 +2140,10 @@
                     }
                 }
                 saveData();
-                alert('Abono registrado');
+                alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
                 renderCatalogo();
+                hideLoader();
             });
 
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
@@ -2669,41 +2702,48 @@
 
             document.getElementById('resumenComisionesBtn').addEventListener('click', () => generarResumenComisiones());
 
-            // --- INICIO DEL PARCHE TEMPORAL: SINCRONIZADOR DE INVENTARIO ---
+            // --- NUEVO BLINDAJE: SINCRONIZADOR DE INVENTARIO ---
             document.getElementById('sincronizarInventarioBtn')?.addEventListener('click', () => {
-                if (confirm('Esto reconstruirá el historial de ventas pasadas para que el Corte Semanal cuadre. ¿Deseas continuar?')) {
-                    // 1. Conservar los ajustes manuales (esos siempre estuvieron bien)
-                    const soloAjustes = movimientosInventario.filter(m => m.tipo !== 'venta');
+                if (confirm('Esto reconstruirá el historial de ventas pasadas de forma segura para cuadrar tu Inventario Móvil. ¿Deseas continuar?')) {
+                    showLoader();
                     
-                    // 2. Reconstruir todos los movimientos de las ventas reales
-                    const movsReconstruidos = [];
-                    ventas.forEach(v => {
-                        if (v.estado === 'normal') {
-                            v.productos.forEach(p => {
-                                movsReconstruidos.push({
-                                    id: generarIdMovimiento() + Math.floor(Math.random() * 1000),
-                                    fecha: v.fecha,
-                                    productoId: p.productoId,
-                                    productoNombre: p.producto,
-                                    tipo: 'venta',
-                                    cantidad: -Math.abs(p.unidades),
-                                    motivo: 'Venta',
-                                    stockResultante: '—',
-                                    usuario: 'Sistema',
-                                    documento: v.id ? v.id.substr(0,8) : 'Factura'
+                    // Damos 100ms para que el DOM renderice el Loader antes de bloquear el hilo con cálculos pesados
+                    setTimeout(() => {
+                        // 1. EXTRAER SÓLO LOS AJUSTES MANUALES (Ignoramos y eliminamos todas las ventas previas de la bitácora)
+                        const soloAjustes = movimientosInventario.filter(m => m.tipo !== 'venta');
+                        
+                        // 2. RECONSTRUIR ÚNICAMENTE DESDE LA FUENTE DE LA VERDAD (Arreglo de Ventas)
+                        const movsReconstruidos = [];
+                        ventas.forEach(v => {
+                            if (v.estado === 'normal') {
+                                v.productos.forEach(p => {
+                                    movsReconstruidos.push({
+                                        id: generarIdMovimiento() + Math.floor(Math.random() * 1000),
+                                        fecha: v.fecha,
+                                        productoId: p.productoId,
+                                        productoNombre: p.producto,
+                                        tipo: 'venta',
+                                        cantidad: -Math.abs(p.unidades),
+                                        motivo: 'Venta Sincronizada',
+                                        stockResultante: '—', // Cálculo en masa no requiere stock en tiempo real aquí
+                                        usuario: 'Sistema',
+                                        documento: v.id ? v.id.substr(0,8) : 'Factura'
+                                    });
                                 });
-                            });
-                        }
-                    });
-                    
-                    // 3. Unir ambos mundos
-                    movimientosInventario = [...soloAjustes, ...movsReconstruidos];
-                    saveData();
-                    alert(`✅ ¡Sincronización completa! Se reconstruyeron ${movsReconstruidos.length} movimientos de ventas pasadas. Tu Inventario Inicial ahora calculará correctamente.`);
-                    renderMovimientos();
+                            }
+                        });
+                        
+                        // 3. UNIFICAR: Ajustes Reales + Ventas Reales (Cero duplicados)
+                        movimientosInventario = [...soloAjustes, ...movsReconstruidos];
+                        saveData();
+                        
+                        renderMovimientos();
+                        hideLoader();
+                        alert(`✅ ¡Sincronización completa y blindada! Se reconstruyeron ${movsReconstruidos.length} movimientos exactos.`);
+                    }, 100);
                 }
             });
-            // --- FIN DEL PARCHE TEMPORAL ---
+            // --- FIN NUEVO BLINDAJE ---
 
             document.getElementById('abrirModalTrimestralBtn').addEventListener('click', () => {
                 document.getElementById('trimestralModal').style.display = 'flex';
