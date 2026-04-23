@@ -86,7 +86,7 @@
             .prod-precio, .prod-monto { width: 65px !important; padding: 6px 2px !important; }
             .stock-display { font-size: 0.7rem !important; }
         }
-        }
+        
         #greeting { background: #e8f5e9; padding: 10px 20px; text-align: right; font-size: 0.95rem; color: #075e54; border-bottom: 1px solid #c8e6c9; font-weight: 500; }
         .calificacion-star { color: #ffc107; font-size: 1rem; }
         .calificacion-lista { margin-top: 8px; font-size: 0.85rem; background: #f8f9fa; border-radius: 20px; padding: 12px; }
@@ -136,6 +136,7 @@
     </div>
     <div id="greeting"></div>
     <div class="tabs">
+        <div class="tab" data-tab="dashboard">📈 Dashboard</div>
         <div class="tab active" data-tab="venta">🧾 Registrar venta</div>
         <div class="tab" data-tab="ventas">📅 Ventas</div>
         <div class="tab" data-tab="catalogo">📇 Clientes</div>
@@ -272,7 +273,45 @@
             return correlativo;
         }
         const formatoQ = (val) => 'Q' + redondearDinero(val).toFixed(2);
+         function normalizarRuta(rutaIngresada, automatico = false) {
+            if (!rutaIngresada) return rutaIngresada;
+            const r = rutaIngresada.toLowerCase().trim();
+            const diccionario = {
+                'Quetzaltenango': ['xela', 'quetgo', 'qtz', 'quetzaltenango'],
+                'Guatemala': ['guate', 'capital', 'ciudad', 'ciudad de guatemala', 'guatemala'],
+                'Huehuetenango': ['huehue', 'huehuetenango'],
+                'Suchitepéquez': ['mazate', 'mazatenango', 'suchi', 'suchitepequez', 'suchitepéquez'],
+                'Retalhuleu': ['reu', 'retalhuleu'],
+                'Alta Verapaz': ['coban', 'cobán', 'alta verapaz'],
+                'Baja Verapaz': ['salama', 'salamá', 'baja verapaz'],
+                'Chimaltenango': ['chimal', 'chimaltenango'],
+                'Sacatepéquez': ['antigua', 'sacatepequez', 'sacatepéquez'],
+                'Escuintla': ['puerto san jose', 'palin', 'escuintla'],
+                'San Marcos': ['san marcos'],
+                'Totonicapán': ['toto', 'totonicapan', 'totonicapán'],
+                'Sololá': ['solola', 'sololá', 'pana', 'panajachel'],
+                'Petén': ['peten', 'petén', 'flores'],
+                'Izabal': ['puerto barrios', 'morales', 'rio dulce', 'izabal'],
+                'Zacapa': ['zacapa'],
+                'Chiquimula': ['chiquimula'],
+                'Jalapa': ['jalapa'],
+                'Jutiapa': ['jutiapa'],
+                'Santa Rosa': ['santa rosa', 'cuilapa'],
+                'El Progreso': ['progreso', 'guastatoya', 'el progreso']
+            };
 
+            for (const [departamento, sinonimos] of Object.entries(diccionario)) {
+                if (sinonimos.some(s => r.includes(s)) && !r.includes(departamento.toLowerCase())) {
+                    if (automatico || confirm(`🗺️ El sistema detectó la zona "${rutaIngresada}".\n¿Deseas estandarizar la ruta a "${departamento}" para ordenar correctamente tu Mapa de Calor Gerencial?`)) {
+                        return departamento;
+                    }
+                    return rutaIngresada;
+                }
+            }
+            return rutaIngresada;
+        }
+            
+        
         const productosPredefinidos = [
             { nombre: 'AZIREN 500', precio: 18.00 }, { nombre: 'CLARIRON IV', precio: 78.00 }, { nombre: 'CLARIRON TABLETAS', precio: 66.00 }, { nombre: 'CORTICINATE 500', precio: 25.00 },
             { nombre: 'ESOMEREN', precio: 149.00 }, { nombre: 'ITRACOREN', precio: 49.00 }, { nombre: 'MEROPE', precio: 54.00 }, { nombre: 'OMEZIL CAPSULAS', precio: 35.00 },
@@ -286,6 +325,10 @@
                 if (c.encargado === undefined) { c.encargado = ''; migrado = true; }
                 if (c.categoria === undefined) { c.categoria = ''; migrado = true; }
                 if (c.ruta === undefined) { c.ruta = ''; migrado = true; }
+                else if (c.ruta.trim() !== '') {
+                    const rutaLimpia = normalizarRuta(c.ruta, true); // true = modo automático (sin confirm)
+                    if (c.ruta !== rutaLimpia) { c.ruta = rutaLimpia; migrado = true; }
+                }
                 if (c.limiteCredito === undefined) { c.limiteCredito = null; migrado = true; }
             });
             ventas.forEach(v => {
@@ -503,7 +546,8 @@
         function showTab(tabId) {
             tabs.forEach(t => t.classList.remove('active'));
             document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
-            if (tabId === 'venta') renderVenta();
+            if (tabId === 'dashboard') renderDashboard();
+            else if (tabId === 'venta') renderVenta();
             else if (tabId === 'ventas') renderVentasHistorial();
             else if (tabId === 'catalogo') renderCatalogo();
             else if (tabId === 'productos') renderProductos();
@@ -979,7 +1023,7 @@
                     telefono: telefono.value.trim(),
                     correo: correo.value.trim(),
                     categoria: categoria.value,
-                    ruta: ruta.value.trim(),
+                    ruta: normalizarRuta(ruta.value.trim()),
                     limiteCredito: limiteCredito.value ? parseFloat(limiteCredito.value) : null
                 };
 
@@ -1439,18 +1483,20 @@
             }
 
             function actualizarResumen() {
-                let total = 0, contado = 0, credito = 0;
-                ventasFiltradas.forEach(v => {
-                    if (v.estado === 'anulada') return;
-                    const t = parseFloat(v.total) || 0;
-                    total += t;
-                    if (v.tipoVenta === 'Contado') contado += t;
-                    else credito += t;
-                });
-                totalPeriodo.innerText = formatoQ(total);
-                totalContadoPeriodo.innerText = formatoQ(contado);
-                totalCreditoPeriodo.innerText = formatoQ(credito);
-            }
+    let contado = 0, creditoLiquido = 0;
+    ventasFiltradas.forEach(v => {
+        if (v.estado === 'anulada') return;
+        const t = parseFloat(v.total) || 0;
+        if (v.tipoVenta === 'Contado') {
+            contado += t;
+        } else if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) {
+            creditoLiquido += t; // Solo suma cobros recuperados al 100%
+        }
+    });
+    totalPeriodo.innerText = formatoQ(contado + creditoLiquido);
+    totalContadoPeriodo.innerText = formatoQ(contado);
+    totalCreditoPeriodo.innerText = formatoQ(creditoLiquido);
+}
 
             const hoy = new Date();
             filtroMes.value = hoy.getMonth();
@@ -1646,14 +1692,14 @@
                 
                 const activeTab = document.querySelector('.tab.active').dataset.tab;
                 if (activeTab === 'ventas') renderVentasHistorial();
-                if (activeTab === 'inventario') renderInventario();
-                if (activeTab === 'catalogo') renderCatalogo();
-                hideLoader();
-            });
+                if (activeTab === 'inventario') renderInventario();
+                if (activeTab === 'catalogo') renderCatalogo();
+                hideLoader();
+            });
 
-            document.getElementById('cancelarAbonoBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        }
+            document.getElementById('cancelarAbonoBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
 
         // ========== PESTAÑA CATÁLOGO ==========
         function renderCatalogo() {
@@ -1677,8 +1723,7 @@
                                 <th style="width: 15%">Dirección</th>
                                 <th style="width: 12%">Teléfono</th>
                                 <th style="width: 12%">Estado Venta</th>
-                                <th style="width: 13%">Comportamiento</th>
-                                <th style="width: 10%">Acciones</th>
+                                <th style="width: 23%">Comportamiento y Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="clientesTablaBody"></tbody>
@@ -1697,24 +1742,39 @@
             let paginaActual = 0;
             const itemsPorPagina = 10;
             let clientesFiltrados = [];
+function evaluarComportamientoCliente(clienteId) {
+    const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal');
+    const creditos = ventasCliente.filter(v => v.tipoVenta === 'Crédito');
+    
+    if (creditos.length === 0) return { estrellas: 5, texto: '100% Contado', clase: 'comportamiento-contado', colorPDF: [46, 125, 50] };
 
-            function obtenerComportamiento(clienteId) {
-                const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal');
-                const tieneCreditoPendiente = ventasCliente.some(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0);
-                if (!tieneCreditoPendiente) return { texto: 'Contado', clase: 'comportamiento-contado' };
-                
-                const hoy = new Date();
-                let maxDiasMora = 0;
-                ventasCliente.forEach(v => {
-                    if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0 && v.fechaVencimiento) {
-                        const venc = new Date(v.fechaVencimiento);
-                        const diasMora = Math.ceil((hoy - venc) / (1000*60*60*24));
-                        if (diasMora > maxDiasMora) maxDiasMora = diasMora;
-                    }
-                });
-                if (maxDiasMora > 0) return { texto: 'Con mora', clase: 'comportamiento-con-mora' };
-                return { texto: 'Al día', clase: 'comportamiento-al-dia' };
-            }
+    let maxDiasAtraso = 0;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+    creditos.forEach(v => {
+        const emision = new Date(v.fecha); emision.setHours(0,0,0,0);
+        if (v.saldoPendiente === 0 && v.fechaCancelacion) {
+            const cancelacion = new Date(v.fechaCancelacion); cancelacion.setHours(0,0,0,0);
+            const diasTardados = Math.ceil((cancelacion - emision) / (1000*60*60*24));
+            if (diasTardados > maxDiasAtraso) maxDiasAtraso = diasTardados;
+        } else if (v.saldoPendiente > 0) {
+            const diasTranscurridos = Math.ceil((hoy - emision) / (1000*60*60*24));
+            if (diasTranscurridos > maxDiasAtraso) maxDiasAtraso = diasTranscurridos;
+        }
+    });
+
+    if (maxDiasAtraso <= 49) {
+        return { estrellas: 5.0, texto: `Al día (${maxDiasAtraso}d)`, clase: 'comportamiento-al-dia', colorPDF: [46, 125, 50] };
+    } else if (maxDiasAtraso <= 60) {
+        let calc = 5.0 - ((maxDiasAtraso - 49) * 0.18);
+        return { estrellas: calc, texto: `Precaución (${maxDiasAtraso}d)`, clase: 'vencimiento-naranja', colorPDF: [239, 108, 0] };
+    } else {
+        let calc = Math.max(1.0, 3.0 - ((maxDiasAtraso - 60) * 0.06));
+        return { estrellas: calc, texto: `Mora Crítica (${maxDiasAtraso}d)`, clase: 'comportamiento-con-mora', colorPDF: [198, 40, 40] };
+    }
+}
+            
+            
 
             function filtrarClientes() {
                 const termino = buscarInput.value.toLowerCase().trim();
@@ -1741,9 +1801,10 @@
 
                 tbody.innerHTML = '';
                 clientesPagina.forEach(cli => {
-                    const comportamiento = obtenerComportamiento(cli.id);
-                    const promedio = obtenerPromedioCalificaciones(cli.id);
-                    const estrellas = promedio ? `<br><span style="font-size:0.75rem; color:#ffc107;">⭐ ${promedio.contado.toFixed(1)}</span>` : '<br><span style="font-size:0.7rem; color:#888;">Sin calif.</span>';
+                    const analisis = evaluarComportamientoCliente(cli.id);
+let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
+const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
+const comportamiento = { clase: analisis.clase, texto: analisis.texto };
 
                     const saldoTotalCliente = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     const estadoVenta = saldoTotalCliente > 0 
@@ -1758,13 +1819,16 @@
                         <td>${cli.direccion || '—'}</td>
                         <td>${cli.telefono || '—'}</td>
                         <td>${estadoVenta}</td>
-                        <td><span class="${comportamiento.clase}">${comportamiento.texto}</span></td>
-                        <td>
-                            <button class="secondary small historialClienteBtn" data-id="${cli.id}" title="Historial de Compras" style="margin-bottom:2px; min-width:35px;">📜</button>
-                            <button class="secondary small calificarClienteBtn" data-id="${cli.id}" title="Calificar" style="margin-bottom:2px; min-width:35px;">⭐</button>
-                            <button class="secondary small editarClienteBtn" data-id="${cli.id}" title="Editar" style="margin-bottom:2px; min-width:35px;">✏️</button> 
-                            <button class="secondary small estadoCuentaBtn" data-id="${cli.id}" title="Estado de Cuenta" style="margin-bottom:2px; min-width:35px;">📊</button> 
-                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin-bottom:2px; min-width:35px;">🗑</button>
+                        <td style="display: flex; gap: 8px; align-items: center; border: none; flex-wrap: wrap;">
+                            <span class="${comportamiento.clase}" style="min-width: 80px; text-align:center;">${comportamiento.texto}</span>
+                            <select class="accionClienteSelect secondary small" data-id="${cli.id}" style="width: 110px; padding: 4px; margin:0; border-radius: 12px; font-size: 0.8rem;">
+                                <option value="">Acciones...</option>
+                                <option value="historial">📜 Historial</option>
+                                <option value="editar">✏️ Editar</option>
+                                <option value="estado">📊 Estado Cta.</option>
+                                <option value="gps">📍 Abrir GPS</option>
+                            </select>
+                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -1782,16 +1846,26 @@
                 document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
                 document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
 
-                document.querySelectorAll('.historialClienteBtn').forEach(btn => btn.addEventListener('click', () => generarHistorialClientePDF(btn.dataset.id)));
-                
-                document.querySelectorAll('.calificarClienteBtn').forEach(btn => btn.addEventListener('click', () => mostrarModalCalificacion(btn.dataset.id)));
-                
-                document.querySelectorAll('.editarClienteBtn').forEach(btn => btn.addEventListener('click', () => {
-                    const cli = clientes.find(c => c.id === btn.dataset.id);
-                    if (cli) mostrarModalEditarCliente(cli);
-                }));
-
-                document.querySelectorAll('.estadoCuentaBtn').forEach(btn => btn.addEventListener('click', () => mostrarEstadoCuenta(btn.dataset.id)));
+                document.querySelectorAll('.accionClienteSelect').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const accion = e.target.value;
+                        const id = e.target.dataset.id;
+                        e.target.value = ''; // Resetea el selector a "Acciones..."
+                        if (accion === 'historial') generarHistorialClientePDF(id);
+                       
+                        if (accion === 'editar') {
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli) mostrarModalEditarCliente(cli);
+                        }
+                        if (accion === 'estado') mostrarEstadoCuenta(id);
+                        if (accion === 'gps') {
+                            const ventasCli = ventas.filter(v => v.clienteId === id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                            const link = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : null;
+                            if (link && link !== 'Sin ubicación GPS' && link !== 'Sin ubicación') window.open(link, '_blank');
+                            else alert('No hay coordenadas GPS registradas en las ventas de este cliente.');
+                        }
+                    });
+                });
 
                 document.querySelectorAll('.eliminarClienteBtn').forEach(btn => btn.addEventListener('click', () => {
                     const cli = clientes.find(c => c.id === btn.dataset.id);
@@ -1844,18 +1918,23 @@
 
                 const tableColumn = ['Cliente', 'NIT', 'Dirección', 'Teléfono', 'Ruta', 'Estado', 'Ubicación GPS'];
                 
-                const tableRows = clientesFiltrados.map(c => {
-                    const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-                    
-                    const ventasCli = ventas.filter(v => v.clienteId === c.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                    const gpsLink = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : 'Sin ubicación';
+                const tableRows = [];
+const colorFilas = [];
 
-                    return [
-                        c.razonSocial, c.nit || 'C/F', c.direccion || '—', c.telefono || '—', c.ruta || '—',
-                        saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
-                        gpsLink
-                    ];
-                });
+clientesFiltrados.forEach(c => {
+    const saldo = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+    const ventasCli = ventas.filter(v => v.clienteId === c.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    const gpsLink = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : 'Sin ubicación';
+    
+    const analisis = evaluarComportamientoCliente(c.id);
+    colorFilas.push(analisis.colorPDF);
+
+   tableRows.push([
+            `${c.razonSocial} (Calf: ${parseFloat(analisis.estrellas).toFixed(1)})`, c.nit || 'C/F', c.direccion || '—', c.telefono || '—', c.ruta || '—',
+            saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
+            gpsLink
+        ]);
+});
                 
                 doc.autoTable({
                     startY: 25, 
@@ -1865,11 +1944,19 @@
                     headStyles: { fillColor: [7, 94, 84], textColor: 255 }, 
                     styles: { fontSize: 8 },
                     columnStyles: { 6: { textColor: [0, 0, 255], fontStyle: 'italic' } }, 
+                    didParseCell: function(data) {
+                        // Inyecta el color del semáforo en la columna 5 (Estado)
+                        if (data.section === 'body' && data.column.index === 5) {
+                            data.cell.styles.textColor = colorFilas[data.row.index];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    },
                     didDrawCell: function(data) {
+                        // Mantiene tu lógica original para los enlaces GPS
                         if (data.section === 'body' && data.column.index === 6 && data.cell.raw !== 'Sin ubicación' && data.cell.raw !== 'Sin ubicación GPS') {
                             doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw });
                         }
-                    }
+                    },
                 });
                 doc.save(`Directorio_${new Date().toISOString().slice(0,10)}.pdf`);
             });
@@ -1953,7 +2040,7 @@
                 const dir = document.getElementById('editDireccion').value.trim();
                 const tel = document.getElementById('editTelefono').value.trim();
                 const cat = document.getElementById('editCategoria').value;
-                const ruta = document.getElementById('editRuta').value.trim();
+                const ruta = normalizarRuta(document.getElementById('editRuta').value.trim());
 
                 if (!razon || !dir || !tel || !cat || !ruta) {
                     alert('Por favor completa todos los campos obligatorios (*).');
@@ -2086,7 +2173,10 @@
                 <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
                 <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label>
                 <div id="chequeOpcionesModal" style="display:none; margin-top:10px;"><div class="flex-row"><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="hoy" checked> Cheque del día</label><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="futuro"> Cheque posfechado</label></div><div id="fechaChequeModalContainer" style="display:none;"><label>Fecha de cobro: <input type="date" id="fechaChequeModal"></label></div></div>
-                <div style="margin-top:10px; display:flex; gap:10px;"><button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button></div></div>`;
+                <div style="margin-top:10px; display:flex; gap:10px;">
+                    <button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button>
+                    <button id="cerrarEstadoCuentaBtn" class="secondary small">Cerrar / Cancelar</button>
+                </div></div>`;
 
             const modal = document.getElementById('estadoCuentaModal');
             const modalContent = document.getElementById('estadoCuentaContent');
@@ -2140,14 +2230,15 @@
                     }
                 }
                 saveData();
-                alert('Abono registrado exitosamente.');
-                modal.style.display = 'none';
-                renderCatalogo();
-                hideLoader();
-            });
+                alert('Abono registrado exitosamente.');
+                modal.style.display = 'none';
+                renderCatalogo();
+                hideLoader();
+            });
 
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        }
+            document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
 
 
         // ========== PESTAÑA PRODUCTOS ==========
@@ -2177,7 +2268,7 @@
                     tr.innerHTML = `
                         <td><input type="text" class="prod-nombre" value="${p.nombre}" style="width:100%;"></td>
                         <td><input type="text" class="prod-lote" value="${invItem.lote || ''}" placeholder="Ej: L-001" style="width:80px;"></td>
-                        <td style="font-size:0.85rem; color:#075e54;"><b>${invItem.fechaVencimiento ? new Date(invItem.fechaVencimiento).toLocaleDateString() : 'N/A'}</b></td>
+                       <td><input type="date" class="prod-vencimiento" value="${invItem.fechaVencimiento || ''}" style="width:120px;"></td>
                         <td><input type="number" class="prod-precio" value="${p.precioSugerido.toFixed(2)}" step="0.01" min="0" style="width:90px;"></td>
                         <td><label class="checkbox-label"><input type="checkbox" class="prod-activo" ${p.activo !== false ? 'checked' : ''} style="width:20px;"> Activo</label></td>
                         <td><button class="secondary small guardarBtn" data-id="${p.id}">💾 Guardar</button></td>
@@ -2193,17 +2284,20 @@
                         const precio = parseFloat(tr.querySelector('.prod-precio').value);
                         const activo = tr.querySelector('.prod-activo').checked;
                         const lote = tr.querySelector('.prod-lote').value.trim();
-                        
+                        const vencimiento = tr.querySelector('.prod-vencimiento').value;
+
                         const prod = catalogoProductos.find(p => p.id === id);
-                        if (prod && nombre) {
-                            prod.nombre = nombre;
-                            prod.precioSugerido = precio;
-                            prod.activo = activo;
-                            const inv = inventario.find(i => i.productoId === id);
-                            if (inv) {
-                                inv.nombre = nombre;
-                                inv.precioUnitario = precio;
-                                inv.lote = lote; 
+if (prod && nombre) {
+    prod.nombre = nombre;
+    prod.precioSugerido = precio;
+    prod.activo = activo;
+    const inv = inventario.find(i => i.productoId === id);
+    if (inv) {
+        inv.nombre = nombre;
+        inv.precioUnitario = precio;
+        inv.lote = lote; 
+        inv.fechaVencimiento = vencimiento;
+    
                             }
                             saveData();
                             alert('Producto actualizado.');
@@ -2834,24 +2928,14 @@
                         <td>${item.nombre}</td>
                         <td class="${stockClass}">${item.stock}</td>
                         <td>${formatoQ(item.precioUnitario)}</td>
-                        <td><input type="date" class="fecha-vencimiento" data-id="${item.productoId}" value="${item.fechaVencimiento || ''}" style="width:120px;"></td>
+                        <td style="font-size:0.85rem; color:#075e54; text-align:center;"><b>${item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString() : 'N/A'}</b></td>
                         <td>${claseVenc === 'vencimiento-rojo' ? '🔴 Vence pronto' : (claseVenc === 'vencimiento-naranja' ? '🟠 Precaución' : '🟢 Vigente')}</td>
                     `;
                     inventarioBody.appendChild(tr);
                 });
 
-                document.querySelectorAll('.fecha-vencimiento').forEach(input => {
-                    input.addEventListener('change', (e) => {
-                        const prodId = input.dataset.id;
-                        const newDate = input.value;
-                        const item = inventario.find(i => i.productoId === prodId);
-                        if (item && newDate) {
-                            item.fechaVencimiento = newDate;
-                            saveData();
-                            renderInventarioTabla();
-                        }
-                    });
-                });
+                
+                
                 actualizarComision();
                 
                 const totalPaginas = Math.ceil(inventarioOrdenado.length / itemsPorPagina);
@@ -3973,11 +4057,266 @@
             });
 
             document.getElementById('cancelarPagoCobroBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+    
+    // --- AGREGA ESTO AQUÍ ---
+    document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+    
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+} // <-- Fin de la función mostrarEstadoCuenta
+
+      // ========== PESTAÑA DASHBOARD (Business Intelligence) ==========
+        function renderDashboard() {
+            let ventasMesContado = 0;
+            let cobrosRecuperadosMes = 0;
+            
+            const hoy = new Date();
+            const mesActual = hoy.getMonth();
+            const anioActual = hoy.getFullYear();
+
+            ventas.forEach(v => {
+                if(v.estado === 'anulada') return;
+                const f = new Date(v.fecha);
+                if(f.getMonth() === mesActual && f.getFullYear() === anioActual && v.tipoVenta === 'Contado') {
+                    ventasMesContado += (parseFloat(v.total) || 0);
+                }
+            });
+
+            abonos.forEach(a => {
+                const f = new Date(a.fecha);
+                if(f.getMonth() === mesActual && f.getFullYear() === anioActual) {
+                    cobrosRecuperadosMes += (parseFloat(a.monto) || 0);
+                }
+            });
+
+            // Salud de Cartera Global
+            let sana = 0, precaucion = 0, critica = 0;
+            ventas.forEach(v => {
+                if(v.estado === 'normal' && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
+                    const emision = new Date(v.fecha); emision.setHours(0,0,0,0);
+                    const diasTranscurridos = Math.ceil((new Date().setHours(0,0,0,0) - emision) / (1000*60*60*24));
+                    if(diasTranscurridos <= 49) sana += v.saldoPendiente;
+                    else if(diasTranscurridos <= 60) precaucion += v.saldoPendiente;
+                    else critica += v.saldoPendiente;
+                }
+            });
+            
+            let totalSalud = sana + precaucion + critica;
+            let pSana = totalSalud ? (sana/totalSalud)*100 : 0;
+            let pPrec = totalSalud ? (precaucion/totalSalud)*100 : 0;
+            let pCrit = totalSalud ? (critica/totalSalud)*100 : 0;
+
+            // Heatmap por Rutas (Concentración de Capital)
+            let rutasMap = {};
+            ventas.forEach(v => {
+                if(v.estado === 'anulada') return;
+                const c = clientes.find(cli => cli.id === v.clienteId);
+                const ruta = (c && c.ruta) ? c.ruta : 'Sin Ruta Asignada';
+                if(!rutasMap[ruta]) rutasMap[ruta] = { contado: 0, sana: 0, vencida: 0 };
+                
+                if(v.tipoVenta === 'Contado') {
+                    rutasMap[ruta].contado += (parseFloat(v.total) || 0);
+                } else if(v.saldoPendiente > 0) {
+                    const emision = new Date(v.fecha); emision.setHours(0,0,0,0);
+                    const diasTranscurridos = Math.ceil((new Date().setHours(0,0,0,0) - emision) / (1000*60*60*24));
+                    if(diasTranscurridos <= 60) rutasMap[ruta].sana += v.saldoPendiente;
+                    else rutasMap[ruta].vencida += v.saldoPendiente;
+                }
+            });
+
+            let heatmapRows = Object.keys(rutasMap).sort().map(ruta => {
+                let data = rutasMap[ruta];
+                return `<tr>
+                    <td><strong>${ruta}</strong></td>
+                    <td><div style="background:#2e7d32; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.contado)}</div></td>
+                    <td><div style="background:#8bc34a; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.sana)}</div></td>
+                    <td><div style="background:#c62828; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.vencida)}</div></td>
+                </tr>`;
+            }).join('');
+
+            let html = `
+                <style>
+                    .dashboard-kpi { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+                    .kpi-card { flex: 1 1 200px; background: white; padding: 20px; border-radius: 20px; border: 1px solid #c9ddec; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+                    .kpi-card h3 { color: #1e3b4f; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;}
+                    .kpi-card span { font-size: 1.8rem; font-weight: 700; color: #075e54; }
+                    .health-bar-container { height: 35px; display: flex; border-radius: 15px; overflow: hidden; margin-top: 15px; background: #eee; border: 1px solid #ccc; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);}
+                    .health-bar-segment { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.85rem; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);}
+                </style>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="margin: 0; padding-left: 0; border: none;">📈 Dashboard Gerencial (Mes en curso)</h2>
+                    <button id="imprimirDashboardBtn" class="secondary small">📄 Imprimir Resumen</button>
+                </div>
+                
+                <div class="dashboard-kpi">
+                    <div class="kpi-card"><h3>Ingreso Real (Contado)</h3><span>${formatoQ(ventasMesContado)}</span></div>
+                    <div class="kpi-card"><h3>Cobros Recuperados</h3><span>${formatoQ(cobrosRecuperadosMes)}</span></div>
+                    <div class="kpi-card"><h3>Flujo de Caja Total</h3><span style="color:#25d366;">${formatoQ(ventasMesContado + cobrosRecuperadosMes)}</span></div>
+                </div>
+
+                <fieldset>
+                    <legend>⚖️ Salud de Cartera en la Calle (Deuda Total)</legend>
+                    <div style="display:flex; justify-content: space-between; font-weight:600; font-size:0.9rem; color:#1e3b4f;">
+                        <span>Al día / Sana: ${formatoQ(sana)} (${pSana.toFixed(1)}%)</span>
+                        <span>Precaución: ${formatoQ(precaucion)} (${pPrec.toFixed(1)}%)</span>
+                        <span>Mora Crítica: ${formatoQ(critica)} (${pCrit.toFixed(1)}%)</span>
+                    </div>
+                    <div class="health-bar-container">
+                        <div class="health-bar-segment" style="width: ${pSana}%; background: #4caf50;" title="Sana (0-49 días)">${pSana > 5 ? pSana.toFixed(0)+'%' : ''}</div>
+                        <div class="health-bar-segment" style="width: ${pPrec}%; background: #ff9800;" title="Precaución (50-60 días)">${pPrec > 5 ? pPrec.toFixed(0)+'%' : ''}</div>
+                        <div class="health-bar-segment" style="width: ${pCrit}%; background: #f44336;" title="Crítica (+61 días)">${pCrit > 5 ? pCrit.toFixed(0)+'%' : ''}</div>
+                    </div>
+                </fieldset>
+
+                <h3>🗺️ Heatmap: Concentración de Capital por Rutas</h3>
+                <div class="table-responsive">
+                    <table style="width:100%;">
+                        <thead>
+                            <tr><th>Ruta / Zona</th><th>Ventas Contado (Mes)</th><th>Créditos Sanos (Global)</th><th>Mora Vencida (Global)</th></tr>
+                        </thead>
+                        <tbody>${heatmapRows || '<tr><td colspan="4">No hay datos de rutas suficientes.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('content').innerHTML = html;
+
+            // --- LÓGICA PARA IMPRIMIR EL DASHBOARD EN PDF ---
+            document.getElementById('imprimirDashboardBtn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+                const fechaHora = new Date().toLocaleString();
+
+                // Encabezado Estándar
+                doc.setFillColor(7, 94, 84);
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('MARIJOSE JHIRE S.A.', 14, 12);
+                doc.setFontSize(10);
+                doc.text('RESUMEN EJECUTIVO - DASHBOARD', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+                doc.setTextColor(0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 25);
+                doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
+                doc.text(`Fecha de impresión: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+
+                doc.setDrawColor(200);
+                doc.line(14, 30, doc.internal.pageSize.getWidth() - 14, 30);
+
+                let currentY = 38;
+
+                // 1. Tabla de Flujo de Caja
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text('1. Indicadores de Flujo de Caja (Mes en curso)', 14, currentY);
+                
+                doc.autoTable({
+                    startY: currentY + 3,
+                    head: [['Concepto', 'Monto']],
+                    body: [
+                        ['Ingresos por Ventas al Contado', formatoQ(ventasMesContado)],
+                        ['Cobros de Créditos Recuperados', formatoQ(cobrosRecuperadosMes)],
+                        ['FLUJO DE CAJA TOTAL', formatoQ(ventasMesContado + cobrosRecuperadosMes)]
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 211, 102], textColor: 255 },
+                    styles: { fontSize: 10 },
+                    willDrawCell: function(data) {
+                        if (data.row.index === 2) {
+                            doc.setFillColor(230, 245, 235);
+                            doc.setFont('helvetica', 'bold');
+                        }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 12;
+
+                // 2. Tabla de Salud de Cartera
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text('2. Estado Global de la Cartera (Créditos en la calle)', 14, currentY);
+
+                doc.autoTable({
+                    startY: currentY + 3,
+                    head: [['Estado', 'Saldo Pendiente', 'Proporción']],
+                    body: [
+                        ['Al Día / Sana (0 - 49 días)', formatoQ(sana), pSana.toFixed(1) + '%'],
+                        ['Precaución (50 - 60 días)', formatoQ(precaucion), pPrec.toFixed(1) + '%'],
+                        ['Mora Crítica (+61 días)', formatoQ(critica), pCrit.toFixed(1) + '%'],
+                        ['DEUDA TOTAL EN LA CALLE', formatoQ(totalSalud), '100%']
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 211, 102], textColor: 255 },
+                    styles: { fontSize: 10 },
+                    willDrawCell: function(data) {
+                        if (data.row.index === 3) {
+                            doc.setFillColor(230, 245, 235);
+                            doc.setFont('helvetica', 'bold');
+                        }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 12;
+
+                // 3. Tabla de Heatmap de Rutas
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(7, 94, 84);
+                doc.text('3. Concentración de Capital por Ruta', 14, currentY);
+
+                const rutasBody = Object.keys(rutasMap).sort().map(ruta => {
+                    const data = rutasMap[ruta];
+                    return [ruta, formatoQ(data.contado), formatoQ(data.sana), formatoQ(data.vencida)];
+                });
+
+                if (rutasBody.length === 0) rutasBody.push(['Sin datos', '-', '-', '-']);
+
+                doc.autoTable({
+                    startY: currentY + 3,
+                    head: [['Ruta / Zona', 'Venta Contado (Mes)', 'Créditos Sanos', 'Mora Vencida']],
+                    body: rutasBody,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 9 }
+                });
+
+                // Líneas de firma
+                let signY = doc.lastAutoTable.finalY + 40;
+                if (signY > doc.internal.pageSize.getHeight() - 30) { 
+                    doc.addPage(); 
+                    signY = 40; 
+                }
+                
+                doc.setDrawColor(0);
+                doc.line(40, signY, 90, signY);
+                doc.setFontSize(9);
+                doc.setTextColor(0);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Firma Colaborador', 65, signY + 5, { align: 'center' });
+                
+                doc.line(doc.internal.pageSize.getWidth() - 90, signY, doc.internal.pageSize.getWidth() - 40, signY);
+                doc.text('Vo.Bo. Gerencia', doc.internal.pageSize.getWidth() - 65, signY + 5, { align: 'center' });
+
+                // Paginación
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                }
+
+                doc.save(`Resumen_Dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
         }
 
         // INICIALIZACIÓN
-        showTab('venta');
+        showTab('dashboard'); // Arrancamos en el Dashboard por defecto
     })();
 </script>
 </body>
