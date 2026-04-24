@@ -153,7 +153,8 @@
 <div id="resumenVentasModal" class="modal"><div class="modal-content" id="resumenVentasContent"></div></div>
 <div id="editarClienteModal" class="modal"><div class="modal-content" id="editarClienteContent"></div></div>
 <div id="calificacionModal" class="modal"><div class="modal-content" id="calificacionContent"></div></div>
-
+<div id="alertaLiquidezModal" class="modal" style="z-index: 1050;"><div class="modal-content" id="alertaLiquidezContent" style="max-width: 400px; text-align: center;"></div></div>
+<div id="detalleRutaModal" class="modal"><div class="modal-content" id="detalleRutaContent" style="max-width: 700px;"></div></div>
 <div id="nuevoProductoModal" class="modal">
     <div class="modal-content">
         <h3 style="color: #075e54; margin-bottom: 15px;">📦 Agregar Nuevo Producto</h3>
@@ -275,22 +276,24 @@
         const formatoQ = (val) => 'Q' + redondearDinero(val).toFixed(2);
          function normalizarRuta(rutaIngresada, automatico = false) {
             if (!rutaIngresada) return '';
-            const r = rutaIngresada.toLowerCase().trim();
+            // Normalizamos quitando tildes para que la búsqueda no falle (ej. "Panajachél" será leído limpio)
+            const rLimpia = rutaIngresada.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            
             const diccionario = {
                 'Quetzaltenango': ['xela', 'quetgo', 'qtz', 'quetzaltenango'],
-                'Guatemala': ['guate', 'capital', 'ciudad', 'ciudad de guatemala', 'guatemala'],
+                'Guatemala': ['guate', 'capital', 'ciudad', 'guatemala'],
                 'Huehuetenango': ['huehue', 'huehuetenango'],
-                'Suchitepéquez': ['mazate', 'mazatenango', 'suchi', 'suchitepequez', 'suchitepéquez'],
+                'Suchitepéquez': ['mazate', 'mazatenango', 'suchi', 'suchitepequez'],
                 'Retalhuleu': ['reu', 'retalhuleu'],
-                'Alta Verapaz': ['coban', 'cobán', 'alta verapaz'],
-                'Baja Verapaz': ['salama', 'salamá', 'baja verapaz'],
+                'Alta Verapaz': ['coban', 'alta verapaz'],
+                'Baja Verapaz': ['salama', 'baja verapaz'],
                 'Chimaltenango': ['chimal', 'chimaltenango'],
-                'Sacatepéquez': ['antigua', 'sacatepequez', 'sacatepéquez'],
+                'Sacatepéquez': ['antigua', 'sacatepequez'],
                 'Escuintla': ['puerto san jose', 'palin', 'escuintla'],
                 'San Marcos': ['san marcos'],
-                'Totonicapán': ['toto', 'totonicapan', 'totonicapán'],
-                'Sololá': ['solola', 'sololá', 'pana', 'panajachel'],
-                'Petén': ['peten', 'petén', 'flores'],
+                'Totonicapán': ['toto', 'totonicapan'],
+                'Sololá': ['solola', 'pana', 'panajachel'],
+                'Petén': ['peten', 'flores'],
                 'Izabal': ['puerto barrios', 'morales', 'rio dulce', 'izabal'],
                 'Zacapa': ['zacapa'],
                 'Chiquimula': ['chiquimula'],
@@ -301,21 +304,19 @@
             };
 
             for (const [departamento, sinonimos] of Object.entries(diccionario)) {
-                // Si la palabra escrita es exactamente igual a un sinónimo o departamento
-                if (sinonimos.some(s => r === s || r.includes(s))) {
-                    // Si el usuario ya escribió el departamento, pero con mal formato (ej. quetzaltenango), lo forzamos al estándar
-                    if (r === departamento.toLowerCase() || r.includes(departamento.toLowerCase())) {
-                        return departamento;
+                for (const s of sinonimos) {
+                    // \b indica Límite de Palabra. Ahora "toto" solo se activa si es la palabra exacta, no si escriben "totoral"
+                    const regex = new RegExp(`\\b${s}\\b`, 'i');
+                    if (regex.test(rLimpia)) {
+                        if (automatico || confirm(`🗺️ El sistema detectó la zona "${rutaIngresada}".\n¿Deseas estandarizar la ruta a "${departamento}"?`)) {
+                            return departamento;
+                        }
+                        return rutaIngresada.trim();
                     }
-                    // Si detecta un sinónimo (ej. 'xela'), pide confirmación o lo cambia automático
-                    if (automatico || confirm(`🗺️ El sistema detectó la zona "${rutaIngresada}".\n¿Deseas estandarizar la ruta a "${departamento}" para ordenar correctamente tu Mapa de Calor Gerencial?`)) {
-                        return departamento;
-                    }
-                    return rutaIngresada.trim();
                 }
             }
             
-            // Si es una ruta personalizada (ej. "ruta 3"), capitaliza la primera letra de cada palabra
+            // Si es una ruta personalizada (ej. "Avenida las americas"), devuelve el texto capitalizado
             return rutaIngresada.trim().replace(/\b\w/g, c => c.toUpperCase());
         }
             
@@ -334,11 +335,22 @@
                 if (c.encargado === undefined) { c.encargado = ''; migrado = true; }
                 if (c.categoria === undefined) { c.categoria = ''; migrado = true; }
                 if (c.ruta === undefined) { c.ruta = ''; migrado = true; }
-                else if (c.ruta.trim() !== '') {
-                    const rutaLimpia = normalizarRuta(c.ruta, true); // true = modo automático (sin confirm)
-                    if (c.ruta !== rutaLimpia) { c.ruta = rutaLimpia; migrado = true; }
-                }
-                if (c.limiteCredito === undefined) { c.limiteCredito = null; migrado = true; }
+                // --- INICIO PARCHE 8 (CORREGIDO): SANEAMIENTO AUTOMÁTICO DE HISTORIAL ---
+                if ((c.ruta === '' || c.ruta === 'Sin Ruta Asignada') && c.direccion) {
+                    const deptoDetectado = normalizarRuta(c.direccion, true);
+                    const diccionario = ['Quetzaltenango', 'Guatemala', 'Huehuetenango', 'Suchitepéquez', 'Retalhuleu', 'Alta Verapaz', 'Baja Verapaz', 'Chimaltenango', 'Sacatepéquez', 'Escuintla', 'San Marcos', 'Totonicapán', 'Sololá', 'Petén', 'Izabal', 'Zacapa', 'Chiquimula', 'Jalapa', 'Jutiapa', 'Santa Rosa', 'El Progreso'];
+                    
+                    if (diccionario.includes(deptoDetectado)) {
+                        c.ruta = deptoDetectado;
+                        migrado = true;
+                    }
+                }
+                // --- FIN PARCHE 8 ---
+                else if (c.ruta.trim() !== '') {
+                    const rutaLimpia = normalizarRuta(c.ruta, true); // true = modo automático (sin confirm)
+                    if (c.ruta !== rutaLimpia) { c.ruta = rutaLimpia; migrado = true; }
+                }
+                if (c.limiteCredito === undefined) { c.limiteCredito = null; migrado = true; }
             });
             ventas.forEach(v => {
                 if (!v.clienteId && v.clienteCodigo) { const cliente = clientes.find(c => c.codigo === v.clienteCodigo); v.clienteId = cliente ? cliente.id : null; migrado = true; }
@@ -760,7 +772,21 @@
             const cantidadFilas = document.getElementById('cantidadFilas');
 
             let clienteSeleccionado = null;
-            let isReseting = false;
+            let isReseting = false;
+
+            // --- INICIO PARCHE 1 (CORREGIDO): AUTO-ASIGNACIÓN EFICIENTE ---
+            // Usamos 'blur' para que la magia ocurra cuando el vendedor termina de escribir y pasa a la siguiente casilla.
+            direccion.addEventListener('blur', () => {
+                if (!ruta.value || isReseting) {
+                    const detectado = normalizarRuta(direccion.value, true);
+                    if (detectado) {
+                        ruta.value = detectado; // Si detecta depto, lo pone. Si no, clona la dirección capitalizada. ¡Ahorras tiempo!
+                    }
+                }
+            });
+            // --- FIN PARCHE 1 ---
+
+            // BLOQUEO INTELIGENTE PARCIAL (Deja editables los campos vacíos para poder llenarlos)
 
             // BLOQUEO INTELIGENTE PARCIAL (Deja editables los campos vacíos para poder llenarlos)
             function toggleBloqueoCamposParcial(cli) {
@@ -1100,8 +1126,18 @@
                 if (filas.length === 0) { alert('Debe agregar al menos un producto.'); hideLoader(); return; }
 
                 const total = Math.round((parseFloat(document.getElementById('totalVentaCalc').innerText.replace('Q','')) || 0) * 100) / 100;
-                let fechaSeleccionada = document.getElementById('fechaVenta').value || new Date().toISOString().slice(0,10);
-                const fechaISO = new Date(fechaSeleccionada + 'T12:00:00').toISOString();
+                
+                // --- INICIO PARCHE 2: SINCRONIZACIÓN DEL RELOJ LOCAL ---
+                let fechaSeleccionada = document.getElementById('fechaVenta').value;
+                if (!fechaSeleccionada) {
+                    const ahora = new Date();
+                    fechaSeleccionada = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+                }
+                // Construimos la fecha forzando la media noche en la zona local, y luego la pasamos a ISO.
+                const partesFecha = fechaSeleccionada.split('-');
+                const fechaLocal = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2], 0, 0, 0);
+                const fechaISO = fechaLocal.toISOString();
+                // --- FIN PARCHE 2 ---
 
                 let clienteFinal = clienteSeleccionado;
                 if (!clienteFinal) {
@@ -2884,15 +2920,31 @@ if (prod && nombre) {
                 });
                 const totalCreditosCancelados = ventasCreditoCanceladas.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-                const pagosPropiosPeriodo = pagosCobro.filter(p => new Date(p.fecha) >= start && new Date(p.fecha) <= end && p.tipo === 'propio');
+                // --- INICIO PARCHE 5: EXCLUSIÓN MUTUA DE COBROS Y DEDUCCIÓN FIJA ---
+                const pagosPropiosPeriodo = pagosCobro.filter(p => {
+                    if (new Date(p.fecha) < start || new Date(p.fecha) > end || p.tipo !== 'propio') return false;
+                    // REGLA: Si el pago pertenece a un cobro cuya factura madre YA fue liquidada en el mismo periodo, se excluye para evitar doble suma.
+                    const cobroDoc = cobros.find(c => c.id === p.cobroId);
+                    if (cobroDoc) {
+                        // Buscar la factura original de este cliente con saldo cero en el mismo rango de fechas
+                        const facturaLigada = ventasCreditoCanceladas.find(v => v.clienteId === cobroDoc.clienteId);
+                        if (facturaLigada) return false; // Se excluye el recibo
+                    }
+                    return true;
+                });
                 const totalPagosPropios = pagosPropiosPeriodo.reduce((acc, p) => acc + (p.monto || 0), 0);
 
                 const totalVentasPeriodo = ventas.filter(v => new Date(v.fecha) >= start && new Date(v.fecha) <= end && v.estado === 'normal').reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
                 ventasPeriodoTotalSpan.innerText = formatoQ(totalVentasPeriodo);
 
-                const base = totalContado + totalCreditosCancelados + totalPagosPropios;
-                baseComisionSpan.innerText = formatoQ(base);
-                return base;
+                // DEDUCCIÓN OPERATIVA: Q1,500.00 base (Solo aplica si hay ventas en el periodo)
+                const DEDUCCION_EQUIPO = totalVentasPeriodo > 0 ? 1500 : 0;
+                let baseCruda = totalContado + totalCreditosCancelados + totalPagosPropios;
+                let baseNeta = Math.max(0, baseCruda - DEDUCCION_EQUIPO);
+
+                baseComisionSpan.innerText = formatoQ(baseNeta) + ` (Bruto: ${formatoQ(baseCruda)} - Descuento: ${formatoQ(DEDUCCION_EQUIPO)})`;
+                return baseNeta;
+                // --- FIN PARCHE 5 ---
             }
 
             function actualizarComision() {
@@ -4076,6 +4128,7 @@ if (prod && nombre) {
       // ========== PESTAÑA DASHBOARD (Business Intelligence) ==========
         function renderDashboard() {
             let ventasMesContado = 0;
+            let ventasMesCredito = 0; // Para el Parche 7
             let cobrosRecuperadosMes = 0;
             
             const hoy = new Date();
@@ -4085,8 +4138,9 @@ if (prod && nombre) {
             ventas.forEach(v => {
                 if(v.estado === 'anulada') return;
                 const f = new Date(v.fecha);
-                if(f.getMonth() === mesActual && f.getFullYear() === anioActual && v.tipoVenta === 'Contado') {
-                    ventasMesContado += (parseFloat(v.total) || 0);
+                if(f.getMonth() === mesActual && f.getFullYear() === anioActual) {
+                    if (v.tipoVenta === 'Contado') ventasMesContado += (parseFloat(v.total) || 0);
+                    if (v.tipoVenta === 'Crédito') ventasMesCredito += (parseFloat(v.total) || 0);
                 }
             });
 
@@ -4097,15 +4151,20 @@ if (prod && nombre) {
                 }
             });
 
+            // --- INICIO PARCHE 4: VECTOR DE VENCIMIENTO REAL ---
             // Salud de Cartera Global
             let sana = 0, precaucion = 0, critica = 0;
+            const hoyCeroHoras = new Date(); hoyCeroHoras.setHours(0,0,0,0);
+
             ventas.forEach(v => {
                 if(v.estado === 'normal' && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
-                    const emision = new Date(v.fecha); emision.setHours(0,0,0,0);
-                    const diasTranscurridos = Math.ceil((new Date().setHours(0,0,0,0) - emision) / (1000*60*60*24));
-                    if(diasTranscurridos <= 49) sana += v.saldoPendiente;
-                    else if(diasTranscurridos <= 60) precaucion += v.saldoPendiente;
-                    else critica += v.saldoPendiente;
+                    const vencimiento = v.fechaVencimiento ? new Date(v.fechaVencimiento) : new Date(v.fecha);
+                    vencimiento.setHours(0,0,0,0);
+                    const diasMoraReal = Math.ceil((hoyCeroHoras - vencimiento) / (1000*60*60*24));
+                    
+                    if(diasMoraReal <= 0) sana += v.saldoPendiente; // Dentro de fecha de pago
+                    else if(diasMoraReal <= 15) precaucion += v.saldoPendiente; // Hasta 15 días de atraso
+                    else critica += v.saldoPendiente; // Más de 15 días vencido
                 }
             });
             
@@ -4114,35 +4173,74 @@ if (prod && nombre) {
             let pPrec = totalSalud ? (precaucion/totalSalud)*100 : 0;
             let pCrit = totalSalud ? (critica/totalSalud)*100 : 0;
 
-            // Heatmap por Rutas (Concentración de Capital)
-            let rutasMap = {};
-            ventas.forEach(v => {
-                if(v.estado === 'anulada') return;
-                const c = clientes.find(cli => cli.id === v.clienteId);
-                const ruta = (c && c.ruta) ? c.ruta : 'Sin Ruta Asignada';
-                if(!rutasMap[ruta]) rutasMap[ruta] = { contado: 0, sana: 0, vencida: 0 };
-                
-                if(v.tipoVenta === 'Contado') {
-                    rutasMap[ruta].contado += (parseFloat(v.total) || 0);
-                } else if(v.saldoPendiente > 0) {
-                    const emision = new Date(v.fecha); emision.setHours(0,0,0,0);
-                    const diasTranscurridos = Math.ceil((new Date().setHours(0,0,0,0) - emision) / (1000*60*60*24));
-                    if(diasTranscurridos <= 60) rutasMap[ruta].sana += v.saldoPendiente;
-                    else rutasMap[ruta].vencida += v.saldoPendiente;
-                }
-            });
+            // Heatmap por Rutas (Concentración de Capital y Cobros)
+            let rutasMap = {};
+            
+            // 1. Mapear Ventas y Mora
+            ventas.forEach(v => {
+                if(v.estado === 'anulada') return;
+                const c = clientes.find(cli => cli.id === v.clienteId);
+                const ruta = (c && c.ruta) ? c.ruta : 'Sin Ruta Asignada';
+                if(!rutasMap[ruta]) rutasMap[ruta] = { contado: 0, sana: 0, vencida: 0, cobros: 0 };
+                
+                if(v.tipoVenta === 'Contado') {
+                    if(new Date(v.fecha).getMonth() === mesActual && new Date(v.fecha).getFullYear() === anioActual) {
+                        rutasMap[ruta].contado += (parseFloat(v.total) || 0);
+                    }
+                } else if(v.saldoPendiente > 0) {
+                    const vencimiento = v.fechaVencimiento ? new Date(v.fechaVencimiento) : new Date(v.fecha);
+                    vencimiento.setHours(0,0,0,0);
+                    const diasMoraReal = Math.ceil((hoyCeroHoras - vencimiento) / (1000*60*60*24));
+                    
+                    if(diasMoraReal <= 15) rutasMap[ruta].sana += v.saldoPendiente;
+                    else rutasMap[ruta].vencida += v.saldoPendiente;
+                }
+            });
 
-            let heatmapRows = Object.keys(rutasMap).sort().map(ruta => {
-                let data = rutasMap[ruta];
-                return `<tr>
-                    <td><strong>${ruta}</strong></td>
-                    <td><div style="background:#2e7d32; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.contado)}</div></td>
-                    <td><div style="background:#8bc34a; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.sana)}</div></td>
-                    <td><div style="background:#c62828; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.vencida)}</div></td>
-                </tr>`;
-            }).join('');
+            // 2. Mapear Abonos (Recuperación) del mes
+            abonos.forEach(a => {
+                const f = new Date(a.fecha);
+                if(f.getMonth() === mesActual && f.getFullYear() === anioActual) {
+                    const v = ventas.find(ven => ven.id === a.ventaId);
+                    if(v) {
+                        const c = clientes.find(cli => cli.id === v.clienteId);
+                        const ruta = (c && c.ruta) ? c.ruta : 'Sin Ruta Asignada';
+                        if(!rutasMap[ruta]) rutasMap[ruta] = { contado: 0, sana: 0, vencida: 0, cobros: 0 };
+                        rutasMap[ruta].cobros += (parseFloat(a.monto) || 0);
+                    }
+                }
+            });
 
-            let html = `
+            // 3. Mapear Pagos de Cobros Físicos del mes
+            pagosCobro.forEach(p => {
+                const f = new Date(p.fecha);
+                if(f.getMonth() === mesActual && f.getFullYear() === anioActual && p.tipo === 'propio') {
+                    const cob = cobros.find(cb => cb.id === p.cobroId);
+                    if(cob) {
+                        const c = clientes.find(cli => cli.id === cob.clienteId);
+                        const ruta = (c && c.ruta) ? c.ruta : 'Sin Ruta Asignada';
+                        if(!rutasMap[ruta]) rutasMap[ruta] = { contado: 0, sana: 0, vencida: 0, cobros: 0 };
+                        rutasMap[ruta].cobros += (parseFloat(p.monto) || 0);
+                    }
+                }
+            });
+            // --- FIN PARCHE 4 ---
+
+            let heatmapRows = Object.keys(rutasMap).sort().map(ruta => {
+                let data = rutasMap[ruta];
+                return `<tr>
+                    <td>
+                        <strong>${ruta}</strong><br>
+                        <button class="secondary small btn-detalle-ruta" data-ruta="${ruta}" style="font-size:0.75rem; padding: 4px 8px; margin-top:4px; width:100%; border-color:#25d366; color:#075e54;">🔍 Llamar Clientes</button>
+                    </td>
+                    <td><div style="background:#2e7d32; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.contado)}</div></td>
+                    <td><div style="background:#1976d2; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.cobros)}</div></td>
+                    <td><div style="background:#8bc34a; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.sana)}</div></td>
+                    <td><div style="background:#c62828; color:white; padding:4px 8px; border-radius:12px; text-align:center;">${formatoQ(data.vencida)}</div></td>
+                </tr>`;
+            }).join('');
+
+            let html = `
                 <style>
                     .dashboard-kpi { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
                     .kpi-card { flex: 1 1 200px; background: white; padding: 20px; border-radius: 20px; border: 1px solid #c9ddec; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
@@ -4181,7 +4279,7 @@ if (prod && nombre) {
                 <div class="table-responsive">
                     <table style="width:100%;">
                         <thead>
-                            <tr><th>Ruta / Zona</th><th>Ventas Contado (Mes)</th><th>Créditos Sanos (Global)</th><th>Mora Vencida (Global)</th></tr>
+                            <tr><th>Ruta / Zona</th><th>Venta Contado (Mes)</th><th>Cobros Recuperados (Mes)</th><th>Créditos Sanos (Global)</th><th>Mora Vencida (Global)</th></tr>
                         </thead>
                         <tbody>${heatmapRows || '<tr><td colspan="4">No hay datos de rutas suficientes.</td></tr>'}</tbody>
                     </table>
@@ -4322,6 +4420,112 @@ if (prod && nombre) {
 
                 doc.save(`Resumen_Dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
             });
+
+            // --- INICIO PARCHE 9: CALL CENTER DE COBROS POR RUTA ---
+            document.querySelectorAll('.btn-detalle-ruta').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const rutaSel = e.target.dataset.ruta;
+                    let htmlCobros = `<h3 style="color:#075e54;">📞 Gestión de Cobros: ${rutaSel}</h3><div class="table-responsive"><table><thead><tr><th>Cliente</th><th>Factura</th><th>Vencimiento</th><th>Saldo</th><th>Acción</th></tr></thead><tbody>`;
+                    
+                    let deudasRuta = 0;
+                    // 1. Cargar Facturas pendientes
+                    ventas.forEach(v => {
+                        if (v.estado === 'normal' && v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
+                            const cli = clientes.find(c => c.id === v.clienteId);
+                            const rutaCli = (cli && cli.ruta) ? cli.ruta : 'Sin Ruta Asignada';
+                            if (rutaCli === rutaSel) {
+                                deudasRuta++;
+                                const venc = v.fechaVencimiento ? new Date(v.fechaVencimiento) : new Date(v.fecha);
+                                const hoyCero = new Date(); hoyCero.setHours(0,0,0,0);
+                                venc.setHours(0,0,0,0);
+                                const diff = Math.ceil((hoyCero - venc) / (1000*60*60*24));
+                                const estadoText = diff > 0 ? `<span style="color:#c62828; font-weight:bold;">Mora (${diff}d)</span>` : '<span style="color:#2e7d32;">Al día</span>';
+                                
+                                htmlCobros += `<tr>
+                                    <td>${cli.razonSocial}<br><span style="font-size:0.75rem; color:gray;">${cli.telefono || 'Sin Tel'}</span></td>
+                                    <td>Fact: ${v.id.substr(0,8)}</td>
+                                    <td>${venc.toLocaleDateString()}<br>${estadoText}</td>
+                                    <td style="font-weight:bold; color:#c62828;">${formatoQ(v.saldoPendiente)}</td>
+                                    <td><button class="secondary small btn-whatsapp-dashboard" data-tel="${cli.telefono}" data-saldo="${v.saldoPendiente}" data-doc="Fact: ${v.id.substr(0,8)}">📲 Cobrar</button></td>
+                                </tr>`;
+                            }
+                        }
+                    });
+
+                    // 2. Cargar Recibos Físicos (Cobros) pendientes
+                    cobros.forEach(c => {
+                        if (c.saldoPendiente > 0) {
+                            const cli = clientes.find(client => client.id === c.clienteId);
+                            const rutaCli = (cli && cli.ruta) ? cli.ruta : 'Sin Ruta Asignada';
+                            if (rutaCli === rutaSel) {
+                                deudasRuta++;
+                                const emision = new Date(c.fecha);
+                                const hoyCero = new Date(); hoyCero.setHours(0,0,0,0);
+                                emision.setHours(0,0,0,0);
+                                const diff = Math.ceil((hoyCero - emision) / (1000*60*60*24));
+                                const estadoText = `<span style="color:#ef6c00; font-weight:bold;">Recibo (${diff}d)</span>`;
+                                
+                                htmlCobros += `<tr>
+                                    <td>${cli.razonSocial}<br><span style="font-size:0.75rem; color:gray;">${cli.telefono || 'Sin Tel'}</span></td>
+                                    <td>Rec: ${c.numeroDocumento}</td>
+                                    <td>Emitido:<br>${estadoText}</td>
+                                    <td style="font-weight:bold; color:#ef6c00;">${formatoQ(c.saldoPendiente)}</td>
+                                    <td><button class="secondary small btn-whatsapp-dashboard" data-tel="${cli.telefono}" data-saldo="${c.saldoPendiente}" data-doc="Recibo: ${c.numeroDocumento}">📲 Cobrar</button></td>
+                                </tr>`;
+                            }
+                        }
+                    });
+                    
+                    if (deudasRuta === 0) htmlCobros += `<tr><td colspan="5" style="text-align:center;">Excelente. No hay deudas pendientes en esta ruta.</td></tr>`;
+                    htmlCobros += `</tbody></table></div><div style="margin-top:15px; text-align:right;"><button id="cerrarDetalleRutaBtn" class="secondary small">Cerrar Panel</button></div>`;
+                    
+                    const modalRuta = document.getElementById('detalleRutaModal');
+                    document.getElementById('detalleRutaContent').innerHTML = htmlCobros;
+                    modalRuta.style.display = 'flex';
+                    
+                    document.getElementById('cerrarDetalleRutaBtn').onclick = () => modalRuta.style.display = 'none';
+                    
+                    // Activador de envíos directos de WhatsApp para cobro
+                    document.querySelectorAll('.btn-whatsapp-dashboard').forEach(bw => {
+                        bw.addEventListener('click', (ev) => {
+                            const t = ev.target;
+                            let num = (t.dataset.tel || '').replace(/\D/g, '');
+                            const mensaje = `¡${obtenerSaludo()}! Le saludamos de *MARIJOSE JHIRE S.A.*\nLe contactamos para recordarle amablemente su factura pendiente (Doc: ${t.dataset.doc}) por el monto de *${formatoQ(t.dataset.saldo)}*.\n\nQuedamos a su entera disposición.`;
+                            const url = num ? `https://wa.me/502${num}?text=${encodeURIComponent(mensaje)}` : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+                            window.open(url, '_blank');
+                        });
+                    });
+                });
+            });
+            // --- FIN PARCHE 9 ---
+
+            // --- INICIO PARCHE 7: GUARDIÁN DE RENTABILIDAD (Alerta Temprana) ---
+            const fechaHoyStr = hoy.toISOString().slice(0, 10);
+            const ultimaAlerta = localStorage.getItem('alertaLiquidezMostrada');
+            
+            // Si no se ha mostrado hoy, y hay más crédito que contado en el mes, lanzar alerta.
+            if (ultimaAlerta !== fechaHoyStr && ventasMesCredito > ventasMesContado && ventasMesCredito > 0) {
+                setTimeout(() => {
+                    const modalAlerta = document.getElementById('alertaLiquidezModal');
+                    const contenido = document.getElementById('alertaLiquidezContent');
+                    contenido.innerHTML = `
+                        <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+                        <h2 style="color: #c62828; margin-bottom: 10px;">Alerta de Liquidez</h2>
+                        <p style="font-size: 0.95rem; color: #333;">Este mes, el valor de las ventas otorgadas al crédito ha superado sus ingresos en efectivo. Sugerimos priorizar la recuperación de cartera.</p>
+                        <div style="background: #ffebee; padding: 15px; border-radius: 12px; margin: 20px 0; font-size: 1.1rem;">
+                            <strong>Ingreso Contado:</strong> ${formatoQ(ventasMesContado)}<br>
+                            <strong style="color: #c62828;">Fuga al Crédito:</strong> ${formatoQ(ventasMesCredito)}
+                        </div>
+                        <button id="cerrarAlertaLiquidezBtn" style="width: 100%; background: #c62828; color: white; border:none; padding: 14px; font-size: 1rem;">Entendido</button>
+                    `;
+                    modalAlerta.style.display = 'flex';
+                    document.getElementById('cerrarAlertaLiquidezBtn').onclick = () => {
+                        localStorage.setItem('alertaLiquidezMostrada', fechaHoyStr); // Se sella para no molestar más hoy
+                        modalAlerta.style.display = 'none';
+                    };
+                }, 800); // 800ms de retraso para que la pantalla de fondo cargue bien primero
+            }
+            // --- FIN PARCHE 7 ---
         }
 
         // INICIALIZACIÓN
