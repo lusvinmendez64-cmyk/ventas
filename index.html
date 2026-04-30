@@ -114,6 +114,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <div id="globalLoader" class="global-loader">
@@ -1528,20 +1530,21 @@
             }
 
             function actualizarResumen() {
-    let contado = 0, creditoLiquido = 0;
-    ventasFiltradas.forEach(v => {
-        if (v.estado === 'anulada') return;
-        const t = parseFloat(v.total) || 0;
-        if (v.tipoVenta === 'Contado') {
-            contado += t;
-        } else if (v.tipoVenta === 'Crédito' && v.saldoPendiente === 0) {
-            creditoLiquido += t; // Solo suma cobros recuperados al 100%
-        }
-    });
-    totalPeriodo.innerText = formatoQ(contado + creditoLiquido);
-    totalContadoPeriodo.innerText = formatoQ(contado);
-    totalCreditoPeriodo.innerText = formatoQ(creditoLiquido);
-}
+                let contado = 0, credito = 0, cobradoCredito = 0;
+                ventasFiltradas.forEach(v => {
+                    if (v.estado === 'anulada') return;
+                    const t = parseFloat(v.total) || 0;
+                    if (v.tipoVenta === 'Contado') {
+                        contado += t;
+                    } else if (v.tipoVenta === 'Crédito') {
+                        credito += t;
+                        cobradoCredito += (t - (parseFloat(v.saldoPendiente) || 0));
+                    }
+                });
+                totalPeriodo.innerText = formatoQ(contado + credito);
+                totalContadoPeriodo.innerText = formatoQ(contado);
+                totalCreditoPeriodo.innerText = formatoQ(credito) + ` (Recup: ${formatoQ(cobradoCredito)})`;
+            }
 
             const hoy = new Date();
             filtroMes.value = hoy.getMonth();
@@ -1720,16 +1723,10 @@
                 abonos.push(nuevoAbono);
 
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
-                if (venta.saldoPendiente <= 0) { 
-                    venta.saldoPendiente = 0; 
-                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
-                    
-                    const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
-                    if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
-                        venta.tipoVenta = 'Contado';
-                        venta.diasCredito = 0;
-                    }
-                }
+                if (venta.saldoPendiente <= 0) { 
+                    venta.saldoPendiente = 0; 
+                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
+                }
 
                 saveData();
                 alert('Abono registrado exitosamente.');
@@ -2264,16 +2261,10 @@ clientesFiltrados.forEach(c => {
                 const nuevoAbono = { id: generarIdAbono(), ventaId, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
                 abonos.push(nuevoAbono);
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
-                if (venta.saldoPendiente <= 0) { 
-                    venta.saldoPendiente = 0; 
-                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
-                    
-                    const obtenerLunes = (d) => { const date = new Date(d); const day = date.getDay(); const diff = date.getDate() - day + (day === 0 ? -6 : 1); return new Date(date.setDate(diff)).setHours(0,0,0,0); };
-                    if (obtenerLunes(venta.fecha) === obtenerLunes(new Date())) {
-                        venta.tipoVenta = 'Contado';
-                        venta.diasCredito = 0;
-                    }
-                }
+                if (venta.saldoPendiente <= 0) { 
+                    venta.saldoPendiente = 0; 
+                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
+                }
                 saveData();
                 alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
@@ -2937,13 +2928,9 @@ if (prod && nombre) {
                 const totalVentasPeriodo = ventas.filter(v => new Date(v.fecha) >= start && new Date(v.fecha) <= end && v.estado === 'normal').reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
                 ventasPeriodoTotalSpan.innerText = formatoQ(totalVentasPeriodo);
 
-                // DEDUCCIÓN OPERATIVA: Q1,500.00 base (Solo aplica si hay ventas en el periodo)
-                const DEDUCCION_EQUIPO = totalVentasPeriodo > 0 ? 1500 : 0;
-                let baseCruda = totalContado + totalCreditosCancelados + totalPagosPropios;
-                let baseNeta = Math.max(0, baseCruda - DEDUCCION_EQUIPO);
-
-                baseComisionSpan.innerText = formatoQ(baseNeta) + ` (Bruto: ${formatoQ(baseCruda)} - Descuento: ${formatoQ(DEDUCCION_EQUIPO)})`;
-                return baseNeta;
+                let baseNeta = totalContado + totalCreditosCancelados + totalPagosPropios;
+                baseComisionSpan.innerText = formatoQ(baseNeta);
+                return baseNeta;
                 // --- FIN PARCHE 5 ---
             }
 
@@ -4275,7 +4262,10 @@ if (prod && nombre) {
                     </div>
                 </fieldset>
 
-                <h3>🗺️ Heatmap: Concentración de Capital por Rutas</h3>
+                <h3>🌍 Geolocalización de Ventas</h3>
+                <div id="mapaDashboard" style="height: 400px; border-radius: 20px; border: 2px solid #25d366; margin-bottom: 20px; z-index: 1;"></div>
+
+                <h3>🗺️ Concentración de Capital por Rutas</h3>
                 <div class="table-responsive">
                     <table style="width:100%;">
                         <thead>
@@ -4285,9 +4275,28 @@ if (prod && nombre) {
                     </table>
                 </div>
             `;
-            document.getElementById('content').innerHTML = html;
+           document.getElementById('content').innerHTML = html;
 
-            // --- LÓGICA PARA IMPRIMIR EL DASHBOARD EN PDF ---
+            // --- INICIO PARCHE MAPA LEAFLET ---
+            setTimeout(() => {
+                if (document.getElementById('mapaDashboard')) {
+                    const map = L.map('mapaDashboard').setView([14.8347, -91.5185], 8);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+                    ventas.forEach(v => {
+                        if (v.estado === 'normal' && v.ubicacionGPS) {
+                            const coords = v.ubicacionGPS.match(/(-?\d+\.\d+),(-?\d+\.\d+)/);
+                            if (coords) {
+                                const c = clientes.find(cli => cli.id === v.clienteId);
+                                L.marker([parseFloat(coords[1]), parseFloat(coords[2])]).addTo(map)
+                                    .bindPopup(`<b>${c ? c.razonSocial : 'Desconocido'}</b><br>Doc: ${v.id.substr(0,8)}<br>Monto: Q${parseFloat(v.total).toFixed(2)}`);
+                            }
+                        }
+                    });
+                }
+            }, 150);
+            // --- FIN PARCHE MAPA LEAFLET ---
+
+            // --- LÓGICA PARA IMPRIMIR EL DASHBOARD EN PDF ---
             document.getElementById('imprimirDashboardBtn').addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
@@ -4534,5 +4543,3 @@ if (prod && nombre) {
 </script>
 </body>
 </html>
-
-                    
