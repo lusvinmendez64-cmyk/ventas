@@ -3790,6 +3790,144 @@ if (prod && nombre) {
                 }
             });
 
+            // --- INICIO PARCHE: REPORTE DETALLADO POR SEMANA (MATRIZ LUNES A DOMINGO) ---
+            let currentYTablas = doc.lastAutoTable.finalY + 15;
+
+            if (currentYTablas > doc.internal.pageSize.getHeight() - 30) {
+                doc.addPage();
+                currentYTablas = 20;
+            }
+
+            doc.setTextColor(7, 94, 84);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DETALLE SEMANAL DE PRODUCTOS (UNIDADES: CONTADO VS CRÉDITO)', 14, currentYTablas);
+            currentYTablas += 10;
+
+            let diaPuntero = new Date(fechaInicio);
+            diaPuntero.setHours(0,0,0,0);
+            const fechaFinCero = new Date(fechaFin);
+            fechaFinCero.setHours(23,59,59,999);
+
+            let numeroSemana = 1;
+
+            while (diaPuntero <= fechaFinCero) {
+                // Calcular el domingo de esta semana
+                let diaFinSemana = new Date(diaPuntero);
+                let dayOfWeek = diaFinSemana.getDay(); // 0 = Dom, 1 = Lun ... 6 = Sab
+                let diffToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+                diaFinSemana.setDate(diaFinSemana.getDate() + diffToSunday);
+                diaFinSemana.setHours(23, 59, 59, 999);
+
+                if (diaFinSemana > fechaFinCero) diaFinSemana = new Date(fechaFinCero);
+
+                // Filtrar ventas de ESTA semana
+                const ventasSemana = ventasPeriodo.filter(v => {
+                    const fV = new Date(v.fecha);
+                    return fV >= diaPuntero && fV <= diaFinSemana;
+                });
+
+                if (ventasSemana.length > 0) {
+                    // Estructura: prodName -> [LunCont, LunCred, MarCont, MarCred, ..., DomCont, DomCred]
+                    const dataProductos = {};
+
+                    ventasSemana.forEach(v => {
+                        const fV = new Date(v.fecha);
+                        // Convertir getDay() (0=Dom, 1=Lun) a indice (0=Lun, ..., 6=Dom)
+                        let idxDia = fV.getDay() === 0 ? 6 : fV.getDay() - 1;
+                        let isContado = v.tipoVenta === 'Contado';
+                        
+                        v.productos.forEach(p => {
+                            if (!dataProductos[p.producto]) {
+                                dataProductos[p.producto] = Array(14).fill(0); // 7 dias * 2 tipos (Contado/Crédito)
+                            }
+                            const uds = p.unidades || 0;
+                            // Indice en el array: (idxDia * 2) + (isContado ? 0 : 1)
+                            const offset = isContado ? 0 : 1;
+                            dataProductos[p.producto][(idxDia * 2) + offset] += uds;
+                        });
+                    });
+
+                    // Construir las filas
+                    const rowsSemana = Object.keys(dataProductos).sort().map(prod => {
+                        const arr = dataProductos[prod];
+                        const totalProd = arr.reduce((sum, val) => sum + val, 0);
+                        return [
+                            prod,
+                            ...arr.map(v => v === 0 ? '-' : v.toString()),
+                            totalProd.toString()
+                        ];
+                    });
+
+                    // Calcular totales por columna al final de la semana
+                    const totalesColumnas = Array(14).fill(0);
+                    let granTotalSemana = 0;
+                    rowsSemana.forEach(row => {
+                        for (let i = 1; i <= 14; i++) {
+                            const val = parseInt(row[i]) || 0;
+                            totalesColumnas[i-1] += val;
+                        }
+                        granTotalSemana += parseInt(row[15]) || 0;
+                    });
+
+                    rowsSemana.push([
+                        'TOTAL UNIDADES',
+                        ...totalesColumnas.map(v => v === 0 ? '-' : v.toString()),
+                        granTotalSemana.toString()
+                    ]);
+
+                    if (currentYTablas > doc.internal.pageSize.getHeight() - 40) {
+                        doc.addPage();
+                        currentYTablas = 20;
+                    }
+
+                    doc.setFontSize(10);
+                    doc.setTextColor(0);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`Semana ${numeroSemana}: Del ${diaPuntero.toLocaleDateString()} al ${diaFinSemana.toLocaleDateString()}`, 14, currentYTablas);
+
+                    // Generar la tabla con encabezados anidados (Días divididos en Cont y Créd)
+                    doc.autoTable({
+                        startY: currentYTablas + 3,
+                        head: [
+                            [
+                                { content: 'Producto', rowSpan: 2, styles: { valign: 'middle' } },
+                                { content: 'Lunes', colSpan: 2 },
+                                { content: 'Martes', colSpan: 2 },
+                                { content: 'Miércoles', colSpan: 2 },
+                                { content: 'Jueves', colSpan: 2 },
+                                { content: 'Viernes', colSpan: 2 },
+                                { content: 'Sábado', colSpan: 2 },
+                                { content: 'Domingo', colSpan: 2 },
+                                { content: 'Total', rowSpan: 2, styles: { valign: 'middle' } }
+                            ],
+                            [
+                                'Cont', 'Créd', 'Cont', 'Créd', 'Cont', 'Créd', 'Cont', 'Créd', 
+                                'Cont', 'Créd', 'Cont', 'Créd', 'Cont', 'Créd'
+                            ]
+                        ],
+                        body: rowsSemana,
+                        theme: 'grid',
+                        headStyles: { fillColor: [37, 211, 102], textColor: 255, halign: 'center' },
+                        styles: { fontSize: 7, halign: 'center', cellPadding: 1 },
+                        columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } },
+                        willDrawCell: function(data) {
+                            if (data.row.index === rowsSemana.length - 1 && data.section === 'body') {
+                                doc.setFillColor(230, 245, 235);
+                                doc.setFont('helvetica', 'bold');
+                            }
+                        }
+                    });
+                    currentYTablas = doc.lastAutoTable.finalY + 12;
+                }
+
+                // Siguiente semana (Avanza al Lunes)
+                diaPuntero = new Date(diaFinSemana);
+                diaPuntero.setDate(diaPuntero.getDate() + 1);
+                diaPuntero.setHours(0,0,0,0);
+                numeroSemana++;
+            }
+            // --- FIN PARCHE ---
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
