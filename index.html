@@ -1457,12 +1457,11 @@
                     else {
                         mensaje += '*VENTAS DEL DÍA*\n';
                         ventasHoy.forEach((v, index) => {
-                            const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
-                            mensaje += `*VENTA ${index+1}*\n[Cód: ${cliente.codigo || 'S/C'}] Razón Social: ${cliente.razonSocial}\nNIT: ${cliente.nit || 'C/F'}\n`;
-                            if (cliente.direccion) mensaje += `Dirección: ${cliente.direccion}\n`;
-                            if (v.tipoVenta === 'Crédito' && v.numeroFactura) mensaje += `Factura Física: ${v.numeroFactura}\n`;
-                            mensaje += `Monto Total: ${formatoQ(v.total)}\nTipo de Venta: ${v.tipoVenta}\nDescripción:\n`;
-                            v.productos.forEach(p => { mensaje += `- ${p.unidades}, ${p.producto}, ${formatoQ(p.monto)} (${formatoQ(p.precioUnitario)} c/u)\n`; });
+                           const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
+                            mensaje += `*VENTA ${index+1}*\n[Cód: ${cliente.codigo || 'S/C'}] Razón Social: ${cliente.razonSocial}\nNIT: ${cliente.nit || 'C/F'}\n`;
+                            if (cliente.direccion) mensaje += `Dirección: ${cliente.direccion}\n`;
+                            if (v.numeroFactura) mensaje += `*Doc/Factura Física: ${v.numeroFactura}*\n`;
+                            mensaje += `Monto Total: ${formatoQ(v.total)}\nTipo de Venta: ${v.tipoVenta}\nDescripción:\n`;                            v.productos.forEach(p => { mensaje += `- ${p.unidades}, ${p.producto}, ${formatoQ(p.monto)} (${formatoQ(p.precioUnitario)} c/u)\n`; });
                             mensaje += '\n';
                         });
                     }
@@ -2049,50 +2048,50 @@ function evaluarComportamientoCliente(clienteId) {
                 tbody.innerHTML = '';
                 clientesPagina.forEach(cli => {
                     const analisis = evaluarComportamientoCliente(cli.id);
-let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
-const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
-const comportamiento = { clase: analisis.clase, texto: analisis.texto };
+                    let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
+                    const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
+                    const comportamiento = { clase: analisis.clase, texto: analisis.texto };
 
-                    const creditosPendientes = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal' && v.saldoPendiente > 0);
+                    const creditosPendientes = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal' && v.saldoPendiente > 0);
                     const saldoTotalCliente = creditosPendientes.reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     
                     let docsHtml = '';
                     if (creditosPendientes.length > 0) {
-                        const docsList = creditosPendientes.map(v => v.numeroFactura || v.id.substr(0,8)).join(', ');
-                        docsHtml = `<br><span style="font-size:0.75rem; color:#666;">Docs: ${docsList}</span>`;
+                        const docsList = creditosPendientes.map(v => v.numeroFactura ? `Fact: ${v.numeroFactura}` : `Id: ${v.id.substr(0,6)}`).join(', ');
+                        docsHtml = `<br><span style="font-size:0.75rem; color:#1e3b4f; line-height:1.2; display:inline-block; margin-top:4px;">Docs: ${docsList}</span>`;
                     }
 
                     const estadoVenta = saldoTotalCliente > 0 
                         ? `<span style="color: #c62828; font-weight: 600;">Pendiente (Q${saldoTotalCliente.toFixed(2)})</span>${docsHtml}` 
                         : `<span style="color: #2e7d32; font-weight: 600;">Liquidado</span>`;
 
-                    const codigoHtml = cli.codigo ? `<b>${cli.codigo}</b>` : `<div style="display:flex; gap:4px; align-items:center;"><input type="text" class="inline-codigo-input" data-id="${cli.id}" placeholder="Añadir..." style="width:65px; padding:4px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-codigo" data-id="${cli.id}" style="padding:4px; margin:0; min-width:30px;" title="Guardar código">💾</button></div>`;
+                    const codigoHtml = cli.codigo ? `<b>${cli.codigo}</b>` : `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><input type="text" class="inline-codigo-input" data-id="${cli.id}" placeholder="Añadir..." style="width:65px; padding:4px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-codigo" data-id="${cli.id}" style="padding:4px; margin:0; min-width:30px;" title="Guardar código">💾</button></div>`;
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${cli.razonSocial} ${estrellas}</td>
                         <td>${codigoHtml}</td>
-                        <td>${cli.nit || 'C/F'}</td>
-                        <td>${cli.direccion || '—'}</td>
-                        <td>${cli.telefono || '—'}</td>
-                        <td>${estadoVenta}</td>
-                        <td style="display: flex; gap: 8px; align-items: center; border: none; flex-wrap: wrap;">
-                            <span class="${comportamiento.clase}" style="min-width: 80px; text-align:center;">${comportamiento.texto}</span>
-                            <select class="accionClienteSelect secondary small" data-id="${cli.id}" style="width: 110px; padding: 4px; margin:0; border-radius: 12px; font-size: 0.8rem;">
-                                <option value="">Acciones...</option>
-                                <option value="historial">📜 Historial</option>
-                                <option value="editar">✏️ Editar</option>
-                                <option value="estado">📊 Estado Cta.</option>
-                                <option value="gps">📍 Abrir GPS</option>
-                            </select>
-                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                        <td>${cli.nit || 'C/F'}</td>
+                        <td>${cli.direccion || '—'}</td>
+                        <td>${cli.telefono || '—'}</td>
+                        <td>${estadoVenta}</td>
+                        <td style="display: flex; gap: 8px; align-items: center; border: none; flex-wrap: wrap;">
+                            <span class="${comportamiento.clase}" style="min-width: 80px; text-align:center;">${comportamiento.texto}</span>
+                            <select class="accionClienteSelect secondary small" data-id="${cli.id}" style="width: 110px; padding: 4px; margin:0; border-radius: 12px; font-size: 0.8rem;">
+                                <option value="">Acciones...</option>
+                                <option value="historial">📜 Historial</option>
+                                <option value="editar">✏️ Editar</option>
+                                <option value="estado">📊 Estado Cta.</option>
+                                <option value="gps">📍 Abrir GPS</option>
+                            </select>
+                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+               });
 
-                const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
-                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
+                // Escuchador para guardar los códigos desde la tabla
+                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const id = btn.dataset.id;
                         const val = document.querySelector(`.inline-codigo-input[data-id="${id}"]`).value.trim();
@@ -2102,7 +2101,9 @@ const comportamiento = { clase: analisis.clase, texto: analisis.texto };
                         }
                     });
                 });
-                let paginacionHtml = '';
+
+                const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
+                let paginacionHtml = '';
                 if (totalPaginas > 1) {
                     paginacionHtml += `<button class="secondary small" id="paginaAnteriorCat" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Ant</button>`;
                     paginacionHtml += `<span> Pág ${paginaActual+1} de ${totalPaginas} </span>`;
