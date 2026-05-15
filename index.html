@@ -1460,8 +1460,8 @@
                            const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                             mensaje += `*VENTA ${index+1}*\n[Cód: ${cliente.codigo || 'S/C'}] Razón Social: ${cliente.razonSocial}\nNIT: ${cliente.nit || 'C/F'}\n`;
                             if (cliente.direccion) mensaje += `Dirección: ${cliente.direccion}\n`;
-                            if (v.numeroFactura) mensaje += `*Doc/Factura Física: ${v.numeroFactura}*\n`;
-                            mensaje += `Monto Total: ${formatoQ(v.total)}\nTipo de Venta: ${v.tipoVenta}\nDescripción:\n`;                            v.productos.forEach(p => { mensaje += `- ${p.unidades}, ${p.producto}, ${formatoQ(p.monto)} (${formatoQ(p.precioUnitario)} c/u)\n`; });
+                            if (v.numeroFactura) mensaje += `*Doc/Factura Física: ${v.numeroFactura}*\n`;
+                            mensaje += `Monto Total: ${formatoQ(v.total)}\nTipo de Venta: ${v.tipoVenta}\nDescripción:\n`;                          v.productos.forEach(p => { mensaje += `- ${p.unidades}, ${p.producto}, ${formatoQ(p.monto)} (${formatoQ(p.precioUnitario)} c/u)\n`; });
                             mensaje += '\n';
                         });
                     }
@@ -1865,8 +1865,11 @@
         function mostrarFormularioAbono(ventaId) {
             const venta = ventas.find(v => v.id === ventaId);
             if (!venta) return;
+            if (!venta.numeroFactura) {
+                alert('⚠️ OBLIGATORIO: Esta venta no tiene un Número de Factura. Por favor ve al Catálogo y asígnale el número de factura en su Estado de Cuenta antes de abonar.');
+                return;
+            }
             const cliente = clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' };
-
             const modal = document.getElementById('abonoModal');
             const content = document.getElementById('abonoContent');
             content.innerHTML = `
@@ -2062,7 +2065,7 @@ function evaluarComportamientoCliente(clienteId) {
                             if (v.numeroFactura) {
                                 facturasList += `<div style="color:#075e54; font-weight:bold; margin-top:2px;">📄 Fact: ${v.numeroFactura}</div>`;
                             } else {
-                                facturasList += `<div style="display:flex; gap:4px; align-items:center; margin-top:4px;"><input type="text" class="inline-factura-input" data-id="${v.id}" placeholder="Nº Factura..." style="width:80px; padding:2px 4px; font-size:0.7rem; margin:0;"><button class="secondary small btn-guardar-fact-inline" data-id="${v.id}" style="padding:2px 6px; margin:0; min-width:30px;" title="Guardar Factura">💾</button></div>`;
+                                facturasList += `<div style="display:flex; gap:4px; align-items:center; margin-top:4px;"><input type="text" class="inline-factura-input" data-id="${v.id}" placeholder="Nº Fact..." style="width:75px; padding:2px 4px; font-size:0.7rem; margin:0;"><button class="secondary small btn-guardar-fact-inline" data-id="${v.id}" style="padding:2px 6px; margin:0; min-width:30px;" title="Guardar Factura">💾</button></div>`;
                             }
                         });
                         docsHtml = `<div style="margin-top:6px; padding-top:4px; border-top:1px solid #eee;">${facturasList}</div>`;
@@ -2138,62 +2141,6 @@ function evaluarComportamientoCliente(clienteId) {
                         e.target.value = '';
                         if (accion === 'historial') generarHistorialClientePDF(id);
                         if (accion === 'editar') { const cli = clientes.find(c => c.id === id); if (cli) mostrarModalEditarCliente(cli); }
-                        if (accion === 'estado') mostrarEstadoCuenta(id);
-                        if (accion === 'gps') {
-                            const ventasCli = ventas.filter(v => v.clienteId === id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                            const link = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : null;
-                            if (link && link !== 'Sin ubicación GPS' && link !== 'Sin ubicación') window.open(link, '_blank');
-                            else alert('No hay coordenadas GPS registradas en las ventas de este cliente.');
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.eliminarClienteBtn').forEach(btn => btn.addEventListener('click', () => {
-                    const cli = clientes.find(c => c.id === btn.dataset.id);
-                    if (cli && confirm(`¿Eliminar al cliente ${cli.razonSocial} y todas sus ventas? Esta acción es irreversible.`)) {
-                        ventas = ventas.filter(v => v.clienteId !== cli.id);
-                        clientes = clientes.filter(c => c.id !== cli.id);
-                        saveData();
-                        filtrarClientes();
-                    }
-                }));
-            }
-
-                // Escuchador para guardar los códigos desde la tabla
-                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        const val = document.querySelector(`.inline-codigo-input[data-id="${id}"]`).value.trim();
-                        if (val) {
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli) { cli.codigo = val; saveData(); renderTabla(); }
-                        }
-                    });
-                });
-
-                const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
-                let paginacionHtml = '';
-                if (totalPaginas > 1) {
-                    paginacionHtml += `<button class="secondary small" id="paginaAnteriorCat" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Ant</button>`;
-                    paginacionHtml += `<span> Pág ${paginaActual+1} de ${totalPaginas} </span>`;
-                    paginacionHtml += `<button class="secondary small" id="paginaSiguienteCat" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Sig ➔</button>`;
-                }
-                paginacionDiv.innerHTML = paginacionHtml;
-
-                document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
-                document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
-
-                document.querySelectorAll('.accionClienteSelect').forEach(select => {
-                    select.addEventListener('change', (e) => {
-                        const accion = e.target.value;
-                        const id = e.target.dataset.id;
-                        e.target.value = ''; // Resetea el selector a "Acciones..."
-                        if (accion === 'historial') generarHistorialClientePDF(id);
-                       
-                        if (accion === 'editar') {
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli) mostrarModalEditarCliente(cli);
-                        }
                         if (accion === 'estado') mostrarEstadoCuenta(id);
                         if (accion === 'gps') {
                             const ventasCli = ventas.filter(v => v.clienteId === id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
@@ -2485,7 +2432,7 @@ clientesFiltrados.forEach(c => {
             const ventasCliente = ventas.filter(v => v.clienteId === clienteId && v.estado === 'normal').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             const abonosCliente = abonos.filter(a => ventasCliente.some(v => v.id === a.ventaId));
 
-            let html = `<h3>Estado de cuenta: ${cliente.razonSocial}</h3><p>NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || '—'}</p><h4>Facturas pendientes</h4><div class="table-responsive"><table><thead><tr><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead><tbody>`;
+            let html = `<h3>Estado de cuenta: ${cliente.razonSocial}</h3><p>NIT: ${cliente.nit || 'C/F'} | Código: ${cliente.codigo || '—'}</p><h4>Facturas pendientes</h4><div class="table-responsive"><table><thead><tr><th>Factura</th><th>Fecha</th><th>Total</th><th>Saldo</th><th>Vencimiento</th><th>Días</th></tr></thead><tbody>`;
             let totalPendiente = 0;
             ventasCliente.forEach(v => {
                 if (v.tipoVenta === 'Crédito' && v.saldoPendiente > 0) {
@@ -2494,28 +2441,33 @@ clientesFiltrados.forEach(c => {
                     const hoy = new Date();
                     const diasRest = Math.ceil((venc - hoy) / (1000*60*60*24));
                     const clase = diasRest < 0 ? 'vencido' : (diasRest <= 3 ? 'proximo' : '');
-                    html += `<tr class="${clase}"><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${formatoQ(v.total)}</td><td>${formatoQ(v.saldoPendiente)}</td><td>${venc.toLocaleDateString()}</td><td>${diasRest}</td></tr>`;
+
+                    const factHtml = v.numeroFactura 
+                        ? `<b>${v.numeroFactura}</b>` 
+                        : `<div style="display:flex; gap:4px; align-items:center;"><input type="text" class="inline-factura-cta" data-id="${v.id}" placeholder="Añadir..." style="width:70px; padding:2px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-fact-cta" data-id="${v.id}" style="padding:2px 6px; margin:0; min-width:30px;">💾</button></div>`;
+
+                    html += `<tr class="${clase}"><td>${factHtml}</td><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${formatoQ(v.total)}</td><td>${formatoQ(v.saldoPendiente)}</td><td>${venc.toLocaleDateString()}</td><td>${diasRest}</td></tr>`;
                 }
             });
             html += `</tbody></table></div><p><strong>Total pendiente: ${formatoQ(totalPendiente)}</strong></p><h4>Abonos realizados</h4>`;
             
             if (abonosCliente.length === 0) {
-                html += '<p>No hay abonos registrados.</p>';
-            } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Fecha Abono</th><th>Fecha Factura</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
-                abonosCliente.forEach(a => {
-                    const venta = ventas.find(v => v.id === a.ventaId);
-                    const fechaFactura = venta ? new Date(venta.fecha).toLocaleDateString() : '—';
+                html += '<p>No hay abonos registrados.</p>';
+            } else {
+                html += `<div class="table-responsive"><table><thead><tr><th>Fecha Abono</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
+                abonosCliente.forEach(a => {
+                    const venta = ventas.find(v => v.id === a.ventaId);
+                    const docStr = venta ? (venta.numeroFactura || venta.id.substr(0,8)) : '—';
                     let estadoBadge = a.estado === 'pendiente' 
                         ? `<button class="secondary small btn-validar-cheque-modal" data-id="${a.id}" style="background:#ffc107; color:#000; font-size:0.7rem; border:none; padding:4px 8px;">⏳ Validar Depósito</button>` 
                         : `<span style="color:#2e7d32; font-weight:bold;">Cobrado</span>`;
 
-                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${fechaFactura}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${estadoBadge}</td></tr>`;
-                });
-                html += `</tbody></table></div>`;
-            }
+                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${docStr}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${estadoBadge}</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
 
-            html += `<h4>Registrar nuevo abono</h4><div><label>Factura: <select id="abonoVentaId">${ventasCliente.filter(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0).map(v => `<option value="${v.id}">${new Date(v.fecha).toLocaleDateString()} - Q${v.saldoPendiente.toFixed(2)}</option>`).join('')}</select></label>
+            html += `<h4>Registrar nuevo abono</h4><div><label>Factura a abonar: <select id="abonoVentaId">${ventasCliente.filter(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0).map(v => `<option value="${v.id}">${v.numeroFactura ? 'Fact: ' + v.numeroFactura : 'Doc: ' + v.id.substr(0,6)} - Q${v.saldoPendiente.toFixed(2)}</option>`).join('')}</select></label>
                 <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
                 <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label>
                 <div id="chequeOpcionesModal" style="display:none; margin-top:10px;"><div class="flex-row"><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="hoy" checked> Cheque del día</label><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="futuro"> Cheque posfechado</label></div><div id="fechaChequeModalContainer" style="display:none;"><label>Fecha de cobro: <input type="date" id="fechaChequeModal"></label></div></div>
@@ -2529,6 +2481,17 @@ clientesFiltrados.forEach(c => {
             modalContent.innerHTML = html;
             modal.style.display = 'flex';
 
+            document.querySelectorAll('.btn-guardar-fact-cta').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const val = document.querySelector(`.inline-factura-cta[data-id="${id}"]`).value.trim();
+                    if (val) {
+                        const v = ventas.find(ve => ve.id === id);
+                        if (v) { v.numeroFactura = val; saveData(); mostrarEstadoCuenta(clienteId); renderCatalogo(); }
+                    }
+                });
+            });
+
             const tipoPago = document.getElementById('abonoTipoPago');
             const chequeOpciones = document.getElementById('chequeOpcionesModal');
             const fechaChequeContainer = document.getElementById('fechaChequeModalContainer');
@@ -2540,14 +2503,18 @@ clientesFiltrados.forEach(c => {
             radioFuturo.addEventListener('change', () => { fechaChequeContainer.style.display = 'block'; });
 
             document.getElementById('guardarAbonoModalBtn').addEventListener('click', () => {
-                showLoader();
                 const ventaId = document.getElementById('abonoVentaId').value;
+                const venta = ventas.find(v => v.id === ventaId);
+                
+                if (venta && !venta.numeroFactura) { 
+                    alert('⚠️ ALERTA: Esta venta no tiene Número de Factura. Por favor escríbelo en la tabla de arriba y guárdalo (💾) antes de registrar este abono.'); 
+                    return; 
+                }
+
+                showLoader();
                 const monto = parseFloat(document.getElementById('abonoMonto').value);
                 const tipo = tipoPago.value;
                 if (!ventaId || isNaN(monto) || monto <= 0) { alert('Seleccione una factura y monto válido'); hideLoader(); return; }
-                
-                const venta = ventas.find(v => v.id === ventaId);
-                if (!venta) { hideLoader(); return; }
                 if (monto > venta.saldoPendiente) { alert('El monto no puede ser mayor al saldo pendiente'); hideLoader(); return; }
 
                 let fechaCobro = null;
@@ -2563,50 +2530,43 @@ clientesFiltrados.forEach(c => {
                 }
 
                 const nuevoAbono = { id: generarIdAbono(), ventaId, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
-                abonos.push(nuevoAbono);
-                venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
-                
-                // MOTOR INTELIGENTE DE COMISIONES
-                if (venta.saldoPendiente <= 0) { 
-                    venta.saldoPendiente = 0; 
+                abonos.push(nuevoAbono);
+                venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
+                
+                if (venta.saldoPendiente <= 0) { 
+                    venta.saldoPendiente = 0; 
                     const hayChequesPendientes = abonos.some(a => a.ventaId === venta.id && a.estado === 'pendiente');
-                    if (!hayChequesPendientes) {
-                        venta.fechaCancelacion = new Date().toISOString(); // Dinero en mano, se autoriza comisión
-                    } else {
-                        venta.fechaCancelacion = null; // Queda congelada hasta validación
-                    }
-                }
-                saveData();
-                alert('Abono registrado exitosamente.');
-                modal.style.display = 'none';
-                renderCatalogo();
-                hideLoader();
-            });
+                    if (!hayChequesPendientes) venta.fechaCancelacion = new Date().toISOString(); 
+                    else venta.fechaCancelacion = null; 
+                }
+                saveData();
+                alert('Abono registrado exitosamente.');
+                modal.style.display = 'none';
+                renderCatalogo();
+                hideLoader();
+            });
 
-            // --- NUEVA VALIDACIÓN DE CHEQUES DESDE EL MODAL AQUÍ ---
-            document.querySelectorAll('.btn-validar-cheque-modal').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if(confirm('¿Confirmar que este cheque posfechado ya fue depositado?')) {
-                        const abono = abonos.find(a => a.id === btn.dataset.id);
-                        if(abono) {
-                            abono.estado = 'cobrado';
-                            
-                            // LIBERAR COMISIÓN EN EL MES ACTUAL
+            document.querySelectorAll('.btn-validar-cheque-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if(confirm('¿Confirmar que este cheque posfechado ya fue depositado y liberado?')) {
+                        const abono = abonos.find(a => a.id === btn.dataset.id);
+                        if(abono) {
+                            abono.estado = 'cobrado';
                             const vAsociada = ventas.find(v => v.id === abono.ventaId);
                             if (vAsociada && vAsociada.saldoPendiente <= 0) {
                                 const hayChequesPendientes = abonos.some(a => a.ventaId === vAsociada.id && a.estado === 'pendiente');
                                 if (!hayChequesPendientes) vAsociada.fechaCancelacion = new Date().toISOString();
                             }
-                            saveData();
-                            mostrarEstadoCuenta(clienteId); 
-                        }
-                    }
-                });
-            });
+                            saveData();
+                            mostrarEstadoCuenta(clienteId); 
+                        }
+                    }
+                });
+            });
 
-            document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        }
+            document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
 
         // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
