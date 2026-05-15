@@ -4814,10 +4814,13 @@ if (prod && nombre) {
                 <h3>🌍 Geolocalización de Ventas</h3>
                 <div id="mapaDashboard" style="height: 400px; border-radius: 20px; border: 2px solid #25d366; margin-bottom: 20px; z-index: 1;"></div>
 
-                <h3>🗺️ Concentración de Capital por Rutas</h3>
-                <div class="table-responsive">
-                    <table style="width:100%;">
-                        <thead>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 15px; margin-bottom: 8px;">
+                    <h3 style="margin: 0; color: #1e3b4f;">🗺️ Concentración de Capital</h3>
+                    <button id="imprimirCapitalBtn" class="secondary small" style="margin: 0; border-color: #075e54; color: #075e54; font-weight: bold;">📄 Exportar Reporte PDF</button>
+                </div>
+                <div class="table-responsive" style="margin-top: 0;">
+                    <table style="width:100%;">
+                        <thead>
                             <tr><th>Ruta / Zona</th><th>Venta Contado (Mes)</th><th>Cobros Recuperados (Mes)</th><th>Créditos Sanos (Global)</th><th>Mora Vencida (Global)</th></tr>
                         </thead>
                         <tbody>${heatmapRows || '<tr><td colspan="4">No hay datos de rutas suficientes.</td></tr>'}</tbody>
@@ -5002,10 +5005,53 @@ if (prod && nombre) {
                     doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
                 }
 
-                doc.save(`Resumen_Dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
-            });
+               doc.save(`Resumen_Dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
 
-            // --- INICIO PARCHE 9: CALL CENTER DE COBROS POR RUTA ---
+            // --- INICIO NUEVO PARCHE: EXPORTAR CONCENTRACIÓN DE CAPITAL PDF ---
+            document.getElementById('imprimirCapitalBtn')?.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+                const fechaHora = new Date().toLocaleString();
+
+                doc.setFillColor(7, 94, 84);
+                doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('MARIJOSE JHIRE S.A.', 14, 12);
+                doc.setFontSize(10);
+                doc.text('CONCENTRACIÓN DE CAPITAL', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+                doc.setTextColor(0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                doc.text(`Fecha de impresión: ${fechaHora}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+                doc.setDrawColor(200);
+                doc.line(14, 30, doc.internal.pageSize.getWidth() - 14, 30);
+
+                const bodyReporte = Object.keys(rutasMap).sort().map(ruta => {
+                    const data = rutasMap[ruta];
+                    return [ruta, formatoQ(data.contado), formatoQ(data.cobros), formatoQ(data.sana), formatoQ(data.vencida)];
+                });
+
+                if (bodyReporte.length === 0) bodyReporte.push(['Sin datos registrados', '-', '-', '-', '-']);
+
+                doc.autoTable({
+                    startY: 35,
+                    head: [['Ruta / Zona', 'Venta Contado', 'Recuperación', 'Créditos Sanos', 'Mora Vencida']],
+                    body: bodyReporte,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84] },
+                    styles: { fontSize: 9 }
+                });
+
+                doc.save(`Concentracion_Capital_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+            // --- FIN NUEVO PARCHE ---
+
+            // --- INICIO PARCHE 9: CALL CENTER DE COBROS POR RUTA ---
             document.querySelectorAll('.btn-detalle-ruta').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const rutaSel = e.target.dataset.ruta;
