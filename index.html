@@ -87,7 +87,7 @@
             .stock-display { font-size: 0.7rem !important; }
         }
         
-        #greeting { background: #e8f5e9; padding: 10px 20px; text-align: right; font-size: 0.95rem; color: #075e54; border-bottom: 1px solid #c8e6c9; font-weight: 500; }
+        #greeting { background: #e8f5e9; padding: 10px 20px; text-align: center; font-size: 0.95rem; color: #075e54; border-bottom: 1px solid #c8e6c9; font-weight: 500; }
         .calificacion-star { color: #ffc107; font-size: 1rem; }
         .calificacion-lista { margin-top: 8px; font-size: 0.85rem; background: #f8f9fa; border-radius: 20px; padding: 12px; }
         .calificacion-item { border-bottom: 1px solid #dee2e6; padding: 8px 0; }
@@ -109,13 +109,19 @@
         .global-loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(2px); }
         .spinner { border: 6px solid #e1f5fe; border-top: 6px solid #25d366; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader-text { margin-top: 15px; color: #075e54; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; }
-    </style>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+       .loader-text { margin-top: 15px; color: #075e54; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; }
+        .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 9000; }
+        .fab { background: #25d366; color: white; border: none; border-radius: 50%; width: 56px; height: 56px; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .fab.radar { background: #075e54; }
+        .fab:active { transform: scale(0.9); }
+    </style>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="globalLoader" class="global-loader">
@@ -147,8 +153,9 @@
         <div class="tab" data-tab="cobros">💰 Cobros</div>
     </div>
     <div class="content" id="content"></div>
-</div>
+</div> <!-- CIERRE DE LA APP -->
 
+<!-- VERSIÓN LIMPIA Y ÚNICA DE LOS MODALES -->
 <div id="estadoCuentaModal" class="modal"><div class="modal-content" id="estadoCuentaContent"></div></div>
 <div id="abonoModal" class="modal"><div class="modal-content" id="abonoContent"></div></div>
 <div id="estadoCobroModal" class="modal"><div class="modal-content" id="estadoCobroContent"></div></div>
@@ -157,6 +164,7 @@
 <div id="calificacionModal" class="modal"><div class="modal-content" id="calificacionContent"></div></div>
 <div id="alertaLiquidezModal" class="modal" style="z-index: 1050;"><div class="modal-content" id="alertaLiquidezContent" style="max-width: 400px; text-align: center;"></div></div>
 <div id="detalleRutaModal" class="modal"><div class="modal-content" id="detalleRutaContent" style="max-width: 700px;"></div></div>
+
 <div id="nuevoProductoModal" class="modal">
     <div class="modal-content">
         <h3 style="color: #075e54; margin-bottom: 15px;">📦 Agregar Nuevo Producto</h3>
@@ -209,9 +217,119 @@
     </div>
 </div>
 
+<!-- CONTENEDOR FLOTANTE ELIMINADO -->
+
+<div id="radarModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: #075e54; margin-bottom: 15px;">📡 Radar Médico (5 km)</h3>
+        <div id="radarResultados" style="max-height: 400px; overflow-y: auto; font-size:0.9rem;">Toque "Buscar" para rastrear clientes cercanos...</div>
+        <div style="margin-top:20px; display:flex; gap:10px;"><button id="ejecutarRadarBtn" class="secondary" style="background:#075e54; color:white;">🔍 Buscar</button><button id="cerrarRadarBtn" class="secondary small">Cerrar</button></div>
+    </div>
+</div>
+
+<div id="visitaModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color: #075e54; margin-bottom: 15px;">📍 Registrar Visita</h3>
+        
+        <!-- INICIO DEL BUSCADOR INTELIGENTE -->
+        <div style="background:#e3f0fa; padding:10px 14px; border-radius:15px; margin-bottom:15px; border: 1px solid #c9ddec;">
+            <label style="margin-bottom:5px; font-size:0.85rem; color:#075e54; font-weight:600;">🔍 Buscar Cliente (Opcional)</label>
+            <input type="text" id="buscarClienteV" placeholder="Nombre, código o NIT..." style="margin-bottom:5px;">
+            <div id="listaResultadosV" style="max-height:140px; overflow-y:auto; border-radius:10px; background:white;"></div>
+        </div>
+        <!-- FIN DEL BUSCADOR INTELIGENTE -->
+
+        <label>Nombre / Razón Social <span class="req">*</span>: <input type="text" id="vNombre" required></label>
+        <label>Dirección: <input type="text" id="vDireccion"></label>
+        <label>Teléfono: <input type="tel" id="vTelefono"></label>
+        <label>Departamento / Ruta: <input type="text" id="vDepartamento"></label>
+        <label>Clasificación: <select id="vClasificacion"><option value="Nuevo">Cliente Nuevo</option><option value="Seguimiento">Seguimiento</option><option value="Cobranza">Cobro</option><option value="Venta">Venta</option></select></label>
+        <label>Comentarios: <textarea id="vComentarios" rows="2"></textarea></label>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button id="guardarVisitaBtn" class="secondary" style="background:#25d366; color:white; border-color:#1a8a4a;">Guardar y Ubicar</button>
+            <button id="cerrarVisitaBtn" class="secondary small">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    (function() {
+    (function() {
+       // --- CONEXIÓN SUPABASE ---
+        const SUPABASE_URL = 'https://dummy.supabase.co'; // Texto simulado para evitar colapso
+        const SUPABASE_KEY = 'dummy-key'; // Texto simulado para evitar colapso
+
+        // Inicializar cliente (El "Enchufe")
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Test rápido de conexión a Supabase
+        async function probarConexionSupabase() {
+            try {
+                // Hacemos una consulta genérica a la tabla 'clientes' (aunque no exista aún, nos dirá si conecta)
+                const { data, error } = await supabase.from('clientes').select('id').limit(1);
+                
+                // Si no hay un error de "Failed to fetch", la conexión es exitosa
+                if (error && error.message.includes("Failed to fetch")) {
+                     console.error("❌ Error de red: No se pudo conectar a Supabase. Verifica tu conexión a internet o URL.");
+                } else if (error && error.code === 'PGRST116') {
+                     // El error PGRST116 significa que la tabla no existe, pero ¡CONECTAMOS a la base de datos!
+                     console.log("✅ ¡Conexión a Supabase Exitosa! (La tabla 'clientes' aún no existe, lo cual es normal).");
+                } else {
+                     console.log("✅ ¡Conexión a Supabase Exitosa!");
+                }
+            } catch (err) {
+                console.error("❌ Fallo crítico de conexión a Supabase:", err);
+            }
+        }
+        
+        // Ejecutamos el test al cargar
+        probarConexionSupabase();
+        async function migrarTodoASupabase() {
+            showLoader();
+            console.log("🚀 Iniciando Migración Masiva...");
+            try {
+                const tablas = [
+                    { nombre: 'clientes', data: clientes },
+                    { nombre: 'ventas', data: ventas },
+                    { nombre: 'catalogoproductos', data: catalogoProductos },
+                    { nombre: 'inventario', data: inventario },
+                    { nombre: 'movimientosinventario', data: movimientosInventario },
+                    { nombre: 'abonos', data: abonos },
+                    { nombre: 'cobros', data: cobros },
+                    { nombre: 'pagoscobro', data: pagosCobro },
+                    { nombre: 'calificacionesclientes', data: calificacionesClientes },
+                    { nombre: 'visitas', data: visitas } 
+                ];
+
+                // Diccionario de llaves primarias para forzar la actualización y evitar duplicados
+                const onConflictKeys = { 
+                    clientes: 'id', ventas: 'id', catalogoproductos: 'id', 
+                    inventario: 'productoId', movimientosinventario: 'id', 
+                    abonos: 'id', cobros: 'id', pagoscobro: 'id', 
+                    calificacionesclientes: 'id', visitas: 'id' 
+                };
+
+                for (const tabla of tablas) {
+                    if (tabla.data.length > 0) {
+                        const dataSellada = tabla.data.map(item => ({ ...item, vendedor_id: vendedorId }));
+                        const llavePrimaria = onConflictKeys[tabla.nombre];
+                        // La directiva onConflict garantiza que si el ID ya existe, solo actualice el stock/datos.
+                        const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: llavePrimaria });
+                        if (error) throw new Error(`Error en ${tabla.nombre}: ${error.message}`);
+                        console.log(`✅ ${tabla.nombre} migrado sin duplicados.`);
+                    }
+                }
+                localStorage.setItem('ultimaSincronizacion', new Date().toISOString().slice(0, 10));
+                alert("✨ Sincronización exitosa. Base de datos actualizada sin duplicados.");
+            } catch (err) {
+                console.error("❌ Fallo en migración:", err);
+                alert("Error al sincronizar: " + err.message);
+            } finally {
+                hideLoader();
+            }
+        }
         // ========== DATOS GLOBALES ==========
+        
+        // ... el resto de tus variables (clientes, ventas, etc.)
+        
         let ventaEditandoId = null;
         let clientes = [];
         let ventas = [];
@@ -220,21 +338,35 @@
         let movimientosInventario = [];
         let abonos = [];
         let cobros = [];
-        let pagosCobro = [];
-        let calificacionesClientes = [];
+        let pagosCobro = [];
+        let calificacionesClientes = [];
+        let visitas = []; // VARIABLE GLOBAL VISITAS
 
         let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
-        if (!nombreUsuario) {
-            nombreUsuario = prompt('¡Hola! Por favor, ingresa tu nombre para personalizar la experiencia:');
+        let vendedorId = localStorage.getItem('vendedorId') || ''; 
+
+        if (!nombreUsuario || !vendedorId) {
+            nombreUsuario = prompt('¡Hola! Ingresa tu nombre y apellido (Ej: Juan Perez):');
+            
             if (nombreUsuario && nombreUsuario.trim() !== '') {
-                localStorage.setItem('nombreUsuario', nombreUsuario.trim());
+                nombreUsuario = nombreUsuario.trim();
+                
+                // Generación automática del código: Iniciales + número aleatorio de 3 dígitos
+                const partesNombre = nombreUsuario.split(' ').filter(n => n.length > 0);
+                const iniciales = partesNombre.map(n => n[0].toUpperCase()).join('').substring(0, 2);
+                const numeroUnico = Math.floor(100 + Math.random() * 900); 
+                vendedorId = `V-${iniciales}${numeroUnico}`;
+                
+                localStorage.setItem('nombreUsuario', nombreUsuario);
+                localStorage.setItem('vendedorId', vendedorId);
             } else {
                 nombreUsuario = 'Usuario';
+                vendedorId = 'V-000';
                 localStorage.setItem('nombreUsuario', nombreUsuario);
+                localStorage.setItem('vendedorId', vendedorId);
             }
         }
-        document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
-
+        document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario} (${vendedorId})`;
         function obtenerSaludo() {
             const hora = new Date().getHours();
             if (hora < 12) return 'Buenos días';
@@ -412,34 +544,83 @@
             }
             if (migrado) saveData();
         }
-
         function loadData() {
-            try {
-                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
-                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
-                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
-                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
-                abonos = JSON.parse(localStorage.getItem('abonos')) || [];
-                cobros = JSON.parse(localStorage.getItem('cobros')) || [];
-                pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
-                calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
-            } catch (e) { console.warn("Error cargando datos", e); }
-            migrarDatos();
-        }
-        function saveData() {
-            localStorage.setItem('clientes', JSON.stringify(clientes));
-            localStorage.setItem('ventas', JSON.stringify(ventas));
-            localStorage.setItem('catalogoProductos', JSON.stringify(catalogoProductos));
-            localStorage.setItem('inventario', JSON.stringify(inventario));
-            localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
-            localStorage.setItem('abonos', JSON.stringify(abonos));
-            localStorage.setItem('cobros', JSON.stringify(cobros));
-            localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
-            localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
-        }
-        loadData();
-        saveData();
+            try {
+                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
+                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
+                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
+                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
+                abonos = JSON.parse(localStorage.getItem('abonos')) || [];
+                cobros = JSON.parse(localStorage.getItem('cobros')) || [];
+                pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
+                calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
+                visitas = JSON.parse(localStorage.getItem('visitas')) || [];
+            } catch (e) { console.warn("Error cargando datos", e); }
+            migrarDatos();
+        }
+
+        function saveData() {
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+            localStorage.setItem('ventas', JSON.stringify(ventas));
+            localStorage.setItem('catalogoProductos', JSON.stringify(catalogoProductos));
+            localStorage.setItem('inventario', JSON.stringify(inventario));
+            localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
+            localStorage.setItem('abonos', JSON.stringify(abonos));
+            localStorage.setItem('cobros', JSON.stringify(cobros));
+            localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
+            localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
+            localStorage.setItem('visitas', JSON.stringify(visitas));
+            
+            // Intento de respaldo silencioso en segundo plano con sello de vendedor
+            const ventasSelladas = ventas.map(v => ({ ...v, vendedor_id: vendedorId }));
+            supabase.from('ventas').upsert(ventasSelladas).then(() => console.log("☁️ Nube actualizada con sello de vendedor"));
+        }
+
+        // 1. Ejecutar carga y guardado PRIMERO
+        loadData();
+        saveData();
+
+        // --- INICIO PARCHE GERENCIA (ACTUALIZADO PARA REGLAS INDIVIDUALES) ---
+        async function syncDesdeGerencia() {
+            try {
+                const { data: config } = await supabase.from('configuraciones').select('*');
+                if (config) {
+                    const bloqueoGlobal = config.find(c => c.llave === 'bloqueo_total')?.valor === 'true';
+                    const creditoGlobal = config.find(c => c.llave === 'permitir_credito')?.valor !== 'false';
+                    const bloqueoIndiv = config.find(c => c.llave === `bloqueo_${vendedorId}`)?.valor === 'true';
+                    const noCreditoIndiv = config.find(c => c.llave === `no_credito_${vendedorId}`)?.valor === 'true';
+
+                    if (bloqueoGlobal || bloqueoIndiv) {
+                        document.body.innerHTML = '<div style="padding:50px; text-align:center; font-family:sans-serif;"><h1 style="color:#c62828;">⛔ ACCESO DENEGADO</h1><p>El sistema ha sido bloqueado por Gerencia Central para su perfil.</p></div>';
+                        return;
+                    }
+
+                    const permisoCreditoFinal = creditoGlobal && !noCreditoIndiv;
+                    const radioCredito = document.querySelector('input[name="tipoVenta"][value="Crédito"]');
+                    if (radioCredito) {
+                        radioCredito.disabled = !permisoCreditoFinal;
+                        if (!permisoCreditoFinal && radioCredito.checked) document.querySelector('input[name="tipoVenta"][value="Contado"]').checked = true;
+                    }
+                }
+                const { data: invReal } = await supabase.from('inventario').select('*');
+                if (invReal && invReal.length > 0) {
+                    inventario = invReal;
+                    localStorage.setItem('inventario', JSON.stringify(inventario));
+                }
+            } catch(e) { console.warn("Modo offline o error al traer reglas."); }
+        }
+        syncDesdeGerencia();
+        // --- FIN PARCHE GERENCIA ---
+
+        // 2. LUEGO EJECUTAR LA CADENA DE COMANDO DIARIA
+        const hoyStr = new Date().toISOString().slice(0, 10);
+        const ultimaSinc = localStorage.getItem('ultimaSincronizacion');
+
+        if (ultimaSinc !== hoyStr) {
+            console.log("📅 Primera apertura del día detectada. Sincronización Automática...");
+            setTimeout(() => { migrarTodoASupabase(); }, 1500);
+        }
 
         function exportarBackup() {
             const backup = { clientes, ventas, catalogoProductos, inventario, movimientosInventario, abonos, cobros, pagosCobro, calificacionesClientes, fecha: new Date().toISOString() };
@@ -495,8 +676,8 @@
             abonos.forEach(a => {
                 if (a.tipoPago === 'cheque' && a.estado === 'pendiente' && a.fechaCobro) {
                     const fechaCobro = new Date(a.fechaCobro); fechaCobro.setHours(0,0,0,0);
-                    const dias = Math.ceil((fechaCobro - hoy) / (1000*60*60*24));
-                    if (dias <= 3 && dias >= 0) {
+                   const dias = Math.ceil((fechaCobro - hoy) / (1000*60*60*24));
+                    if (dias <= 3) { // MODIFICADO: Eliminado el && dias >= 0 para alertar cheques vencidos
                         const venta = ventas.find(v => v.id === a.ventaId);
                         const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?' }) : { razonSocial: '?' };
                         chequesPendientes.push({ ...a, clienteNombre: cliente.razonSocial, dias });
@@ -515,8 +696,12 @@
                     </div>`;
                 });
                 chequesPendientes.forEach(c => {
-                    html += `<div class="recordatorio-item proximo"><div style="flex:1;">💰 Cheque de Q${redondearDinero(c.monto).toFixed(2)} de ${c.clienteNombre} - Fecha cobro: ${new Date(c.fechaCobro).toLocaleDateString()}</div></div>`;
-                });
+                    const estadoCheque = c.dias < 0 ? '<span class="vencido">⚠️ ATRASADO - CONFIRMAR DEPÓSITO</span>' : (c.dias === 0 ? '<b>HOY</b>' : `${c.dias} día(s)`);
+                    html += `<div class="recordatorio-item proximo">
+                        <div style="flex:1;">💰 Cheque (Q${redondearDinero(c.monto).toFixed(2)}) de ${c.clienteNombre} - Cobro: ${estadoCheque}</div>
+                        <button class="secondary small btn-validar-cheque" data-id="${c.id}" style="background:#25d366; color:white; border:none;" title="Marcar como depositado">✅ Validar</button>
+                    </div>`;
+                });
                 if (cobrosPendientes.length > 0) {
                     html += '<div><strong>💰 Cobros pendientes</strong></div>';
                     cobrosPendientes.forEach(c => {
@@ -530,11 +715,21 @@
         }
 
         document.getElementById('content').addEventListener('click', (e) => {
-            const btn = e.target.closest('.btn-enviar-recordatorio');
-            if (btn) {
-                 enviarRecordatorioWhatsApp(btn.dataset.id);
+            const btnRec = e.target.closest('.btn-enviar-recordatorio');
+            if (btnRec) enviarRecordatorioWhatsApp(btnRec.dataset.id);
+
+            const btnVal = e.target.closest('.btn-validar-cheque');
+            if (btnVal) {
+                const abonoId = btnVal.dataset.id;
+                const abono = abonos.find(a => a.id === abonoId);
+                if(abono && confirm('¿Confirmar que este cheque ya fue depositado y los fondos liberados?')) {
+                    abono.estado = 'cobrado';
+                    saveData();
+                    showTab(document.querySelector('.tab.active').dataset.tab); 
+                    alert('✅ Cheque validado exitosamente.');
+                }
             }
-        });
+        });
 
         function enviarRecordatorioWhatsApp(ventaId) {
             const venta = ventas.find(v => v.id === ventaId);
@@ -726,7 +921,10 @@
                 </fieldset>
 
                 <fieldset><legend>📌 Tipo de venta</legend><label style="display:inline-block; margin-right:20px;"><input type="radio" name="tipoVenta" value="Crédito" checked> Crédito</label><label style="display:inline-block;"><input type="radio" name="tipoVenta" value="Contado"> Contado</label></fieldset>
-                <div id="diasCreditoContainer" style="margin-bottom:16px;"><label>Días de crédito: <input type="number" id="diasCredito" value="30" min="1" max="365" step="1"></label></div>
+                <div id="diasCreditoContainer" style="margin-bottom:16px;">
+                    <label>Días de crédito: <input type="number" id="diasCredito" value="30" min="1" max="365" step="1"></label>
+                    <label style="margin-top:10px;">Número de Factura Física (Opcional): <input type="text" id="numeroFacturaCredito" placeholder="Ej: Serie A - 12345"></label>
+                </div>
                 <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="guardarVentaBtn" class="secondary" style="background:#25d366; color:white; border-color:#1a8a4a;">💾 Guardar venta</button>
                     <button id="nuevoClienteBtn" class="secondary">➕ Limpiar Todo / Nuevo</button>
@@ -1003,7 +1201,7 @@
                     nit: document.getElementById('nit').value, direccion: document.getElementById('direccion').value, telefono: document.getElementById('telefono').value,
                     correo: document.getElementById('correo').value, categoria: document.getElementById('categoria').value, ruta: document.getElementById('ruta').value,
                     limiteCredito: document.getElementById('limiteCredito').value, productos: filas, tipoVenta: document.querySelector('input[name="tipoVenta"]:checked').value,
-                    diasCredito: document.getElementById('diasCredito').value, fecha: document.getElementById('fechaVenta').value
+                    diasCredito: document.getElementById('diasCredito').value, numeroFactura: document.getElementById('numeroFacturaCredito') ? document.getElementById('numeroFacturaCredito').value : '', fecha: document.getElementById('fechaVenta').value
                 });
             }
 
@@ -1044,6 +1242,7 @@
                     const radio = document.querySelector(`input[name="tipoVenta"][value="${borrador.tipoVenta || 'Crédito'}"]`);
                     if (radio) radio.checked = true;
                     if (borrador.diasCredito) document.getElementById('diasCredito').value = borrador.diasCredito;
+                    if (borrador.numeroFactura && document.getElementById('numeroFacturaCredito')) document.getElementById('numeroFacturaCredito').value = borrador.numeroFactura;
                     if (borrador.fecha) fechaVenta.value = borrador.fecha;
                     toggleDias(); actualizarTotal();
                 }
@@ -1081,7 +1280,7 @@
                         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000 });
                     });
                     // FIX: Variable literal de JS corregida ($ faltante)
-                    linkGPS = `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+                    linkGPS = `http://googleusercontent.com/maps.google.com/${position.coords.latitude},${position.coords.longitude}`;
                 } catch (error) { 
                     // FIX Observación 4: Advertencia controlada sin detener el sistema
                     console.warn("⚠️ GPS Denegado o sin señal. Se guardará sin ubicación. Detalle:", error.message); 
@@ -1167,7 +1366,8 @@
                     }
                 }
 
-                const nuevaVenta = { id: 'ven_' + Date.now(), clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS, estado: 'normal', facturado: false };
+                const numFactura = tipoVenta === 'Crédito' && document.getElementById('numeroFacturaCredito') ? document.getElementById('numeroFacturaCredito').value.trim() : '';
+                const nuevaVenta = { id: 'ven_' + Date.now(), clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, numeroFactura: numFactura, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS, estado: 'normal', facturado: false };
                 ventas.push(nuevaVenta);
                 
                 filas.forEach(p => {
@@ -1256,6 +1456,7 @@
                             const cliente = clientes.find(c => c.id === v.clienteId) || { razonSocial: 'Cliente desconocido', nit: null, direccion: '', telefono: '', correo: '', codigo: '' };
                             mensaje += `*VENTA ${index+1}*\n[Cód: ${cliente.codigo || 'S/C'}] Razón Social: ${cliente.razonSocial}\nNIT: ${cliente.nit || 'C/F'}\n`;
                             if (cliente.direccion) mensaje += `Dirección: ${cliente.direccion}\n`;
+                            if (v.tipoVenta === 'Crédito' && v.numeroFactura) mensaje += `Factura Física: ${v.numeroFactura}\n`;
                             mensaje += `Monto Total: ${formatoQ(v.total)}\nTipo de Venta: ${v.tipoVenta}\nDescripción:\n`;
                             v.productos.forEach(p => { mensaje += `- ${p.unidades}, ${p.producto}, ${formatoQ(p.monto)} (${formatoQ(p.precioUnitario)} c/u)\n`; });
                             mensaje += '\n';
@@ -1308,7 +1509,7 @@
         function renderVentasHistorial() {
             let html = `
                 <h2>📅 Historial de ventas</h2>
-                ${mostrarRecordatorios()}
+                
                 <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="exportarVentasBtn" class="secondary">📥 Exportar Excel</button>
                     <button id="exportarVentasPdfBtn" class="secondary">📄 Exportar PDF</button>
@@ -1957,10 +2158,14 @@ const comportamiento = { clase: analisis.clase, texto: analisis.texto };
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
                 doc.text('MARIJOSE JHIRE S.A. - DIRECTORIO DE CLIENTES', 14, 12);
+                // MODIFICADO: Agregado nombre del vendedor en el encabezado
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Colaborador/Vendedor: ${nombreUsuario}`, 14, 20);
 
-                const tableColumn = ['Cliente', 'NIT', 'Dirección', 'Teléfono', 'Ruta', 'Estado', 'Ubicación GPS'];
-                
-                const tableRows = [];
+                const tableColumn = ['Código', 'Cliente', 'NIT', 'Dirección', 'Teléfono', 'Ruta', 'Estado', 'GPS'];
+                
+                const tableRows = [];
 const colorFilas = [];
 
 clientesFiltrados.forEach(c => {
@@ -1972,10 +2177,11 @@ clientesFiltrados.forEach(c => {
     colorFilas.push(analisis.colorPDF);
 
    tableRows.push([
-            `${c.razonSocial} (Calf: ${parseFloat(analisis.estrellas).toFixed(1)})`, c.nit || 'C/F', c.direccion || '—', c.telefono || '—', c.ruta || '—',
-            saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
-            gpsLink
-        ]);
+            c.codigo || 'S/C', // MODIFICADO: Columna de código añadida
+            `${c.razonSocial} (Calf: ${parseFloat(analisis.estrellas).toFixed(1)})`, c.nit || 'C/F', c.direccion || '—', c.telefono || '—', c.ruta || '—',
+            saldo > 0 ? `Pendiente (Q${saldo.toFixed(2)})` : 'Liquidado',
+            gpsLink
+        ]);
 });
                 
                 doc.autoTable({
@@ -2023,9 +2229,9 @@ clientesFiltrados.forEach(c => {
             doc.setTextColor(0);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Cliente: ${cliente.razonSocial} | NIT: ${cliente.nit || 'C/F'}`, 14, 25);
-            doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
-
+            doc.text(`Colaborador: ${nombreUsuario}`, 14, 23);
+            doc.text(`Cliente: [Cód: ${cliente.codigo || 'S/C'}] ${cliente.razonSocial} | NIT: ${cliente.nit || 'C/F'}`, 14, 28);
+            doc.text(`Fecha de emisión: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
             let body = [];
             let granTotal = 0;
             let totalUnidades = 0;
@@ -2200,16 +2406,20 @@ clientesFiltrados.forEach(c => {
             html += `</tbody></table></div><p><strong>Total pendiente: ${formatoQ(totalPendiente)}</strong></p><h4>Abonos realizados</h4>`;
             
             if (abonosCliente.length === 0) {
-                html += '<p>No hay abonos registrados.</p>';
-            } else {
-                html += `<div class="table-responsive"><table><thead><tr><th>Fecha Abono</th><th>Fecha Factura</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
-                abonosCliente.forEach(a => {
-                    const venta = ventas.find(v => v.id === a.ventaId);
-                    const fechaFactura = venta ? new Date(venta.fecha).toLocaleDateString() : '—';
-                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${fechaFactura}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${a.estado || 'cobrado'}</td></tr>`;
-                });
-                html += `</tbody></table></div>`;
-            }
+                html += '<p>No hay abonos registrados.</p>';
+            } else {
+                html += `<div class="table-responsive"><table><thead><tr><th>Fecha Abono</th><th>Fecha Factura</th><th>Factura</th><th>Monto</th><th>Tipo</th><th>Cheque fecha</th><th>Estado</th></tr></thead><tbody>`;
+                abonosCliente.forEach(a => {
+                    const venta = ventas.find(v => v.id === a.ventaId);
+                    const fechaFactura = venta ? new Date(venta.fecha).toLocaleDateString() : '—';
+                    let estadoBadge = a.estado === 'pendiente' 
+                        ? `<button class="secondary small btn-validar-cheque-modal" data-id="${a.id}" style="background:#ffc107; color:#000; font-size:0.7rem; border:none; padding:4px 8px;">⏳ Validar Depósito</button>` 
+                        : `<span style="color:#2e7d32; font-weight:bold;">Cobrado</span>`;
+
+                    html += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${fechaFactura}</td><td>${venta ? venta.id.substr(0,8) : ''}</td><td>${formatoQ(a.monto)}</td><td>${a.tipoPago}</td><td>${a.fechaCobro ? new Date(a.fechaCobro).toLocaleDateString() : '—'}</td><td>${estadoBadge}</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
 
             html += `<h4>Registrar nuevo abono</h4><div><label>Factura: <select id="abonoVentaId">${ventasCliente.filter(v => v.tipoVenta === 'Crédito' && v.saldoPendiente > 0).map(v => `<option value="${v.id}">${new Date(v.fecha).toLocaleDateString()} - Q${v.saldoPendiente.toFixed(2)}</option>`).join('')}</select></label>
                 <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
@@ -2259,27 +2469,54 @@ clientesFiltrados.forEach(c => {
                 }
 
                 const nuevoAbono = { id: generarIdAbono(), ventaId, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
-                abonos.push(nuevoAbono);
-                venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
+                abonos.push(nuevoAbono);
+                venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
+                
+                // MOTOR INTELIGENTE DE COMISIONES
                 if (venta.saldoPendiente <= 0) { 
                     venta.saldoPendiente = 0; 
-                    if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
+                    const hayChequesPendientes = abonos.some(a => a.ventaId === venta.id && a.estado === 'pendiente');
+                    if (!hayChequesPendientes) {
+                        venta.fechaCancelacion = new Date().toISOString(); // Dinero en mano, se autoriza comisión
+                    } else {
+                        venta.fechaCancelacion = null; // Queda congelada hasta validación
+                    }
                 }
-                saveData();
+                saveData();
                 alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
                 renderCatalogo();
                 hideLoader();
             });
 
+            // --- NUEVA VALIDACIÓN DE CHEQUES DESDE EL MODAL AQUÍ ---
+            document.querySelectorAll('.btn-validar-cheque-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if(confirm('¿Confirmar que este cheque posfechado ya fue depositado?')) {
+                        const abono = abonos.find(a => a.id === btn.dataset.id);
+                        if(abono) {
+                            abono.estado = 'cobrado';
+                            
+                            // LIBERAR COMISIÓN EN EL MES ACTUAL
+                            const vAsociada = ventas.find(v => v.id === abono.ventaId);
+                            if (vAsociada && vAsociada.saldoPendiente <= 0) {
+                                const hayChequesPendientes = abonos.some(a => a.ventaId === vAsociada.id && a.estado === 'pendiente');
+                                if (!hayChequesPendientes) vAsociada.fechaCancelacion = new Date().toISOString();
+                            }
+                            saveData();
+                            mostrarEstadoCuenta(clienteId); 
+                        }
+                    }
+                });
+            });
+
             document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
-
         // ========== PESTAÑA PRODUCTOS ==========
         function renderProductos() {
-            let html = `<h2>📦 Catálogo de productos y Lotes</h2>${mostrarRecordatorios()}<div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
+            let html = `<h2>📦 Catálogo de productos y Lotes</h2><div class="action-buttons"><button id="nuevoProductoBtn" class="secondary">➕ Nuevo producto</button></div><div class="table-responsive">
                     <table>
                      <thead><tr><th>Nombre</th><th>Lote</th><th>Vencimiento</th><th>Precio (Q)</th><th>Activo</th><th>Acción</th></tr></thead>
                     <tbody id="productosCatalogoBody"></tbody>
@@ -2389,7 +2626,7 @@ if (prod && nombre) {
 
             let html = `
                 <h2>📊 Inventario y comisiones</h2>
-                ${mostrarRecordatorios()}
+                
                 <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="ajusteManualBtn" class="secondary">➕ Ajuste / Recarga</button>
                     <button id="exportarInventarioBtn" class="secondary">📥 Exportar Excel</button>
@@ -2783,16 +3020,93 @@ if (prod && nombre) {
                         if (data.row.index === rowsDesglose.length - 1) {
                             doc.setFillColor(230, 245, 235);
                             doc.setFont('helvetica', 'bold');
-                        }
+                       }
                     }
                 });
 
+                // --- INICIO PARCHE COBROS Y RECUPERACIÓN (SEMANAL) ---
+                let currentYTablasCobros = doc.lastAutoTable.finalY + 15;
+                if (currentYTablasCobros > doc.internal.pageSize.getHeight() - 40) {
+                    doc.addPage();
+                    currentYTablasCobros = 20;
+                }
+
+                doc.setTextColor(7, 94, 84);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('REPORTE DE COBROS Y RECUPERACIÓN (EFECTIVOS)', 14, currentYTablasCobros);
+                
+                const cobrosReporteRows = [];
+                let totalCobrosReporte = 0;
+                
+                abonos.forEach(a => {
+                    // Usamos la fecha de cobro para posfechados, sino la de registro
+                    const fechaRef = (a.tipoPago === 'cheque' && a.fechaCobro) ? new Date(a.fechaCobro) : new Date(a.fecha);
+                    
+                    // SOLO incluimos si está dentro de la semana Y el estado NO es 'pendiente' (cheque no validado)
+                    if (fechaRef >= fechaInicio && fechaRef <= fechaFin && a.estado !== 'pendiente') {
+                        const v = ventas.find(ven => ven.id === a.ventaId);
+                        const c = v ? clientes.find(cli => cli.id === v.clienteId) : null;
+                        cobrosReporteRows.push([
+                            fechaRef.toLocaleDateString(), 
+                            v ? 'Fact: ' + v.id.substr(0,8) : '-', 
+                            c ? c.razonSocial : 'Desconocido', 
+                            formatoQ(a.monto), 
+                            a.tipoPago.toUpperCase()
+                        ]);
+                        totalCobrosReporte += parseFloat(a.monto);
+                    }
+                });
+                
+                pagosCobro.forEach(p => {
+                    const f = new Date(p.fecha);
+                    if (f >= fechaInicio && f <= fechaFin) { 
+                        const cobro = cobros.find(cb => cb.id === p.cobroId);
+                        const c = cobro ? clientes.find(cli => cli.id === cobro.clienteId) : null;
+                        cobrosReporteRows.push([
+                            f.toLocaleDateString(), 
+                            cobro ? 'Rec: ' + cobro.numeroDocumento : '-', 
+                            c ? c.razonSocial : 'Desconocido', 
+                            formatoQ(p.monto), 
+                            p.metodoPago.toUpperCase()
+                        ]);
+                        totalCobrosReporte += parseFloat(p.monto);
+                    }
+                });
+
+                if (cobrosReporteRows.length === 0) {
+                    cobrosReporteRows.push(['', '', 'No hay cobros o cheques validados en esta semana', '', '']);
+                } else {
+                    cobrosReporteRows.push(['', '', 'TOTAL RECUPERADO', formatoQ(totalCobrosReporte), '']);
+                }
+
+                doc.autoTable({
+                    startY: currentYTablasCobros + 5,
+                    head: [['Fecha Real', 'Documento', 'Cliente', 'Monto', 'Método']],
+                    body: cobrosReporteRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                    styles: { fontSize: 8 },
+                    willDrawCell: function(data) {
+                        if (data.row.index === cobrosReporteRows.length - 1 && cobrosReporteRows.length > 1) {
+                            doc.setFillColor(230, 245, 235);
+                            doc.setFont('helvetica', 'bold');
+                        }
+                    }
+                });
+                // --- FIN PARCHE COBROS ---
+
+                // LÍNEAS DE FIRMA
                 let signY = doc.lastAutoTable.finalY + 30;
                 if (signY > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); signY = 40; }
                 
                 doc.setDrawColor(0);
                 doc.line(40, signY, 110, signY);
+                doc.setFontSize(9);
+                doc.setTextColor(0);
+                doc.setFont('helvetica', 'normal');
                 doc.text('Firma del Colaborador (Vendedor)', 75, signY + 5, { align: 'center' });
+                
                 doc.line(doc.internal.pageSize.getWidth() - 110, signY, doc.internal.pageSize.getWidth() - 40, signY);
                 doc.text('Firma de Vo.Bo. (Revisión)', doc.internal.pageSize.getWidth() - 75, signY + 5, { align: 'center' });
 
@@ -2904,8 +3218,8 @@ if (prod && nombre) {
                 const ventasContadoPeriodo = ventas.filter(v => new Date(v.fecha) >= start && new Date(v.fecha) <= end && v.tipoVenta === 'Contado' && v.estado === 'normal');
                 const totalContado = ventasContadoPeriodo.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
-                const ventasCreditoCanceladas = ventas.filter(v => {
-                    if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
+               const ventasCreditoCanceladas = ventas.filter(v => {
+                    if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || (parseFloat(v.saldoPendiente) || 0) > 0.01 || !v.fechaCancelacion) return false;
                     const fechaCanc = new Date(v.fechaCancelacion);
                     return fechaCanc >= start && fechaCanc <= end;
                 });
@@ -3117,7 +3431,7 @@ if (prod && nombre) {
             });
 
             const ventasCreditoCanceladas = ventas.filter(v => {
-                if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || v.saldoPendiente > 0 || !v.fechaCancelacion) return false;
+                    if (v.tipoVenta !== 'Crédito' || v.estado !== 'normal' || (parseFloat(v.saldoPendiente) || 0) > 0.01 || !v.fechaCancelacion) return false;
                 const fechaCanc = new Date(v.fechaCancelacion);
                 return fechaCanc >= start && fechaCanc <= end;
             });
@@ -3928,14 +4242,102 @@ if (prod && nombre) {
                 numeroSemana++;
             }
             // --- FIN PARCHE ---
+
+            // --- INICIO PARCHE COBROS Y FIRMAS ---
+            let currentYTablasCobros = currentYTablas + 10;
+            if (currentYTablasCobros > doc.internal.pageSize.getHeight() - 40) {
+                doc.addPage();
+                currentYTablasCobros = 20;
+            }
+
+            doc.setTextColor(7, 94, 84);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('REPORTE DE COBROS Y RECUPERACIÓN (EFECTIVOS)', 14, currentYTablasCobros);
+            
+            const cobrosReporteRows = [];
+            let totalCobrosReporte = 0;
+            
+            abonos.forEach(a => {
+                // Usamos la fecha de cobro para posfechados, sino la de registro
+                const fechaRef = (a.tipoPago === 'cheque' && a.fechaCobro) ? new Date(a.fechaCobro) : new Date(a.fecha);
+                
+                // SOLO incluimos si está dentro del rango Y el estado NO es 'pendiente' (cheque no validado)
+                if (fechaRef >= fechaInicio && fechaRef <= fechaFin && a.estado !== 'pendiente') {
+                    const v = ventas.find(ven => ven.id === a.ventaId);
+                    const c = v ? clientes.find(cli => cli.id === v.clienteId) : null;
+                    cobrosReporteRows.push([
+                        fechaRef.toLocaleDateString(), 
+                        v ? 'Fact: ' + v.id.substr(0,8) : '-', 
+                        c ? c.razonSocial : 'Desconocido', 
+                        formatoQ(a.monto), 
+                        a.tipoPago.toUpperCase()
+                    ]);
+                    totalCobrosReporte += parseFloat(a.monto);
+                }
+            });
+            
+            pagosCobro.forEach(p => {
+                const f = new Date(p.fecha);
+                if (f >= fechaInicio && f <= fechaFin) { 
+                    const cobro = cobros.find(cb => cb.id === p.cobroId);
+                    const c = cobro ? clientes.find(cli => cli.id === cobro.clienteId) : null;
+                    cobrosReporteRows.push([
+                        f.toLocaleDateString(), 
+                        cobro ? 'Rec: ' + cobro.numeroDocumento : '-', 
+                        c ? c.razonSocial : 'Desconocido', 
+                        formatoQ(p.monto), 
+                        p.metodoPago.toUpperCase()
+                    ]);
+                    totalCobrosReporte += parseFloat(p.monto);
+                }
+            });
+
+            if (cobrosReporteRows.length === 0) {
+                cobrosReporteRows.push(['', '', 'No hay cobros o cheques validados en este período', '', '']);
+            } else {
+                cobrosReporteRows.push(['', '', 'TOTAL RECUPERADO', formatoQ(totalCobrosReporte), '']);
+            }
+
+            doc.autoTable({
+                startY: currentYTablasCobros + 5,
+                head: [['Fecha Real', 'Documento', 'Cliente', 'Monto', 'Método']],
+                body: cobrosReporteRows,
+                theme: 'striped',
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                styles: { fontSize: 8 },
+                willDrawCell: function(data) {
+                    if (data.row.index === cobrosReporteRows.length - 1 && cobrosReporteRows.length > 1) {
+                        doc.setFillColor(230, 245, 235);
+                        doc.setFont('helvetica', 'bold');
+                    }
+                }
+            });
+
+            // LÍNEAS DE FIRMA
+            let signY = doc.lastAutoTable.finalY + 40;
+            if (signY > doc.internal.pageSize.getHeight() - 30) { 
+                doc.addPage(); 
+                signY = 40; 
+            }
+            
+            doc.setDrawColor(0);
+            doc.line(40, signY, 110, signY);
+            doc.setFontSize(9);
+            doc.setTextColor(0);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Firma del Colaborador (Vendedor)', 75, signY + 5, { align: 'center' });
+            
+            doc.line(doc.internal.pageSize.getWidth() - 110, signY, doc.internal.pageSize.getWidth() - 40, signY);
+            doc.text('Vo.Bo. Gerencia / Auditoría', doc.internal.pageSize.getWidth() - 75, signY + 5, { align: 'center' });
+
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
                 doc.setFontSize(8);
-                doc.setTextColor(150);
+                doc.setTextColor(100);
                 doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
             }
-
             doc.save(`${titulo.replace(/ /g, '_')}_${nombreUsuario.replace(/\s+/g,'_')}_${fechaInicio.toISOString().slice(0,10)}.pdf`);
         }
 
@@ -4375,15 +4777,25 @@ if (prod && nombre) {
                     .health-bar-segment { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.85rem; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);}
                 </style>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                    <h2 style="margin: 0; padding-left: 0; border: none;">📈 Dashboard Gerencial (Mes en curso)</h2>
-                    <button id="imprimirDashboardBtn" class="secondary small">📄 Imprimir Resumen</button>
-                </div>
+                <h2>📈 Dashboard Gerencial</h2>
+                <div class="action-buttons" style="justify-content: flex-start;">
+                    <button id="btnSincronizarNube" class="secondary" style="background:#075e54; color:white; border-color:#075e54;">☁️ Sincronizar BD</button>
+                    <button id="btnAbrirRadar" class="secondary">📡 Radar Médico</button>
+                    <button id="btnRegistrarVisita" class="secondary">📍 Registrar Visita</button>
+                    <button id="imprimirDashboardBtn" class="secondary">📄 Imprimir</button>
+<button id="exportarVisitasBtn" class="secondary" style="border-color:#1976d2; color:#1976d2;">📍 Exportar Visitas (PDF)</button>
+</div>
                 
                 <div class="dashboard-kpi">
-                    <div class="kpi-card"><h3>Ingreso Real (Contado)</h3><span>${formatoQ(ventasMesContado)}</span></div>
-                    <div class="kpi-card"><h3>Cobros Recuperados</h3><span>${formatoQ(cobrosRecuperadosMes)}</span></div>
-                    <div class="kpi-card"><h3>Flujo de Caja Total</h3><span style="color:#25d366;">${formatoQ(ventasMesContado + cobrosRecuperadosMes)}</span></div>
+                    <div class="kpi-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-tab=\\'ventas\\']').click()" title="Ir a Ventas">
+                        <h3>Ingreso Real (Contado)</h3><span>${formatoQ(ventasMesContado)}</span>
+                    </div>
+                    <div class="kpi-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-tab=\\'cobros\\']').click()" title="Ir a Cobros">
+                        <h3>Cobros Recuperados</h3><span>${formatoQ(cobrosRecuperadosMes)}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Flujo de Caja Total</h3><span style="color:#25d366;">${formatoQ(ventasMesContado + cobrosRecuperadosMes)}</span>
+                    </div>
                 </div>
 
                 <fieldset>
@@ -4415,7 +4827,31 @@ if (prod && nombre) {
             `;
            document.getElementById('content').innerHTML = html;
 
-            // --- INICIO PARCHE MAPA LEAFLET ---
+            // VINCULAR EVENTOS INMEDIATAMENTE (Garantiza que funcionen siempre)
+            document.getElementById('btnSincronizarNube')?.addEventListener('click', migrarTodoASupabase);
+            document.getElementById('btnAbrirRadar')?.addEventListener('click', () => document.getElementById('radarModal').style.display = 'flex');
+            document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => document.getElementById('visitaModal').style.display = 'flex');
+
+            // --- INICIO EVENTO PDF VISITAS ---
+            document.getElementById('exportarVisitasBtn')?.addEventListener('click', () => {
+                if (visitas.length === 0) { alert('No hay visitas registradas.'); return; }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+                doc.setFillColor(7, 94, 84); doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                doc.setTextColor(255, 255, 255); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+                doc.text('MARIJOSE JHIRE S.A.', 14, 12); doc.setFontSize(10);
+                doc.text('BITÁCORA DE VISITAS (CAMPO)', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+                doc.setTextColor(0); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+                doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                
+                const rows = visitas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(v => [
+                    new Date(v.fecha).toLocaleDateString(), v.nombre, v.clasificacion, v.departamento || '—', v.comentarios || '—', v.ubicacionGPS || 'Sin ubicación'
+                ]);
+                doc.autoTable({ startY: 32, head: [['Fecha', 'Prospecto/Cliente', 'Clasificación', 'Depto/Ruta', 'Comentarios', 'Enlace GPS']], body: rows, theme: 'striped', headStyles: { fillColor: [7, 94, 84] }, styles: { fontSize: 8 }, columnStyles: { 5: { textColor: [0, 0, 255] } }, didDrawCell: function(data) { if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin ubicación') { doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw }); } }});
+                doc.save(`Visitas_${new Date().toISOString().slice(0,10)}.pdf`);
+            });
+
+            // --- LÓGICA MAPA DE CALOR EXCLUSIVO ---
             setTimeout(() => {
                 if (document.getElementById('mapaDashboard')) {
                     const map = L.map('mapaDashboard').setView([14.8347, -91.5185], 8);
@@ -4425,14 +4861,16 @@ if (prod && nombre) {
                             const coords = v.ubicacionGPS.match(/(-?\d+\.\d+),(-?\d+\.\d+)/);
                             if (coords) {
                                 const c = clientes.find(cli => cli.id === v.clienteId);
-                                L.marker([parseFloat(coords[1]), parseFloat(coords[2])]).addTo(map)
-                                    .bindPopup(`<b>${c ? c.razonSocial : 'Desconocido'}</b><br>Doc: ${v.id.substr(0,8)}<br>Monto: Q${parseFloat(v.total).toFixed(2)}`);
+                                L.marker([parseFloat(coords[1]), parseFloat(coords[2])]).addTo(map).bindPopup(`<b>${c ? c.razonSocial : 'Venta'}</b><br>Doc: ${v.id.substr(0,8)}<br>Monto: Q${parseFloat(v.total).toFixed(2)}`);
                             }
                         }
                     });
+                    if (typeof L.heatLayer !== 'undefined' && visitas.length > 0) {
+                        const heatData = visitas.map(v => [v.lat, v.lng, 1]);
+                        L.heatLayer(heatData, {radius: 28, blur: 18, maxZoom: 16, gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'}}).addTo(map);
+                    }
                 }
             }, 150);
-            // --- FIN PARCHE MAPA LEAFLET ---
 
             // --- LÓGICA PARA IMPRIMIR EL DASHBOARD EN PDF ---
             document.getElementById('imprimirDashboardBtn').addEventListener('click', () => {
@@ -4675,9 +5113,186 @@ if (prod && nombre) {
             // --- FIN PARCHE 7 ---
         }
 
-        // INICIALIZACIÓN
-        showTab('dashboard'); // Arrancamos en el Dashboard por defecto
-    })();
+        // ========== LÓGICA RADAR Y VISITAS ==========
+        document.getElementById('cerrarVisitaBtn').onclick = () => {
+            document.getElementById('visitaModal').style.display = 'none';
+            document.getElementById('buscarClienteV').value = '';
+            document.getElementById('listaResultadosV').innerHTML = '';
+        };
+        document.getElementById('cerrarRadarBtn').onclick = () => document.getElementById('radarModal').style.display = 'none';
+
+        // Buscador Inteligente de Visitas
+        document.getElementById('buscarClienteV').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            const caja = document.getElementById('listaResultadosV');
+            if(!term) { caja.innerHTML = ''; return; }
+            
+            // Filtra por nombre, código o NIT y muestra los 5 mejores resultados
+            const filtrados = clientes.filter(c => 
+                c.razonSocial.toLowerCase().includes(term) || 
+                (c.codigo && c.codigo.toLowerCase().includes(term)) || 
+                (c.nit && c.nit.toLowerCase().includes(term))
+            ).slice(0, 5);
+            
+            if(filtrados.length === 0) { 
+                caja.innerHTML = '<div style="padding:10px; font-size:0.85rem; color:gray; text-align:center;">No se encontró el cliente. Ingrese sus datos manualmente abajo.</div>'; 
+                return; 
+            }
+            
+            caja.innerHTML = filtrados.map(c => `
+                <div class="client-item-visita" style="padding:10px; border-bottom:1px solid #e1f5fe; cursor:pointer; font-size:0.9rem;" 
+                     data-nombre="${c.razonSocial}" data-dir="${c.direccion || ''}" data-tel="${c.telefono || ''}" data-depto="${c.ruta || ''}">
+                    <strong style="color:#075e54;">${c.codigo ? '['+c.codigo+'] ' : ''}${c.razonSocial}</strong><br>
+                    <span style="color:#1e3b4f; font-size:0.8rem;">📍 ${c.direccion || 'Sin dirección guardada'}</span>
+                </div>
+            `).join('');
+            
+            // Evento para autocompletar al hacer clic
+            document.querySelectorAll('.client-item-visita').forEach(el => {
+                el.addEventListener('click', () => {
+                    document.getElementById('vNombre').value = el.dataset.nombre;
+                    document.getElementById('vDireccion').value = el.dataset.dir;
+                    document.getElementById('vTelefono').value = el.dataset.tel;
+                    document.getElementById('vDepartamento').value = el.dataset.depto;
+                    document.getElementById('vClasificacion').value = 'Seguimiento'; // Auto-cambia a seguimiento
+                    
+                    caja.innerHTML = '';
+                    document.getElementById('buscarClienteV').value = '';
+                });
+            });
+        });
+        // Guardar Visita y Mandar a Base de Datos en Tiempo Real
+        document.getElementById('guardarVisitaBtn').addEventListener('click', () => {
+            const nombre = document.getElementById('vNombre').value.trim();
+            if(!nombre) { alert("El nombre/razón social es obligatorio"); return; }
+            showLoader();
+
+            if (!("geolocation" in navigator)) { alert("Tu dispositivo no soporta GPS."); hideLoader(); return; }
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const nuevaVisita = {
+                    id: 'vis_' + Date.now(),
+                    vendedor_id: vendedorId,
+                    fecha: new Date().toISOString(),
+                    nombre: nombre,
+                    direccion: document.getElementById('vDireccion').value.trim(),
+                    telefono: document.getElementById('vTelefono').value.trim(),
+                    departamento: document.getElementById('vDepartamento').value.trim(),
+                    clasificacion: document.getElementById('vClasificacion').value,
+                    comentarios: document.getElementById('vComentarios').value.trim(),
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    ubicacionGPS: `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`
+                };
+                visitas.push(nuevaVisita);
+                saveData(); // Guarda en local
+
+                // Intenta push en tiempo real a Supabase
+                const { error } = await supabase.from('visitas').insert([nuevaVisita]);
+                if(error) console.error("Error al enviar visita a Supabase:", error);
+                
+                hideLoader();
+                document.getElementById('visitaModal').style.display = 'none';
+                document.getElementById('vNombre').value = ''; document.getElementById('vDireccion').value = '';
+                document.getElementById('vTelefono').value = ''; document.getElementById('vDepartamento').value = '';
+                document.getElementById('vComentarios').value = '';
+                if(document.querySelector('.tab.active').dataset.tab === 'dashboard') renderDashboard(); // Recargar mapa
+                alert("✅ Visita registrada en el Mapa de Calor.");
+            }, (err) => { alert("Active su GPS para mapear la visita."); hideLoader(); }, { timeout: 10000 });
+        });
+
+        // Haversine: Distancia en KM
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371; const dLat = (lat2-lat1) * Math.PI / 180; const dLon = (lon2-lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // Radar de Clínicas y Farmacias (Agenda Inteligente)
+        document.getElementById('ejecutarRadarBtn').addEventListener('click', () => {
+            const res = document.getElementById('radarResultados');
+            res.innerHTML = '<div style="text-align:center; padding:20px; color:#075e54; font-weight:bold;">📡 Rastreo satelital iniciado...</div>';
+            if (!("geolocation" in navigator)) { res.innerHTML = "GPS no disponible."; return; }
+
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const mLat = pos.coords.latitude; const mLon = pos.coords.longitude;
+                let cercanos = [];
+                const hoyStr = new Date().toDateString(); // Capturamos el día actual
+
+                clientes.forEach(cli => {
+                    // 1. FILTRO DE AGENDA: Si ya lo visitaste o le vendiste HOY, desaparece del radar
+                    const ventaHoy = ventas.some(v => v.clienteId === cli.id && new Date(v.fecha).toDateString() === hoyStr && v.estado === 'normal');
+                    const visitaHoy = visitas.some(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim() && new Date(vis.fecha).toDateString() === hoyStr);
+                    
+                    if (ventaHoy || visitaHoy) return; // Si ya se gestionó hoy, lo saltamos
+
+                    // 2. BUSCAR COORDENADAS:
+                    const gpsVenta = ventas.find(v => v.clienteId === cli.id && v.ubicacionGPS && v.ubicacionGPS.includes('q='));
+                    if(gpsVenta) {
+                        const match = gpsVenta.ubicacionGPS.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                        if(match) {
+                            const dist = calcularDistancia(mLat, mLon, parseFloat(match[1]), parseFloat(match[2]));
+                            
+                            // 3. SI ESTÁ EN RANGO (5KM):
+                            if(dist <= 5) {
+                                const ventCli = ventas.filter(v => v.clienteId === cli.id && v.estado === 'normal');
+                                const compras = ventCli.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
+                                const saldo = ventCli.reduce((acc, v) => acc + (v.tipoVenta==='Crédito' ? (v.saldoPendiente||0) : 0), 0);
+                                
+                                let conteoProds = {};
+                                ventCli.forEach(v => v.productos.forEach(p => conteoProds[p.producto] = (conteoProds[p.producto]||0)+p.unidades));
+                                const top = Object.entries(conteoProds).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join(', ') || 'Ninguno';
+
+                                // 4. LÓGICA DE ÚLTIMA GESTIÓN (Venta o Visita)
+                                const visitasCli = visitas.filter(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim());
+                                const historialGestion = [
+                                    ...ventCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Venta' })),
+                                    ...visitasCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Visita' }))
+                                ].sort((a,b) => b.fecha - a.fecha);
+
+                                let ultimaGestionTxt = '<span style="color:gray;">Sin gestiones previas registradas</span>';
+                                if (historialGestion.length > 0) {
+                                    const ult = historialGestion[0];
+                                    ultimaGestionTxt = `<span style="color:#1976d2; font-weight:bold;">${ult.fecha.toLocaleDateString()}</span> por <b>${ult.visitador}</b> (${ult.tipo})`;
+                                }
+
+                                cercanos.push({ cli, dist, compras, saldo, top, linkMaps: gpsVenta.ubicacionGPS, ultimaGestionTxt });
+                            }
+                        }
+                    }
+                });
+
+                cercanos.sort((a,b) => a.dist - b.dist);
+                if(cercanos.length === 0) { 
+                    res.innerHTML = '<p style="text-align:center;">No hay prospectos pendientes a menos de 5km de tu posición.</p>'; 
+                } else {
+                    res.innerHTML = cercanos.map(c => {
+                        // Lógica de Estatus de Compra
+                        const textoCompras = c.compras > 0 ? formatoQ(c.compras) : '<span style="color:#ef6c00; font-weight:bold; background:#fff3e0; padding:2px 6px; border-radius:10px;">Prospecto (Sin Compra)</span>';
+                        
+                        return `
+                        <div style="background:#f0f7fc; border:1px solid #c9ddec; padding:12px; border-radius:15px; margin-bottom:8px;">
+                            <a href="${c.linkMaps}" target="_blank" style="text-decoration:none; display:inline-block; margin-bottom:5px;">
+                                <strong style="font-size:1.1rem; color:#1e3b4f; border-bottom: 2px dashed #25d366;" title="Clic para navegar en Google Maps">📍 ${c.cli.razonSocial}</strong>
+                            </a>
+                            <span style="float:right; background:#25d366; color:white; padding:2px 6px; border-radius:10px; font-size:0.75rem;">A ${c.dist.toFixed(1)} km</span><br>
+                            <div style="margin-top:6px; font-size:0.85rem;">
+                                <strong>Deuda:</strong> <span style="color:${c.saldo > 0 ? '#c62828' : '#2e7d32'}; font-weight:bold;">${formatoQ(c.saldo)}</span> | <strong>Comprado:</strong> ${textoCompras}<br>
+                                <strong style="color:#075e54;">💊 Top:</strong> ${c.top}
+                            </div>
+                            <div style="margin-top:8px; font-size:0.8rem; background:#ffffff; padding:6px 10px; border-radius:8px; border:1px solid #dae6f0;">
+                                🕒 <strong>Última gestión:</strong> ${c.ultimaGestionTxt}
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                }
+            }, () => { res.innerHTML = "Error calculando posición GPS. Asegúrese de tener la ubicación activada."; }, { timeout: 10000 });
+        });
+
+        // INICIALIZACIÓN
+        showTab('dashboard'); // Arrancamos en el Dashboard por defecto
+    })();
 </script>
 </body>
 </html>
