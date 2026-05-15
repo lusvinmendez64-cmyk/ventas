@@ -2047,59 +2047,117 @@ function evaluarComportamientoCliente(clienteId) {
 
                 tbody.innerHTML = '';
                 clientesPagina.forEach(cli => {
-                    const analisis = evaluarComportamientoCliente(cli.id);
-                    let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
-                    const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
-                    const comportamiento = { clase: analisis.clase, texto: analisis.texto };
+                    const analisis = evaluarComportamientoCliente(cli.id);
+                    let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
+                    const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
+                    const comportamiento = { clase: analisis.clase, texto: analisis.texto };
 
-                    const creditosPendientes = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal' && v.saldoPendiente > 0);
-                    const saldoTotalCliente = creditosPendientes.reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-                    
-                    let docsHtml = '';
-                    if (creditosPendientes.length > 0) {
-                        const docsList = creditosPendientes.map(v => v.numeroFactura ? `Fact: ${v.numeroFactura}` : `Id: ${v.id.substr(0,6)}`).join(', ');
-                        docsHtml = `<br><span style="font-size:0.75rem; color:#1e3b4f; line-height:1.2; display:inline-block; margin-top:4px;">Docs: ${docsList}</span>`;
-                    }
+                    const creditosPendientes = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal' && v.saldoPendiente > 0);
+                    const saldoTotalCliente = creditosPendientes.reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
+                    
+                    let docsHtml = '';
+                    if (creditosPendientes.length > 0) {
+                        let facturasList = '';
+                        creditosPendientes.forEach(v => {
+                            if (v.numeroFactura) {
+                                facturasList += `<div style="color:#075e54; font-weight:bold; margin-top:2px;">📄 Fact: ${v.numeroFactura}</div>`;
+                            } else {
+                                facturasList += `<div style="display:flex; gap:4px; align-items:center; margin-top:4px;"><input type="text" class="inline-factura-input" data-id="${v.id}" placeholder="Nº Factura..." style="width:80px; padding:2px 4px; font-size:0.7rem; margin:0;"><button class="secondary small btn-guardar-fact-inline" data-id="${v.id}" style="padding:2px 6px; margin:0; min-width:30px;" title="Guardar Factura">💾</button></div>`;
+                            }
+                        });
+                        docsHtml = `<div style="margin-top:6px; padding-top:4px; border-top:1px solid #eee;">${facturasList}</div>`;
+                    }
 
-                    const estadoVenta = saldoTotalCliente > 0 
-                        ? `<span style="color: #c62828; font-weight: 600;">Pendiente<br>(Q${saldoTotalCliente.toFixed(2)})</span>${docsHtml}` 
-                        : `<span style="color: #2e7d32; font-weight: 600;">Liquidado</span>`;
+                    const estadoVenta = saldoTotalCliente > 0 
+                        ? `<span style="color: #c62828; font-weight: 600;">Pendiente (Q${saldoTotalCliente.toFixed(2)})</span>` 
+                        : `<span style="color: #2e7d32; font-weight: 600;">Liquidado</span>`;
 
-                    const codigoHtml = cli.codigo ? `<b>${cli.codigo}</b>` : `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><input type="text" class="inline-codigo-input" data-id="${cli.id}" placeholder="Añadir..." style="width:65px; padding:4px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-codigo" data-id="${cli.id}" style="padding:4px; margin:0; min-width:30px;" title="Guardar código">💾</button></div>`;
+                    const codigoHtml = cli.codigo ? `<b>${cli.codigo}</b>` : `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><input type="text" class="inline-codigo-input" data-id="${cli.id}" placeholder="Añadir..." style="width:65px; padding:4px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-codigo" data-id="${cli.id}" style="padding:4px; margin:0; min-width:30px;" title="Guardar código">💾</button></div>`;
 
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${cli.razonSocial} ${estrellas}</td>
-                        <td>${codigoHtml}</td>
-                        <td>${cli.nit || 'C/F'}</td>
-                        <td>${cli.direccion || '—'}</td>
-                        <td>${cli.telefono || '—'}</td>
-                        <td>${estadoVenta}</td>
-                        <td style="display: flex; gap: 8px; align-items: center; border: none; flex-wrap: wrap;">
-                            <span class="${comportamiento.clase}" style="min-width: 80px; text-align:center;">${comportamiento.texto}</span>
-                            <select class="accionClienteSelect secondary small" data-id="${cli.id}" style="width: 110px; padding: 4px; margin:0; border-radius: 12px; font-size: 0.8rem;">
-                                <option value="">Acciones...</option>
-                                <option value="historial">📜 Historial</option>
-                                <option value="editar">✏️ Editar</option>
-                                <option value="estado">📊 Estado Cta.</option>
-                                <option value="gps">📍 Abrir GPS</option>
-                            </select>
-                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong style="color:#1e3b4f;">${cli.razonSocial}</strong> ${estrellas} ${docsHtml}</td>
+                        <td>${codigoHtml}</td>
+                        <td>${cli.nit || 'C/F'}</td>
+                        <td>${cli.direccion || '—'}</td>
+                        <td>${cli.telefono || '—'}</td>
+                        <td>${estadoVenta}</td>
+                        <td style="display: flex; gap: 8px; align-items: center; border: none; flex-wrap: wrap;">
+                            <span class="${comportamiento.clase}" style="min-width: 80px; text-align:center;">${comportamiento.texto}</span>
+                            <select class="accionClienteSelect secondary small" data-id="${cli.id}" style="width: 110px; padding: 4px; margin:0; border-radius: 12px; font-size: 0.8rem;">
+                                <option value="">Acciones...</option>
+                                <option value="historial">📜 Historial</option>
+                                <option value="editar">✏️ Editar</option>
+                                <option value="estado">📊 Estado Cta.</option>
+                                <option value="gps">📍 Abrir GPS</option>
+                            </select>
+                            <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
 
-                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        const val = document.querySelector(`.inline-codigo-input[data-id="${id}"]`).value.trim();
-                        if (val) {
-                            const cli = clientes.find(c => c.id === id);
-                            if (cli) { cli.codigo = val; saveData(); renderTabla(); }
-                        }
-                    });
-                });
+                const totalPaginas = Math.ceil(clientesFiltrados.length / itemsPorPagina);
+                let paginacionHtml = '';
+                if (totalPaginas > 1) {
+                    paginacionHtml += `<button class="secondary small" id="paginaAnteriorCat" ${paginaActual === 0 ? 'disabled' : ''}>⬅ Ant</button>`;
+                    paginacionHtml += `<span> Pág ${paginaActual+1} de ${totalPaginas} </span>`;
+                    paginacionHtml += `<button class="secondary small" id="paginaSiguienteCat" ${paginaActual >= totalPaginas-1 ? 'disabled' : ''}>Sig ➔</button>`;
+                }
+                paginacionDiv.innerHTML = paginacionHtml;
+
+                document.getElementById('paginaAnteriorCat')?.addEventListener('click', () => { if (paginaActual > 0) { paginaActual--; renderTabla(); } });
+                document.getElementById('paginaSiguienteCat')?.addEventListener('click', () => { if (paginaActual < totalPaginas-1) { paginaActual++; renderTabla(); } });
+
+                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const val = document.querySelector(`.inline-codigo-input[data-id="${id}"]`).value.trim();
+                        if (val) {
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli) { cli.codigo = val; saveData(); renderTabla(); }
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.btn-guardar-fact-inline').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const val = document.querySelector(`.inline-factura-input[data-id="${id}"]`).value.trim();
+                        if (val) {
+                            const v = ventas.find(ve => ve.id === id);
+                            if (v) { v.numeroFactura = val; saveData(); renderTabla(); }
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.accionClienteSelect').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const accion = e.target.value;
+                        const id = e.target.dataset.id;
+                        e.target.value = '';
+                        if (accion === 'historial') generarHistorialClientePDF(id);
+                        if (accion === 'editar') { const cli = clientes.find(c => c.id === id); if (cli) mostrarModalEditarCliente(cli); }
+                        if (accion === 'estado') mostrarEstadoCuenta(id);
+                        if (accion === 'gps') {
+                            const ventasCli = ventas.filter(v => v.clienteId === id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                            const link = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : null;
+                            if (link && link !== 'Sin ubicación GPS' && link !== 'Sin ubicación') window.open(link, '_blank');
+                            else alert('No hay coordenadas GPS registradas en las ventas de este cliente.');
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.eliminarClienteBtn').forEach(btn => btn.addEventListener('click', () => {
+                    const cli = clientes.find(c => c.id === btn.dataset.id);
+                    if (cli && confirm(`¿Eliminar al cliente ${cli.razonSocial} y todas sus ventas? Esta acción es irreversible.`)) {
+                        ventas = ventas.filter(v => v.clienteId !== cli.id);
+                        clientes = clientes.filter(c => c.id !== cli.id);
+                        saveData();
+                        filtrarClientes();
+                    }
+                }));
+            }
 
                 // Escuchador para guardar los códigos desde la tabla
                 document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
