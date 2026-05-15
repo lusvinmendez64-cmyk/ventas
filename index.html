@@ -2047,7 +2047,7 @@ function evaluarComportamientoCliente(clienteId) {
 
                 tbody.innerHTML = '';
                 clientesPagina.forEach(cli => {
-                    const analisis = evaluarComportamientoCliente(cli.id);
+                    const analisis = evaluarComportamientoCliente(cli.id);
                     let colorEstrella = analisis.estrellas >= 4 ? '#ffc107' : (analisis.estrellas >= 2.5 ? '#fd7e14' : '#dc3545');
                     const estrellas = `<br><span style="font-size:0.75rem; color:${colorEstrella}; font-weight:bold;">⭐ ${parseFloat(analisis.estrellas).toFixed(1)}</span>`;
                     const comportamiento = { clase: analisis.clase, texto: analisis.texto };
@@ -2062,7 +2062,7 @@ function evaluarComportamientoCliente(clienteId) {
                     }
 
                     const estadoVenta = saldoTotalCliente > 0 
-                        ? `<span style="color: #c62828; font-weight: 600;">Pendiente (Q${saldoTotalCliente.toFixed(2)})</span>${docsHtml}` 
+                        ? `<span style="color: #c62828; font-weight: 600;">Pendiente<br>(Q${saldoTotalCliente.toFixed(2)})</span>${docsHtml}` 
                         : `<span style="color: #2e7d32; font-weight: 600;">Liquidado</span>`;
 
                     const codigoHtml = cli.codigo ? `<b>${cli.codigo}</b>` : `<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;"><input type="text" class="inline-codigo-input" data-id="${cli.id}" placeholder="Añadir..." style="width:65px; padding:4px; font-size:0.75rem; margin:0;"><button class="secondary small btn-guardar-codigo" data-id="${cli.id}" style="padding:4px; margin:0; min-width:30px;" title="Guardar código">💾</button></div>`;
@@ -2088,7 +2088,18 @@ function evaluarComportamientoCliente(clienteId) {
                         </td>
                     `;
                     tbody.appendChild(tr);
-               });
+                });
+
+                document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const val = document.querySelector(`.inline-codigo-input[data-id="${id}"]`).value.trim();
+                        if (val) {
+                            const cli = clientes.find(c => c.id === id);
+                            if (cli) { cli.codigo = val; saveData(); renderTabla(); }
+                        }
+                    });
+                });
 
                 // Escuchador para guardar los códigos desde la tabla
                 document.querySelectorAll('.btn-guardar-codigo').forEach(btn => {
