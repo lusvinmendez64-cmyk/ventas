@@ -4971,23 +4971,54 @@ if (prod && nombre) {
                 });
                 htmlContent += `</tbody></table></div>`;
                 
-                htmlContent += `<h4>Abonos sin facturar (${abonosNF.length})</h4><div class="table-responsive" style="max-height: 200px; overflow-y: auto;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Abono</th></tr></thead><tbody>`;
-                if(abonosNF.length === 0) htmlContent += `<tr><td colspan="4">Todo al día.</td></tr>`;
+                htmlContent += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px;">
+                                    <h4 style="margin:0;">Abonos sin facturar (${abonosNF.length})</h4>
+                                    ${abonosNF.length > 0 ? '<button id="btnLimpiarAbonosAntiguos" class="secondary small" style="background:#25d366; color:white; border:none; margin:0;">✅ Marcar todos registrados</button>' : ''}
+                                </div>
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Abono</th><th>Acción</th></tr></thead><tbody>`;
+                if(abonosNF.length === 0) htmlContent += `<tr><td colspan="5">Todo al día.</td></tr>`;
                 abonosNF.forEach(a => {
                     const v = ventas.find(ven => ven.id === a.ventaId);
-                    const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?'} : {razonSocial:'?', nit:'?'};
-                    htmlContent += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(a.monto)}</td></tr>`;
+                    const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion:'?'} : {razonSocial:'?', nit:'?', direccion:'?'};
+                    htmlContent += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(a.monto)}</td><td><button class="secondary small btn-marcar-abono-individual" data-id="${a.id}" style="padding:4px 8px; min-width:30px;" title="Marcar como registrado">✅</button></td></tr>`;
                 });
                 htmlContent += `</tbody></table></div>`;
-                
+                
                 htmlContent += `<div style="text-align:right; margin-top:15px;"><button id="cerrarFacturacionBtn" class="secondary small">Cerrar</button></div>`;
-                
+                
                 const modalFact = document.getElementById('pendientesFacturarModal');
                 document.getElementById('pendientesFacturarContent').innerHTML = htmlContent;
                 modalFact.style.display = 'flex';
-                
+                
                 document.getElementById('cerrarFacturacionBtn').onclick = () => modalFact.style.display = 'none';
-                
+
+                // --- NUEVOS EVENTOS PARA MARCAR ABONOS ---
+                document.getElementById('btnLimpiarAbonosAntiguos')?.addEventListener('click', () => {
+                    if(confirm('¿Confirmas que TODOS estos abonos ya fueron registrados en gerencia?\nEsto los quitará de la lista de pendientes.')) {
+                        abonosNF.forEach(a => {
+                            const abonoBase = abonos.find(ab => ab.id === a.id);
+                            if(abonoBase) abonoBase.facturado = true;
+                        });
+                        saveData();
+                        modalFact.style.display = 'none';
+                        renderDashboard(); 
+                        setTimeout(() => document.getElementById('btnAbrirPendientesFacturar')?.click(), 100);
+                    }
+                });
+
+                document.querySelectorAll('.btn-marcar-abono-individual').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const abonoBase = abonos.find(ab => ab.id === e.target.dataset.id);
+                        if(abonoBase) {
+                            abonoBase.facturado = true;
+                            saveData();
+                            modalFact.style.display = 'none';
+                            renderDashboard();
+                            setTimeout(() => document.getElementById('btnAbrirPendientesFacturar')?.click(), 100);
+                        }
+                    });
+                });
+                // --- FIN NUEVOS EVENTOS ---
                 document.getElementById('btnGenerarPDFFacturacion').onclick = () => {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
