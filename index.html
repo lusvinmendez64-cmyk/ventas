@@ -288,7 +288,7 @@
                 const tablas = [
                     { nombre: 'clientes', data: clientes },
                     { nombre: 'ventas', data: ventas },
-                    { nombre: 'catalogoproductos', data: catalogoProductos },
+                   
                     { nombre: 'inventario', data: inventario },
                     { nombre: 'movimientosinventario', data: movimientosInventario },
                     { nombre: 'abonos', data: abonos },
@@ -300,7 +300,7 @@
 
                 // Diccionario de llaves primarias para forzar la actualización y evitar duplicados
                 const onConflictKeys = { 
-                    clientes: 'id', ventas: 'id', catalogoproductos: 'id', 
+                    clientes: 'id', ventas: 'id',
                     inventario: 'productoId', movimientosinventario: 'id', 
                     abonos: 'id', cobros: 'id', pagoscobro: 'id', 
                     calificacionesclientes: 'id', visitas: 'id' 
@@ -571,9 +571,13 @@
             localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
             localStorage.setItem('visitas', JSON.stringify(visitas));
             
-            // Intento de respaldo silencioso en segundo plano con sello de vendedor
+            // Intento de respaldo silencioso en segundo plano con sello de vendedor (Pares relacionales)
             const ventasSelladas = ventas.map(v => ({ ...v, vendedor_id: vendedorId }));
-            supabase.from('ventas').upsert(ventasSelladas).then(() => console.log("☁️ Nube actualizada con sello de vendedor"));
+            const clientesSellados = clientes.map(c => ({ ...c, vendedor_id: vendedorId }));
+            Promise.all([
+                supabase.from('clientes').upsert(clientesSellados, { onConflict: 'id' }),
+                supabase.from('ventas').upsert(ventasSelladas, { onConflict: 'id' })
+            ]).then(() => console.log("☁️ Nube actualizada (Clientes y Ventas)"));
         }
 
         // 1. Ejecutar carga y guardado PRIMERO
@@ -1352,7 +1356,7 @@
                         clienteFinal = clienteExistente;
                         Object.assign(clienteFinal, datosForm);
                     } else {
-                        clienteFinal = { id: generarIdCliente(), ...datosForm, encargado: '', fechaCreacion: new Date().toISOString() };
+                        clienteFinal = { id: generarIdCliente(), vendedor_id: vendedorId, ...datosForm, encargado: '', fechaCreacion: new Date().toISOString() };
                         clientes.push(clienteFinal);
                     }
                 } else {
@@ -1370,7 +1374,7 @@
                 }
 
                 const numFactura = tipoVenta === 'Crédito' && document.getElementById('numeroFacturaCredito') ? document.getElementById('numeroFacturaCredito').value.trim() : '';
-                const nuevaVenta = { id: 'ven_' + Date.now(), clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, numeroFactura: numFactura, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS, estado: 'normal', facturado: false };
+                const nuevaVenta = { id: 'ven_' + Date.now(), vendedor_id: vendedorId, clienteId: clienteFinal.id, fecha: fechaISO, productos: filas, total, tipoVenta, diasCredito, numeroFactura: numFactura, saldoPendiente: tipoVenta === 'Crédito' ? total : 0, fechaVencimiento: tipoVenta === 'Crédito' ? new Date(new Date(fechaISO).getTime() + diasCredito*24*60*60*1000).toISOString() : null, ubicacionGPS: linkGPS, estado: 'normal', facturado: false };
                 ventas.push(nuevaVenta);
                 
                 filas.forEach(p => {
@@ -1925,7 +1929,7 @@
                     }
                 }
 
-                const nuevoAbono = { id: generarIdAbono(), ventaId: venta.id, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
+                const nuevoAbono = { id: generarIdAbono(), vendedor_id: vendedorId, ventaId: venta.id, fecha: new Date().toISOString(), monto, tipoPago: tipo, fechaCobro, estado };
                 abonos.push(nuevoAbono);
 
                 venta.saldoPendiente = redondearDinero(venta.saldoPendiente - monto);
@@ -4571,7 +4575,7 @@ if (prod && nombre) {
                 }
                 saveData();
 
-                const nuevoCobro = { id: generarIdCobro(), numeroDocumento: doc, fecha: new Date(document.getElementById('fechaCobro').value + 'T12:00:00').toISOString(), montoTotal: monto, clienteId: clienteFinal.id, saldoPendiente: monto, fechaCreacion: new Date().toISOString() };
+                const nuevoCobro = { id: generarIdCobro(), vendedor_id: vendedorId, numeroDocumento: doc, fecha: new Date(document.getElementById('fechaCobro').value + 'T12:00:00').toISOString(), montoTotal: monto, clienteId: clienteFinal.id, saldoPendiente: monto, fechaCreacion: new Date().toISOString() };
                 cobros.push(nuevoCobro);
                 saveData();
 
@@ -4691,7 +4695,7 @@ if (prod && nombre) {
                 const fecha = document.getElementById('pagoFechaCobro').value;
                 if (!fecha) { alert('Fecha requerida'); return; }
 
-                const nuevoPago = { id: generarIdPagoCobro(), cobroId: cobro.id, fecha: new Date(fecha + 'T12:00:00').toISOString(), monto, tipo, porcentaje: tipo === 'ajeno' ? porcentaje : 100, metodoPago: metodo };
+                const nuevoPago = { id: generarIdPagoCobro(), vendedor_id: vendedorId, cobroId: cobro.id, fecha: new Date(fecha + 'T12:00:00').toISOString(), monto, tipo, porcentaje: tipo === 'ajeno' ? porcentaje : 100, metodoPago: metodo };
                 pagosCobro.push(nuevoPago);
                 cobro.saldoPendiente = redondearDinero(cobro.saldoPendiente - monto);
                 saveData();
