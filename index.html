@@ -252,8 +252,8 @@
 </div>
 
 <script>
-    (function() {
-       // --- CONEXIÓN SUPABASE ---
+    (async function() {
+       // --- CONEXIÓN SUPABASE ---
         const SUPABASE_URL = 'https://dummy.supabase.co'; // Texto simulado para evitar colapso
         const SUPABASE_KEY = 'dummy-key'; // Texto simulado para evitar colapso
 
@@ -345,27 +345,80 @@
         let vendedorId = localStorage.getItem('vendedorId') || '';
 
         if (!vendedorId || !nombreUsuario) {
-            const codigoExistente = prompt('🔐 RECUPERACIÓN DE CUENTA\n\nSi ya tienes un código de vendedor (Ej: V-LM123), ingrésalo aquí para conectarte a tu perfil en Supabase.\n\nSi eres NUEVO, deja este espacio en blanco y presiona Aceptar:');
-            
-            if (codigoExistente && codigoExistente.trim() !== '') {
-                vendedorId = codigoExistente.trim().toUpperCase();
-                nombreUsuario = prompt('Bienvenido de vuelta. Confirma tu Nombre y Apellido:') || 'Usuario Recuperado';
-            } else {
-                nombreUsuario = prompt('¡Hola! Eres nuevo. Ingresa tu Nombre y Apellido para crear tu usuario:');
-                if (nombreUsuario && nombreUsuario.trim() !== '') {
-                    nombreUsuario = nombreUsuario.trim();
-                    const partesNombre = nombreUsuario.split(' ').filter(n => n.length > 0);
+            // Catálogo predefinido de vendedores (Puedes agregar a todo tu equipo aquí)
+            const vendedoresRegistrados = [
+                { id: 'V-LM123', nombre: 'Lusvin Esnerlin Méndez Palacios' },
+                { id: 'V-JP456', nombre: 'Juan Pérez' }
+            ];
+
+            const opcionesHtml = vendedoresRegistrados.map(v => `<option value="${v.id}|${v.nombre}">${v.nombre} (${v.id})</option>`).join('');
+
+            const loginHtml = `
+            <div id="loginModalPersonalizado" class="modal" style="display:flex; z-index: 99999; background: rgba(0,20,30,0.9);">
+                <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px;">
+                    <h2 style="color: #075e54; margin-bottom: 20px;">🔐 Acceso al Sistema</h2>
+                    <div id="loginPaso1">
+                        <button id="btnSoyExistente" class="secondary" style="width: 100%; margin-bottom: 12px; background: #25d366; color: white; border: none;">Seleccionar mi usuario</button>
+                        <button id="btnSoyNuevo" class="secondary" style="width: 100%;">Soy vendedor nuevo</button>
+                    </div>
+                    <div id="loginExistente" style="display: none; text-align: left;">
+                        <label style="color:#1e3b4f; font-weight:bold;">Selecciona tu cuenta:</label>
+                        <select id="selectVendedorExistente" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #b0c7da;">
+                            <option value="">-- Lista de Vendedores --</option>
+                            ${opcionesHtml}
+                        </select>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btnIngresarExistente" class="secondary" style="background:#25d366; color:white; flex: 2; border:none;">Ingresar</button>
+                            <button id="btnVolver1" class="secondary small" style="flex: 1;">Volver</button>
+                        </div>
+                    </div>
+                    <div id="loginNuevo" style="display: none; text-align: left;">
+                        <label style="color:#1e3b4f; font-weight:bold;">Nombre y Apellido:</label>
+                        <input type="text" id="inputNombreNuevo" placeholder="Ej: Carlos Lopez" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #b0c7da;">
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btnCrearNuevo" class="secondary" style="background:#25d366; color:white; flex: 2; border:none;">Crear Código</button>
+                            <button id="btnVolver2" class="secondary small" style="flex: 1;">Volver</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            
+            document.body.insertAdjacentHTML('beforeend', loginHtml);
+
+            await new Promise((resolve) => {
+                const paso1 = document.getElementById('loginPaso1');
+                const pasoExistente = document.getElementById('loginExistente');
+                const pasoNuevo = document.getElementById('loginNuevo');
+
+                document.getElementById('btnSoyExistente').onclick = () => { paso1.style.display = 'none'; pasoExistente.style.display = 'block'; };
+                document.getElementById('btnSoyNuevo').onclick = () => { paso1.style.display = 'none'; pasoNuevo.style.display = 'block'; };
+                document.getElementById('btnVolver1').onclick = () => { pasoExistente.style.display = 'none'; paso1.style.display = 'block'; };
+                document.getElementById('btnVolver2').onclick = () => { pasoNuevo.style.display = 'none'; paso1.style.display = 'block'; };
+
+                document.getElementById('btnIngresarExistente').onclick = () => {
+                    const sel = document.getElementById('selectVendedorExistente').value;
+                    if (!sel) { alert('Por favor selecciona tu usuario'); return; }
+                    const [id, nombre] = sel.split('|');
+                    vendedorId = id;
+                    nombreUsuario = nombre;
+                    resolve();
+                };
+
+                document.getElementById('btnCrearNuevo').onclick = () => {
+                    let nom = document.getElementById('inputNombreNuevo').value.trim();
+                    if (!nom) { alert('Ingresa tu nombre'); return; }
+                    const partesNombre = nom.split(' ').filter(n => n.length > 0);
                     const iniciales = partesNombre.map(n => n[0].toUpperCase()).join('').substring(0, 2);
-                    const numeroUnico = Math.floor(100 + Math.random() * 900);
-                    vendedorId = `V-${iniciales}${numeroUnico}`;
-                    alert(`✨ Tu nuevo código permanente es: ${vendedorId}\n¡Guárdalo! Lo necesitarás si cambias de teléfono.`);
-                } else {
-                    nombreUsuario = 'Usuario';
-                    vendedorId = 'V-000';
-                }
-            }
+                    vendedorId = 'V-' + iniciales + Math.floor(100 + Math.random() * 900);
+                    nombreUsuario = nom;
+                    alert('✨ Tu código permanente es: ' + vendedorId + '\n¡Guárdalo!');
+                    resolve();
+                };
+            });
+
             localStorage.setItem('nombreUsuario', nombreUsuario);
             localStorage.setItem('vendedorId', vendedorId);
+            document.getElementById('loginModalPersonalizado').remove();
         }
         document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario} (${vendedorId})`;
         function obtenerSaludo() {
