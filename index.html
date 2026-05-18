@@ -284,53 +284,75 @@
         probarConexionSupabase();
         async function migrarTodoASupabase() {
             showLoader();
-            console.log("🚀 Iniciando Sincronización Bidireccional...");
+            console.log("🚀 Iniciando Sincronización Total...");
             try {
-                // 1. SUBIR LO LOCAL A LA NUBE (Upload de lo que trabajaste)
-                const tablas = [
-                    { nombre: 'clientes', data: clientes },
-                    { nombre: 'ventas', data: ventas },
-                    { nombre: 'inventario', data: inventario },
-                    { nombre: 'movimientosinventario', data: movimientosInventario },
-                    { nombre: 'abonos', data: abonos },
-                    { nombre: 'cobros', data: cobros },
-                    { nombre: 'pagoscobro', data: pagosCobro },
-                    { nombre: 'calificacionesclientes', data: calificacionesClientes },
-                    { nombre: 'visitas', data: visitas } 
+                // =========================================================
+                // 1. SUBIR DATOS DEL DISPOSITIVO A LA NUBE
+                // =========================================================
+                const tablasSubida = [
+                    { nombre: 'clientes', data: clientes, key: 'id' },
+                    { nombre: 'ventas', data: ventas, key: 'id' },
+                    { nombre: 'inventario', data: inventario, key: 'productoId' },
+                    { nombre: 'movimientosinventario', data: movimientosInventario, key: 'id' },
+                    { nombre: 'abonos', data: abonos, key: 'id' },
+                    { nombre: 'cobros', data: cobros, key: 'id' },
+                    { nombre: 'pagoscobro', data: pagosCobro, key: 'id' },
+                    { nombre: 'calificacionesclientes', data: calificacionesClientes, key: 'id' },
+                    { nombre: 'visitas', data: visitas, key: 'id' } 
                 ];
 
-                const onConflictKeys = { 
-                    clientes: 'id', ventas: 'id',
-                    inventario: 'productoId', movimientosinventario: 'id', 
-                    abonos: 'id', cobros: 'id', pagoscobro: 'id', 
-                    calificacionesclientes: 'id', visitas: 'id' 
-                };
-
-                for (const tabla of tablas) {
-                    if (tabla.data.length > 0) {
+                for (const tabla of tablasSubida) {
+                    if (tabla.data && tabla.data.length > 0) {
                         const dataSellada = tabla.data.map(item => ({ ...item, vendedor_id: vendedorId }));
-                        const llavePrimaria = onConflictKeys[tabla.nombre];
-                        const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: llavePrimaria });
+                        const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: tabla.key });
                         if (error) throw new Error(`Error subiendo ${tabla.nombre}: ${error.message}`);
-                        console.log(`✅ ${tabla.nombre} subido a la nube.`);
                     }
                 }
 
-                // 2. DESCARGAR DE LA NUBE AL DISPOSITIVO (Download)
+                // =========================================================
+                // 2. DESCARGAR DATOS DE LA NUBE AL DISPOSITIVO
+                // =========================================================
                 console.log("📥 Descargando información actualizada de la nube...");
                 
-                if (typeof syncDesdeGerencia === 'function') {
-                    await syncDesdeGerencia(); // Llama a la función de descarga
+                const tablasDescarga = [
+                    { nombre: 'clientes', localKey: 'clientes', global: false },
+                    { nombre: 'ventas', localKey: 'ventas', global: false },
+                    { nombre: 'inventario', localKey: 'inventario', global: true }, // El inventario es para toda la ruta
+                    { nombre: 'movimientosinventario', localKey: 'movimientosInventario', global: false },
+                    { nombre: 'abonos', localKey: 'abonos', global: false },
+                    { nombre: 'cobros', localKey: 'cobros', global: false },
+                    { nombre: 'pagoscobro', localKey: 'pagosCobro', global: false },
+                    { nombre: 'calificacionesclientes', localKey: 'calificacionesClientes', global: false },
+                    { nombre: 'visitas', localKey: 'visitas', global: false }
+                ];
+
+                for (const tabla of tablasDescarga) {
+                    // Si es inventario lo trae todo, si no, filtra solo lo de este vendedor
+                    let query = supabase.from(tabla.nombre).select('*');
+                    if (!tabla.global) {
+                        query = query.eq('vendedor_id', vendedorId);
+                    }
+                    
+                    const { data, error } = await query;
+                    
+                    if (!error && data && data.length > 0) {
+                        localStorage.setItem(tabla.localKey, JSON.stringify(data));
+                        console.log(`📥 ${tabla.nombre} descargados: ${data.length}`);
+                    }
                 }
 
                 localStorage.setItem('ultimaSincronizacion', new Date().toISOString().slice(0, 10));
-                alert("✨ Sincronización Bidireccional Exitosa. Tu dispositivo ahora tiene todos los datos de la nube.");
+                alert("✨ ¡Sincronización Exitosa! La aplicación se reiniciará para mostrar tus datos.");
+                
+                // =========================================================
+                // 3. RECARGAR LA PÁGINA PARA PINTAR LOS DATOS EN PANTALLA
+                // =========================================================
+                window.location.reload();
                 
             } catch (err) {
                 console.error("❌ Fallo en sincronización:", err);
                 alert("Error al sincronizar: " + err.message);
-            } finally {
-                hideLoader();
+                hideLoader(); // Solo ocultamos el loader si hay error, si hay éxito se reinicia la página
             }
         }
         // ========== DATOS GLOBALES ==========
