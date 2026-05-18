@@ -342,29 +342,31 @@
         let visitas = []; // VARIABLE GLOBAL VISITAS
 
         let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
-        let vendedorId = localStorage.getItem('vendedorId') || ''; 
+        let vendedorId = localStorage.getItem('vendedorId') || '';
 
-        if (!nombreUsuario || !vendedorId) {
-            nombreUsuario = prompt('¡Hola! Ingresa tu nombre y apellido (Ej: Juan Perez):');
-            
-            if (nombreUsuario && nombreUsuario.trim() !== '') {
-                nombreUsuario = nombreUsuario.trim();
-                
-                // Generación automática del código: Iniciales + número aleatorio de 3 dígitos
-                const partesNombre = nombreUsuario.split(' ').filter(n => n.length > 0);
-                const iniciales = partesNombre.map(n => n[0].toUpperCase()).join('').substring(0, 2);
-                const numeroUnico = Math.floor(100 + Math.random() * 900); 
-                vendedorId = `V-${iniciales}${numeroUnico}`;
-                
-                localStorage.setItem('nombreUsuario', nombreUsuario);
-                localStorage.setItem('vendedorId', vendedorId);
-            } else {
-                nombreUsuario = 'Usuario';
-                vendedorId = 'V-000';
-                localStorage.setItem('nombreUsuario', nombreUsuario);
-                localStorage.setItem('vendedorId', vendedorId);
-            }
-        }
+        if (!vendedorId || !nombreUsuario) {
+            const codigoExistente = prompt('🔐 RECUPERACIÓN DE CUENTA\n\nSi ya tienes un código de vendedor (Ej: V-LM123), ingrésalo aquí para conectarte a tu perfil en Supabase.\n\nSi eres NUEVO, deja este espacio en blanco y presiona Aceptar:');
+            
+            if (codigoExistente && codigoExistente.trim() !== '') {
+                vendedorId = codigoExistente.trim().toUpperCase();
+                nombreUsuario = prompt('Bienvenido de vuelta. Confirma tu Nombre y Apellido:') || 'Usuario Recuperado';
+            } else {
+                nombreUsuario = prompt('¡Hola! Eres nuevo. Ingresa tu Nombre y Apellido para crear tu usuario:');
+                if (nombreUsuario && nombreUsuario.trim() !== '') {
+                    nombreUsuario = nombreUsuario.trim();
+                    const partesNombre = nombreUsuario.split(' ').filter(n => n.length > 0);
+                    const iniciales = partesNombre.map(n => n[0].toUpperCase()).join('').substring(0, 2);
+                    const numeroUnico = Math.floor(100 + Math.random() * 900);
+                    vendedorId = `V-${iniciales}${numeroUnico}`;
+                    alert(`✨ Tu nuevo código permanente es: ${vendedorId}\n¡Guárdalo! Lo necesitarás si cambias de teléfono.`);
+                } else {
+                    nombreUsuario = 'Usuario';
+                    vendedorId = 'V-000';
+                }
+            }
+            localStorage.setItem('nombreUsuario', nombreUsuario);
+            localStorage.setItem('vendedorId', vendedorId);
+        }
         document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario} (${vendedorId})`;
         function obtenerSaludo() {
             const hora = new Date().getHours();
@@ -5315,87 +5317,169 @@ if (prod && nombre) {
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // Radar de Clínicas y Farmacias (Agenda Inteligente)
-        document.getElementById('ejecutarRadarBtn').addEventListener('click', () => {
-            const res = document.getElementById('radarResultados');
-            res.innerHTML = '<div style="text-align:center; padding:20px; color:#075e54; font-weight:bold;">📡 Rastreo satelital iniciado...</div>';
-            if (!("geolocation" in navigator)) { res.innerHTML = "GPS no disponible."; return; }
+        // Radar de Clínicas y Farmacias (Agenda Inteligente + Prospección OSM)
+        document.getElementById('ejecutarRadarBtn').addEventListener('click', () => {
+            const res = document.getElementById('radarResultados');
+            res.innerHTML = '<div style="text-align:center; padding:20px; color:#075e54; font-weight:bold;">📡 Rastreo satelital iniciado... buscando prospectos...</div>';
+            if (!("geolocation" in navigator)) { res.innerHTML = "GPS no disponible."; return; }
 
-            navigator.geolocation.getCurrentPosition((pos) => {
-                const mLat = pos.coords.latitude; const mLon = pos.coords.longitude;
-                let cercanos = [];
-                const hoyStr = new Date().toDateString(); // Capturamos el día actual
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const mLat = pos.coords.latitude; const mLon = pos.coords.longitude;
+                let cercanosLocales = [];
+                const hoyStr = new Date().toDateString();
 
-                clientes.forEach(cli => {
-                    // 1. FILTRO DE AGENDA: Si ya lo visitaste o le vendiste HOY, desaparece del radar
-                    const ventaHoy = ventas.some(v => v.clienteId === cli.id && new Date(v.fecha).toDateString() === hoyStr && v.estado === 'normal');
-                    const visitaHoy = visitas.some(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim() && new Date(vis.fecha).toDateString() === hoyStr);
-                    
-                    if (ventaHoy || visitaHoy) return; // Si ya se gestionó hoy, lo saltamos
+                // 1. RASTREO LOCAL (Tus clientes registrados)
+                clientes.forEach(cli => {
+                    const ventaHoy = ventas.some(v => v.clienteId === cli.id && new Date(v.fecha).toDateString() === hoyStr && v.estado === 'normal');
+                    const visitaHoy = visitas.some(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim() && new Date(vis.fecha).toDateString() === hoyStr);
+                    if (ventaHoy || visitaHoy) return; 
 
-                    // 2. BUSCAR COORDENADAS:
-                    const gpsVenta = ventas.find(v => v.clienteId === cli.id && v.ubicacionGPS && v.ubicacionGPS.includes('q='));
-                    if(gpsVenta) {
-                        const match = gpsVenta.ubicacionGPS.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-                        if(match) {
-                            const dist = calcularDistancia(mLat, mLon, parseFloat(match[1]), parseFloat(match[2]));
-                            
-                            // 3. SI ESTÁ EN RANGO (5KM):
-                            if(dist <= 5) {
-                                const ventCli = ventas.filter(v => v.clienteId === cli.id && v.estado === 'normal');
-                                const compras = ventCli.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
-                                const saldo = ventCli.reduce((acc, v) => acc + (v.tipoVenta==='Crédito' ? (v.saldoPendiente||0) : 0), 0);
-                                
-                                let conteoProds = {};
-                                ventCli.forEach(v => v.productos.forEach(p => conteoProds[p.producto] = (conteoProds[p.producto]||0)+p.unidades));
-                                const top = Object.entries(conteoProds).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join(', ') || 'Ninguno';
+                    const gpsVenta = ventas.find(v => v.clienteId === cli.id && v.ubicacionGPS && v.ubicacionGPS.includes('q='));
+                    if(gpsVenta) {
+                        const match = gpsVenta.ubicacionGPS.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                        if(match) {
+                            const dist = calcularDistancia(mLat, mLon, parseFloat(match[1]), parseFloat(match[2]));
+                            if(dist <= 5) {
+                                const ventCli = ventas.filter(v => v.clienteId === cli.id && v.estado === 'normal');
+                                const compras = ventCli.reduce((acc, v) => acc + (parseFloat(v.total)||0), 0);
+                                const saldo = ventCli.reduce((acc, v) => acc + (v.tipoVenta==='Crédito' ? (v.saldoPendiente||0) : 0), 0);
+                                let conteoProds = {};
+                                ventCli.forEach(v => v.productos.forEach(p => conteoProds[p.producto] = (conteoProds[p.producto]||0)+p.unidades));
+                                const top = Object.entries(conteoProds).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join(', ') || 'Ninguno';
 
-                                // 4. LÓGICA DE ÚLTIMA GESTIÓN (Venta o Visita)
-                                const visitasCli = visitas.filter(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim());
-                                const historialGestion = [
-                                    ...ventCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Venta' })),
-                                    ...visitasCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Visita' }))
-                                ].sort((a,b) => b.fecha - a.fecha);
+                                const visitasCli = visitas.filter(vis => vis.nombre.toLowerCase().trim() === cli.razonSocial.toLowerCase().trim());
+                                const historialGestion = [
+                                    ...ventCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Venta' })),
+                                    ...visitasCli.map(v => ({ fecha: new Date(v.fecha), visitador: v.vendedor_id || 'S/D', tipo: 'Visita' }))
+                                ].sort((a,b) => b.fecha - a.fecha);
 
-                                let ultimaGestionTxt = '<span style="color:gray;">Sin gestiones previas registradas</span>';
-                                if (historialGestion.length > 0) {
-                                    const ult = historialGestion[0];
-                                    ultimaGestionTxt = `<span style="color:#1976d2; font-weight:bold;">${ult.fecha.toLocaleDateString()}</span> por <b>${ult.visitador}</b> (${ult.tipo})`;
-                                }
+                                let ultimaGestionTxt = '<span style="color:gray;">Sin gestiones previas</span>';
+                                if (historialGestion.length > 0) {
+                                    const ult = historialGestion[0];
+                                    ultimaGestionTxt = `<span style="color:#1976d2; font-weight:bold;">${ult.fecha.toLocaleDateString()}</span> (${ult.tipo})`;
+                                }
+                                cercanosLocales.push({ esLocal: true, cli, dist, compras, saldo, top, linkMaps: gpsVenta.ubicacionGPS, ultimaGestionTxt });
+                            }
+                        }
+                    }
+                });
 
-                                cercanos.push({ cli, dist, compras, saldo, top, linkMaps: gpsVenta.ubicacionGPS, ultimaGestionTxt });
-                            }
-                        }
-                    }
-                });
+                // 2. RASTREO GLOBAL EXTERNO (OpenStreetMap) + Filtro de Cadenas
+                let prospectosExternos = [];
+                const cadenasBloqueadas = ['galeno', 'batres', 'cruz verde', 'meykos', 'fayco'];
 
-                cercanos.sort((a,b) => a.dist - b.dist);
-                if(cercanos.length === 0) { 
-                    res.innerHTML = '<p style="text-align:center;">No hay prospectos pendientes a menos de 5km de tu posición.</p>'; 
-                } else {
-                    res.innerHTML = cercanos.map(c => {
-                        // Lógica de Estatus de Compra
-                        const textoCompras = c.compras > 0 ? formatoQ(c.compras) : '<span style="color:#ef6c00; font-weight:bold; background:#fff3e0; padding:2px 6px; border-radius:10px;">Prospecto (Sin Compra)</span>';
-                        
-                        return `
-                        <div style="background:#f0f7fc; border:1px solid #c9ddec; padding:12px; border-radius:15px; margin-bottom:8px;">
-                            <a href="${c.linkMaps}" target="_blank" style="text-decoration:none; display:inline-block; margin-bottom:5px;">
-                                <strong style="font-size:1.1rem; color:#1e3b4f; border-bottom: 2px dashed #25d366;" title="Clic para navegar en Google Maps">📍 ${c.cli.razonSocial}</strong>
-                            </a>
-                            <span style="float:right; background:#25d366; color:white; padding:2px 6px; border-radius:10px; font-size:0.75rem;">A ${c.dist.toFixed(1)} km</span><br>
-                            <div style="margin-top:6px; font-size:0.85rem;">
-                                <strong>Deuda:</strong> <span style="color:${c.saldo > 0 ? '#c62828' : '#2e7d32'}; font-weight:bold;">${formatoQ(c.saldo)}</span> | <strong>Comprado:</strong> ${textoCompras}<br>
-                                <strong style="color:#075e54;">💊 Top:</strong> ${c.top}
-                            </div>
-                            <div style="margin-top:8px; font-size:0.8rem; background:#ffffff; padding:6px 10px; border-radius:8px; border:1px solid #dae6f0;">
-                                🕒 <strong>Última gestión:</strong> ${c.ultimaGestionTxt}
-                            </div>
-                        </div>
-                        `;
-                    }).join('');
-                }
-            }, () => { res.innerHTML = "Error calculando posición GPS. Asegúrese de tener la ubicación activada."; }, { timeout: 10000 });
-        });
+                try {
+                    const overpassQuery = `[out:json];(node["amenity"~"hospital|pharmacy|clinic"](around:5000,${mLat},${mLon});node["healthcare"](around:5000,${mLat},${mLon}););out body;`;
+                    const urlOSM = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+                    const response = await fetch(urlOSM);
+                    const dataOSM = await response.json();
+
+                    if (dataOSM && dataOSM.elements) {
+                        dataOSM.elements.forEach(el => {
+                            if (el.tags && el.tags.name) {
+                                const dist = calcularDistancia(mLat, mLon, el.lat, el.lon);
+                                const nombreLugar = el.tags.name;
+                                const esCadena = cadenasBloqueadas.some(cadena => nombreLugar.toLowerCase().includes(cadena));
+                                
+                                // Filtrar si ya existe en la BD local
+                                const existeLocal = clientes.some(c => c.razonSocial.toLowerCase().includes(nombreLugar.toLowerCase()) || nombreLugar.toLowerCase().includes(c.razonSocial.toLowerCase()));
+                                
+                                if (!existeLocal && dist <= 5) {
+                                    let tipoLugar = el.tags.amenity === 'pharmacy' ? 'Farmacia' : (el.tags.amenity === 'hospital' ? 'Hospital' : 'Clínica');
+                                    prospectosExternos.push({
+                                        esLocal: false,
+                                        nombre: nombreLugar,
+                                        tipo: tipoLugar,
+                                        dist: dist,
+                                        esCadenaBloqueada: esCadena,
+                                        linkMaps: `https://www.google.com/maps?q=${el.lat},${el.lon}`
+                                    });
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn("No se pudo conectar al radar global OSM.", e);
+                }
+
+                // 3. MEZCLAR, ORDENAR Y RENDERIZAR
+                const todosLosCercanos = [...cercanosLocales, ...prospectosExternos].sort((a,b) => a.dist - b.dist);
+
+                if(todosLosCercanos.length === 0) { 
+                    res.innerHTML = '<p style="text-align:center;">No hay clientes ni nuevos prospectos en un radio de 5km.</p>'; 
+                } else {
+                    res.innerHTML = todosLosCercanos.map(c => {
+                        if (c.esLocal) {
+                            // CLIENTE LOCAL
+                            const textoCompras = c.compras > 0 ? formatoQ(c.compras) : '<span style="color:#ef6c00; font-weight:bold; background:#fff3e0; padding:2px 6px; border-radius:10px;">Prospecto</span>';
+                            return `
+                            <div style="background:#f0f7fc; border:1px solid #c9ddec; padding:12px; border-radius:15px; margin-bottom:8px;">
+                                <a href="${c.linkMaps}" target="_blank" style="text-decoration:none; display:inline-block; margin-bottom:5px;">
+                                    <strong style="font-size:1.1rem; color:#1e3b4f; border-bottom: 2px dashed #25d366;" title="Clic para navegar">📍 ${c.cli.razonSocial}</strong>
+                                </a>
+                                <span style="float:right; background:#25d366; color:white; padding:2px 6px; border-radius:10px; font-size:0.75rem;">A ${c.dist.toFixed(1)} km</span><br>
+                                <div style="margin-top:6px; font-size:0.85rem;">
+                                    <strong>Deuda:</strong> <span style="color:${c.saldo > 0 ? '#c62828' : '#2e7d32'}; font-weight:bold;">${formatoQ(c.saldo)}</span> | <strong>Comprado:</strong> ${textoCompras}<br>
+                                    <strong style="color:#075e54;">💊 Top:</strong> ${c.top}
+                                </div>
+                                <div style="margin-top:8px; font-size:0.8rem; background:#ffffff; padding:6px 10px; border-radius:8px; border:1px solid #dae6f0;">
+                                    🕒 <strong>Última gestión:</strong> ${c.ultimaGestionTxt}
+                                </div>
+                            </div>`;
+                        } else if (c.esCadenaBloqueada) {
+                            // CADENA BLOQUEADA (Gris, sin enlace, sin botón)
+                            return `
+                            <div style="background:#f5f5f5; border:1px solid #e0e0e0; padding:12px; border-radius:15px; margin-bottom:8px; opacity: 0.7;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div>
+                                        <span style="font-size:0.7rem; background:#9e9e9e; color:white; padding:2px 6px; border-radius:10px; font-weight:bold; text-transform:uppercase;">🚫 Cadena Restringida</span><br>
+                                        <strong style="font-size:1.1rem; color:#616161; margin-top:4px; display:inline-block;">🏢 ${c.nombre}</strong>
+                                    </div>
+                                    <span style="background:#9e9e9e; color:white; padding:2px 6px; border-radius:10px; font-size:0.75rem; white-space:nowrap;">A ${c.dist.toFixed(1)} km</span>
+                                </div>
+                                <div style="margin-top:6px; font-size:0.85rem; color:#757575;">
+                                    Fuera de objetivo comercial.
+                                </div>
+                            </div>`;
+                        } else {
+                            // PROSPECTO NUEVO EXTERNO (OSM - Clickeable y con Acción)
+                            return `
+                            <div style="background:#fff3e0; border:1px solid #ffcc80; padding:12px; border-radius:15px; margin-bottom:8px; box-shadow: 0 2px 5px rgba(239,108,0,0.1);">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div>
+                                        <span style="font-size:0.7rem; background:#ef6c00; color:white; padding:2px 6px; border-radius:10px; font-weight:bold; text-transform:uppercase;">🌟 Prospecto No Registrado</span><br>
+                                        <a href="${c.linkMaps}" target="_blank" style="text-decoration:none; display:inline-block; margin-top:4px;">
+                                            <strong style="font-size:1.1rem; color:#e65100; border-bottom: 2px dashed #ffb74d;" title="Clic para navegar">🏢 ${c.nombre}</strong>
+                                        </a>
+                                    </div>
+                                    <span style="background:#ef6c00; color:white; padding:2px 6px; border-radius:10px; font-size:0.75rem; white-space:nowrap;">A ${c.dist.toFixed(1)} km</span>
+                                </div>
+                                <div style="margin-top:6px; font-size:0.85rem; color:#5d4037;">
+                                    <strong>Categoría detectada:</strong> ${c.tipo}
+                                </div>
+                                <div style="margin-top:10px;">
+                                    <button class="secondary small btn-captar-mapa" data-nombre="${c.nombre}" data-cat="${c.tipo}" data-link="${c.linkMaps}" style="width:100%; background:#ef6c00; color:white; border:none; font-weight:bold;">🎯 Capturar Visita</button>
+                                </div>
+                            </div>`;
+                        }
+                    }).join('');
+
+                    // Evento para capturar el prospecto en la bitácora de visitas
+                    document.querySelectorAll('.btn-captar-mapa').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const nombre = e.target.dataset.nombre;
+                            const cat = e.target.dataset.cat;
+                            
+                            document.getElementById('radarModal').style.display = 'none';
+                            document.getElementById('vNombre').value = nombre;
+                            document.getElementById('vClasificacion').value = 'Nuevo';
+                            document.getElementById('vComentarios').value = `Prospecto detectado en Radar OSM. Categoría sugerida: ${cat}.`;
+                            document.getElementById('visitaModal').style.display = 'flex';
+                        });
+                    });
+                }
+            }, () => { res.innerHTML = "Error calculando posición GPS. Asegúrese de tener la ubicación activada."; }, { timeout: 10000 });
+        });
 
         // INICIALIZACIÓN
         showTab('dashboard'); // Arrancamos en el Dashboard por defecto
