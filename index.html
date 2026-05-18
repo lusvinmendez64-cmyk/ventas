@@ -155,6 +155,7 @@
 </div> <!-- CIERRE DE LA APP -->
 
 <!-- VERSIÓN LIMPIA Y ÚNICA DE LOS MODALES -->
+<div id="pendientesFacturarModal" class="modal" style="z-index: 1100;"><div class="modal-content" id="pendientesFacturarContent" style="max-width: 800px;"></div></div>
 <div id="estadoCuentaModal" class="modal"><div class="modal-content" id="estadoCuentaContent"></div></div>
 <div id="abonoModal" class="modal"><div class="modal-content" id="abonoContent"></div></div>
 <div id="estadoCobroModal" class="modal"><div class="modal-content" id="estadoCobroContent"></div></div>
@@ -4883,8 +4884,18 @@ if (prod && nombre) {
                 </tr>`;
             }).join('');
 
+            const ventasNF = ventas.filter(v => v.estado === 'normal' && v.facturado !== true);
+            const abonosNF = abonos.filter(a => a.facturado !== true);
+            let alertaFacturacion = '';
+            if (ventasNF.length > 0 || abonosNF.length > 0) {
+                alertaFacturacion = `<div id="btnAbrirPendientesFacturar" style="background: #ffebee; border: 1px solid #ef5350; border-radius: 15px; padding: 15px; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(239, 83, 80, 0.2); transition: transform 0.2s;">
+                    <div><span style="font-size: 1.5rem; margin-right: 10px;">🧾</span> <strong style="color: #c62828; font-size: 1.1rem;">Pendientes de Facturación Detectados</strong></div>
+                    <div style="background: #c62828; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.1rem;">${ventasNF.length} Ventas | ${abonosNF.length} Abonos ➔</div>
+                </div>`;
+            }
+
             let html = `
-                <style>
+                <style>
                     .dashboard-kpi { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
                     .kpi-card { flex: 1 1 200px; background: white; padding: 20px; border-radius: 20px; border: 1px solid #c9ddec; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
                     .kpi-card h3 { color: #1e3b4f; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;}
@@ -4894,7 +4905,8 @@ if (prod && nombre) {
                 </style>
                 
                 <h2>📈 Dashboard Gerencial</h2>
-                <div class="action-buttons" style="justify-content: flex-start;">
+                ${alertaFacturacion}
+                <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="btnSincronizarNube" class="secondary" style="background:#075e54; color:white; border-color:#075e54;">☁️ Sincronizar BD</button>
                     <button id="btnAbrirRadar" class="secondary">📡 Radar Médico</button>
                     <button id="btnRegistrarVisita" class="secondary">📍 Registrar Visita</button>
@@ -4947,6 +4959,71 @@ if (prod && nombre) {
            document.getElementById('content').innerHTML = html;
 
             // VINCULAR EVENTOS INMEDIATAMENTE (Garantiza que funcionen siempre)
+            document.getElementById('btnAbrirPendientesFacturar')?.addEventListener('click', () => {
+                let htmlContent = `<h3 style="color:#c62828; margin-bottom:15px;">🧾 Pendientes de Facturación</h3>`;
+                htmlContent += `<div style="margin-bottom:15px;"><button id="btnGenerarPDFFacturacion" class="secondary" style="background:#c62828; color:white; border:none; width:100%;">📄 Generar Reporte PDF para Gerencia</button></div>`;
+                
+                htmlContent += `<h4>Ventas sin facturar (${ventasNF.length})</h4><div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom:15px;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Monto</th></tr></thead><tbody>`;
+                if(ventasNF.length === 0) htmlContent += `<tr><td colspan="4">Todo al día.</td></tr>`;
+                ventasNF.forEach(v => {
+                    const c = clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?'};
+                    htmlContent += `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(v.total)}</td></tr>`;
+                });
+                htmlContent += `</tbody></table></div>`;
+                
+                htmlContent += `<h4>Abonos sin facturar (${abonosNF.length})</h4><div class="table-responsive" style="max-height: 200px; overflow-y: auto;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Abono</th></tr></thead><tbody>`;
+                if(abonosNF.length === 0) htmlContent += `<tr><td colspan="4">Todo al día.</td></tr>`;
+                abonosNF.forEach(a => {
+                    const v = ventas.find(ven => ven.id === a.ventaId);
+                    const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?'} : {razonSocial:'?', nit:'?'};
+                    htmlContent += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(a.monto)}</td></tr>`;
+                });
+                htmlContent += `</tbody></table></div>`;
+                
+                htmlContent += `<div style="text-align:right; margin-top:15px;"><button id="cerrarFacturacionBtn" class="secondary small">Cerrar</button></div>`;
+                
+                const modalFact = document.getElementById('pendientesFacturarModal');
+                document.getElementById('pendientesFacturarContent').innerHTML = htmlContent;
+                modalFact.style.display = 'flex';
+                
+                document.getElementById('cerrarFacturacionBtn').onclick = () => modalFact.style.display = 'none';
+                
+                document.getElementById('btnGenerarPDFFacturacion').onclick = () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+                    doc.setFillColor(198, 40, 40); doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                    doc.setTextColor(255, 255, 255); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+                    doc.text('MARIJOSE JHIRE S.A.', 14, 12); doc.setFontSize(10);
+                    doc.text('REPORTE DE PENDIENTES DE FACTURACION', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+                    doc.setTextColor(0); doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                    doc.text(`Fecha de emision: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() - 14, 25, { align: 'right' });
+                    
+                    let startY = 35;
+                    if(ventasNF.length > 0) {
+                        doc.text('VENTAS PENDIENTES DE FACTURAR', 14, startY);
+                        const bodyVentas = ventasNF.map(v => {
+                            const c = clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion: '?'};
+                            const prods = v.productos.map(p => `${p.unidades}x ${p.producto}`).join(', ');
+                            return [new Date(v.fecha).toLocaleDateString(), v.id.substr(0,8), c.razonSocial, c.nit || 'C/F', c.direccion || '—', prods, formatoQ(v.total)];
+                        });
+                        doc.autoTable({ startY: startY + 5, head: [['Fecha', 'Doc Local', 'Cliente', 'NIT', 'Dirección', 'Productos', 'Total']], body: bodyVentas, headStyles: { fillColor: [198, 40, 40] }, styles: { fontSize: 8 }});
+                        startY = doc.lastAutoTable.finalY + 15;
+                    }
+                    if(abonosNF.length > 0) {
+                        if(startY > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); startY = 20; }
+                        doc.text('ABONOS PENDIENTES DE FACTURAR', 14, startY);
+                        const bodyAbonos = abonosNF.map(a => {
+                            const v = ventas.find(ven => ven.id === a.ventaId);
+                            const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion:'?'} : {razonSocial:'?', nit:'?', direccion:'?'};
+                            const prods = v ? v.productos.map(p => `${p.unidades}x ${p.producto}`).join(', ') : 'N/A';
+                            return [new Date(a.fecha).toLocaleDateString(), a.id.substr(0,8), v ? v.numeroFactura || v.id.substr(0,8) : 'N/A', c.razonSocial, c.nit || 'C/F', prods, formatoQ(a.monto)];
+                        });
+                        doc.autoTable({ startY: startY + 5, head: [['Fecha Abono', 'Doc Abono', 'Fact/Venta Orig.', 'Cliente', 'NIT', 'Productos Orig.', 'Monto Abonado']], body: bodyAbonos, headStyles: { fillColor: [239, 108, 0] }, styles: { fontSize: 8 }});
+                    }
+                    doc.save(`Pendientes_Facturacion_${new Date().toISOString().slice(0,10)}.pdf`);
+                };
+            });
+
             document.getElementById('btnSincronizarNube')?.addEventListener('click', migrarTodoASupabase);
             document.getElementById('btnAbrirRadar')?.addEventListener('click', () => document.getElementById('radarModal').style.display = 'flex');
             document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => document.getElementById('visitaModal').style.display = 'flex');
