@@ -4958,16 +4958,17 @@ if (prod && nombre) {
             `;
            document.getElementById('content').innerHTML = html;
 
-            // VINCULAR EVENTOS INMEDIATAMENTE (Garantiza que funcionen siempre)
+           // VINCULAR EVENTOS INMEDIATAMENTE (Garantiza que funcionen siempre)
             document.getElementById('btnAbrirPendientesFacturar')?.addEventListener('click', () => {
                 let htmlContent = `<h3 style="color:#c62828; margin-bottom:15px;">🧾 Pendientes de Facturación</h3>`;
                 htmlContent += `<div style="margin-bottom:15px;"><button id="btnGenerarPDFFacturacion" class="secondary" style="background:#c62828; color:white; border:none; width:100%;">📄 Generar Reporte PDF para Gerencia</button></div>`;
                 
-                htmlContent += `<h4>Ventas sin facturar (${ventasNF.length})</h4><div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom:15px;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Monto</th></tr></thead><tbody>`;
-                if(ventasNF.length === 0) htmlContent += `<tr><td colspan="4">Todo al día.</td></tr>`;
+                htmlContent += `<h4>Ventas sin facturar (${ventasNF.length})</h4><div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom:15px;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Productos (Costo U.)</th><th>Monto</th></tr></thead><tbody>`;
+                if(ventasNF.length === 0) htmlContent += `<tr><td colspan="5">Todo al día.</td></tr>`;
                 ventasNF.forEach(v => {
                     const c = clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?'};
-                    htmlContent += `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(v.total)}</td></tr>`;
+                    const prodsStr = v.productos.map(p => `${p.unidades}x ${p.producto} <span style="color:#075e54; font-size:0.8rem;">(${formatoQ(p.precioUnitario)} c/u)</span>`).join('<br>');
+                    htmlContent += `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${prodsStr}</td><td><strong>${formatoQ(v.total)}</strong></td></tr>`;
                 });
                 htmlContent += `</tbody></table></div>`;
                 
@@ -4975,21 +4976,22 @@ if (prod && nombre) {
                                     <h4 style="margin:0;">Abonos sin facturar (${abonosNF.length})</h4>
                                     ${abonosNF.length > 0 ? '<button id="btnLimpiarAbonosAntiguos" class="secondary small" style="background:#25d366; color:white; border:none; margin:0;">✅ Marcar todos registrados</button>' : ''}
                                 </div>
-                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>NIT</th><th>Abono</th><th>Acción</th></tr></thead><tbody>`;
-                if(abonosNF.length === 0) htmlContent += `<tr><td colspan="5">Todo al día.</td></tr>`;
+                                <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"><table><thead><tr><th>Fecha</th><th>Factura/Doc</th><th>Cliente</th><th>NIT</th><th>Abono</th><th>Acción</th></tr></thead><tbody>`;
+                if(abonosNF.length === 0) htmlContent += `<tr><td colspan="6">Todo al día.</td></tr>`;
                 abonosNF.forEach(a => {
                     const v = ventas.find(ven => ven.id === a.ventaId);
                     const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion:'?'} : {razonSocial:'?', nit:'?', direccion:'?'};
-                    htmlContent += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td>${formatoQ(a.monto)}</td><td><button class="secondary small btn-marcar-abono-individual" data-id="${a.id}" style="padding:4px 8px; min-width:30px;" title="Marcar como registrado">✅</button></td></tr>`;
+                    const docFact = v ? (v.numeroFactura || 'Doc: ' + v.id.substr(0,8)) : 'S/D';
+                    htmlContent += `<tr><td>${new Date(a.fecha).toLocaleDateString()}</td><td><strong style="color:#ef6c00;">${docFact}</strong></td><td>${c.razonSocial}</td><td>${c.nit || 'C/F'}</td><td><strong>${formatoQ(a.monto)}</strong></td><td><button class="secondary small btn-marcar-abono-individual" data-id="${a.id}" style="padding:4px 8px; min-width:30px;" title="Marcar como registrado">✅</button></td></tr>`;
                 });
                 htmlContent += `</tbody></table></div>`;
-                
+                
                 htmlContent += `<div style="text-align:right; margin-top:15px;"><button id="cerrarFacturacionBtn" class="secondary small">Cerrar</button></div>`;
-                
+                
                 const modalFact = document.getElementById('pendientesFacturarModal');
                 document.getElementById('pendientesFacturarContent').innerHTML = htmlContent;
                 modalFact.style.display = 'flex';
-                
+                
                 document.getElementById('cerrarFacturacionBtn').onclick = () => modalFact.style.display = 'none';
 
                 // --- NUEVOS EVENTOS PARA MARCAR ABONOS ---
@@ -5019,6 +5021,7 @@ if (prod && nombre) {
                     });
                 });
                 // --- FIN NUEVOS EVENTOS ---
+                
                 document.getElementById('btnGenerarPDFFacturacion').onclick = () => {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
@@ -5034,10 +5037,10 @@ if (prod && nombre) {
                         doc.text('VENTAS PENDIENTES DE FACTURAR', 14, startY);
                         const bodyVentas = ventasNF.map(v => {
                             const c = clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion: '?'};
-                            const prods = v.productos.map(p => `${p.unidades}x ${p.producto}`).join(', ');
+                            const prods = v.productos.map(p => `${p.unidades}x ${p.producto} (${formatoQ(p.precioUnitario)} c/u)`).join('\n');
                             return [new Date(v.fecha).toLocaleDateString(), v.id.substr(0,8), c.razonSocial, c.nit || 'C/F', c.direccion || '—', prods, formatoQ(v.total)];
                         });
-                        doc.autoTable({ startY: startY + 5, head: [['Fecha', 'Doc Local', 'Cliente', 'NIT', 'Dirección', 'Productos', 'Total']], body: bodyVentas, headStyles: { fillColor: [198, 40, 40] }, styles: { fontSize: 8 }});
+                        doc.autoTable({ startY: startY + 5, head: [['Fecha', 'Doc Local', 'Cliente', 'NIT', 'Dirección', 'Productos (Costo U.)', 'Total']], body: bodyVentas, headStyles: { fillColor: [198, 40, 40] }, styles: { fontSize: 8 }});
                         startY = doc.lastAutoTable.finalY + 15;
                     }
                     if(abonosNF.length > 0) {
@@ -5046,15 +5049,14 @@ if (prod && nombre) {
                         const bodyAbonos = abonosNF.map(a => {
                             const v = ventas.find(ven => ven.id === a.ventaId);
                             const c = v ? clientes.find(cli => cli.id === v.clienteId) || {razonSocial:'?', nit:'?', direccion:'?'} : {razonSocial:'?', nit:'?', direccion:'?'};
-                            const prods = v ? v.productos.map(p => `${p.unidades}x ${p.producto}`).join(', ') : 'N/A';
+                            const prods = v ? v.productos.map(p => `${p.unidades}x ${p.producto} (${formatoQ(p.precioUnitario)} c/u)`).join('\n') : 'N/A';
                             return [new Date(a.fecha).toLocaleDateString(), a.id.substr(0,8), v ? v.numeroFactura || v.id.substr(0,8) : 'N/A', c.razonSocial, c.nit || 'C/F', prods, formatoQ(a.monto)];
                         });
-                        doc.autoTable({ startY: startY + 5, head: [['Fecha Abono', 'Doc Abono', 'Fact/Venta Orig.', 'Cliente', 'NIT', 'Productos Orig.', 'Monto Abonado']], body: bodyAbonos, headStyles: { fillColor: [239, 108, 0] }, styles: { fontSize: 8 }});
+                        doc.autoTable({ startY: startY + 5, head: [['Fecha Abono', 'Doc Abono', 'Factura Orig.', 'Cliente', 'NIT', 'Productos Orig. (Costo U.)', 'Monto Abonado']], body: bodyAbonos, headStyles: { fillColor: [239, 108, 0] }, styles: { fontSize: 8 }});
                     }
                     doc.save(`Pendientes_Facturacion_${new Date().toISOString().slice(0,10)}.pdf`);
                 };
             });
-
             document.getElementById('btnSincronizarNube')?.addEventListener('click', migrarTodoASupabase);
             document.getElementById('btnAbrirRadar')?.addEventListener('click', () => document.getElementById('radarModal').style.display = 'flex');
             document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => document.getElementById('visitaModal').style.display = 'flex');
