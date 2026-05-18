@@ -284,12 +284,12 @@
         probarConexionSupabase();
         async function migrarTodoASupabase() {
             showLoader();
-            console.log("🚀 Iniciando Migración Masiva...");
+            console.log("🚀 Iniciando Sincronización Bidireccional...");
             try {
+                // 1. SUBIR LO LOCAL A LA NUBE (Upload de lo que trabajaste)
                 const tablas = [
                     { nombre: 'clientes', data: clientes },
                     { nombre: 'ventas', data: ventas },
-                   
                     { nombre: 'inventario', data: inventario },
                     { nombre: 'movimientosinventario', data: movimientosInventario },
                     { nombre: 'abonos', data: abonos },
@@ -299,7 +299,6 @@
                     { nombre: 'visitas', data: visitas } 
                 ];
 
-                // Diccionario de llaves primarias para forzar la actualización y evitar duplicados
                 const onConflictKeys = { 
                     clientes: 'id', ventas: 'id',
                     inventario: 'productoId', movimientosinventario: 'id', 
@@ -311,16 +310,24 @@
                     if (tabla.data.length > 0) {
                         const dataSellada = tabla.data.map(item => ({ ...item, vendedor_id: vendedorId }));
                         const llavePrimaria = onConflictKeys[tabla.nombre];
-                        // La directiva onConflict garantiza que si el ID ya existe, solo actualice el stock/datos.
                         const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: llavePrimaria });
-                        if (error) throw new Error(`Error en ${tabla.nombre}: ${error.message}`);
-                        console.log(`✅ ${tabla.nombre} migrado sin duplicados.`);
+                        if (error) throw new Error(`Error subiendo ${tabla.nombre}: ${error.message}`);
+                        console.log(`✅ ${tabla.nombre} subido a la nube.`);
                     }
                 }
+
+                // 2. DESCARGAR DE LA NUBE AL DISPOSITIVO (Download)
+                console.log("📥 Descargando información actualizada de la nube...");
+                
+                if (typeof syncDesdeGerencia === 'function') {
+                    await syncDesdeGerencia(); // Llama a la función de descarga
+                }
+
                 localStorage.setItem('ultimaSincronizacion', new Date().toISOString().slice(0, 10));
-                alert("✨ Sincronización exitosa. Base de datos actualizada sin duplicados.");
+                alert("✨ Sincronización Bidireccional Exitosa. Tu dispositivo ahora tiene todos los datos de la nube.");
+                
             } catch (err) {
-                console.error("❌ Fallo en migración:", err);
+                console.error("❌ Fallo en sincronización:", err);
                 alert("Error al sincronizar: " + err.message);
             } finally {
                 hideLoader();
