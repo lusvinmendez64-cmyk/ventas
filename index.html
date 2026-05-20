@@ -255,8 +255,8 @@
 <script>
     (async function() {
        // --- CONEXIÓN SUPABASE ---
-        const SUPABASE_URL = 'https://proyecto-emergencia-offline.supabase.co'; // Texto simulado para evitar colapso
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb3llY3RvLWVtZXJnZW5jaWEtb2ZmbGluZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjgxMjM0NTY3LCJleHAiOjE5OTY3NzA1Njd9.EstaEsUnaLlaveFalsaDeSeguridadParaGitHubQueNoHaceNada1234567890abcdef'; // Texto simulado para evitar colapso
+        const SUPABASE_URL = 'https://xyzabcdefghijklmnopqrst.supabase.co'; // Texto simulado para evitar colapso
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU4NjU2MDAsImV4cCI6MjAzMTU0MjQwMH0.dummy_signature_do_not_use_in_production_123456789'; // Texto simulado para evitar colapso
 
         // Inicializar cliente (El "Enchufe")
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -284,15 +284,17 @@
         probarConexionSupabase();
         async function migrarTodoASupabase() {
             showLoader();
-            console.log("🚀 Iniciando Sincronización Total...");
+            console.log("🚀 Iniciando Sincronización Total y Diagnóstico...");
+            let erroresDetectados = 0;
+
             try {
                 // =========================================================
-                // 1. SUBIR DATOS DEL DISPOSITIVO A LA NUBE
+                // 1. FASE DE SUBIDA (Bloque a Bloque aislado)
                 // =========================================================
                 const tablasSubida = [
                     { nombre: 'clientes', data: clientes, key: 'id' },
                     { nombre: 'ventas', data: ventas, key: 'id' },
-                    { nombre: 'inventario', data: inventario, key: 'productoId' },
+                    { nombre: 'inventario', data: inventario, key: 'id' },
                     { nombre: 'movimientosinventario', data: movimientosInventario, key: 'id' },
                     { nombre: 'abonos', data: abonos, key: 'id' },
                     { nombre: 'cobros', data: cobros, key: 'id' },
@@ -303,21 +305,27 @@
 
                 for (const tabla of tablasSubida) {
                     if (tabla.data && tabla.data.length > 0) {
-                        const dataSellada = tabla.data.map(item => ({ ...item, vendedor_id: vendedorId }));
-                        const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: tabla.key });
-                        if (error) throw new Error(`Error subiendo ${tabla.nombre}: ${error.message}`);
+                        try {
+                            const dataSellada = tabla.data.map(item => ({ ...item, vendedor_id: vendedorId }));
+                            const { error } = await supabase.from(tabla.nombre).upsert(dataSellada, { onConflict: tabla.key });
+                            if (error) throw error;
+                            console.log(`✅ Subida OK: ${tabla.nombre}`);
+                        } catch (errTabla) {
+                            console.error(`❌ Falló la subida en [${tabla.nombre}]:`, errTabla.message);
+                            erroresDetectados++;
+                        }
                     }
                 }
 
                 // =========================================================
-                // 2. DESCARGAR DATOS DE LA NUBE AL DISPOSITIVO
+                // 2. FASE DE DESCARGA (Expandida a 5000 registros para historial pesado)
                 // =========================================================
-                console.log("📥 Descargando información actualizada de la nube...");
+                console.log("📥 Iniciando descarga masiva desde la nube...");
                 
                 const tablasDescarga = [
                     { nombre: 'clientes', localKey: 'clientes', global: false },
                     { nombre: 'ventas', localKey: 'ventas', global: false },
-                    { nombre: 'inventario', localKey: 'inventario', global: true }, // El inventario es para toda la ruta
+                    { nombre: 'inventario', localKey: 'inventario', global: true }, 
                     { nombre: 'movimientosinventario', localKey: 'movimientosInventario', global: false },
                     { nombre: 'abonos', localKey: 'abonos', global: false },
                     { nombre: 'cobros', localKey: 'cobros', global: false },
@@ -327,32 +335,40 @@
                 ];
 
                 for (const tabla of tablasDescarga) {
-                    // Si es inventario lo trae todo, si no, filtra solo lo de este vendedor
-                    let query = supabase.from(tabla.nombre).select('*');
-                    if (!tabla.global) {
-                        query = query.eq('vendedor_id', vendedorId);
-                    }
-                    
-                    const { data, error } = await query;
-                    
-                    if (!error && data && data.length > 0) {
-                        localStorage.setItem(tabla.localKey, JSON.stringify(data));
-                        console.log(`📥 ${tabla.nombre} descargados: ${data.length}`);
+                    try {
+                        let query = supabase.from(tabla.nombre).select('*').limit(5000);
+                        if (!tabla.global) query = query.eq('vendedor_id', vendedorId);
+                        
+                        const { data, error } = await query;
+                        if (error) throw error;
+                        
+                        if (data && data.length > 0) {
+                            localStorage.setItem(tabla.localKey, JSON.stringify(data));
+                            console.log(`📥 Descarga OK: ${tabla.nombre} (${data.length} registros)`);
+                        }
+                    } catch (errTabla) {
+                        console.error(`❌ Falló la descarga en [${tabla.nombre}]:`, errTabla.message);
+                        erroresDetectados++;
                     }
                 }
 
                 localStorage.setItem('ultimaSincronizacion', new Date().toISOString().slice(0, 10));
-                alert("✨ ¡Sincronización Exitosa! La aplicación se reiniciará para mostrar tus datos.");
                 
                 // =========================================================
-                // 3. RECARGAR LA PÁGINA PARA PINTAR LOS DATOS EN PANTALLA
+                // 3. REPORTE FINAL EN PANTALLA
                 // =========================================================
-                window.location.reload();
+                if (erroresDetectados > 0) {
+                    alert(`⚠️ Sincronización incompleta. Se detectaron ${erroresDetectados} errores. Abre la consola (F12) para ver el detalle de qué tabla falló.`);
+                } else {
+                    alert("✨ Sincronización 100% exitosa. Se recargará la pantalla.");
+                    window.location.reload();
+                }
                 
             } catch (err) {
-                console.error("❌ Fallo en sincronización:", err);
-                alert("Error al sincronizar: " + err.message);
-                hideLoader(); // Solo ocultamos el loader si hay error, si hay éxito se reinicia la página
+                console.error("❌ Error crítico del sistema:", err);
+                alert("Error general: " + err.message);
+            } finally {
+                hideLoader();
             }
         }
         // ========== DATOS GLOBALES ==========
@@ -377,20 +393,20 @@
         if (!vendedorId || !nombreUsuario) {
             // Catálogo predefinido de vendedores (Puedes agregar a todo tu equipo aquí)
             const vendedoresRegistrados = [
-                { id: 'V-LM123', nombre: 'Lusvin Esnerlin Méndez Palacios' },
-                { id: 'V-JP456', nombre: 'Juan Pérez' }
+                { id: 'V-LM123', nombre: 'Lusvin Méndez' },
+                
             ];
 
             const opcionesHtml = vendedoresRegistrados.map(v => `<option value="${v.id}|${v.nombre}">${v.nombre} (${v.id})</option>`).join('');
 
-            const loginHtml = `
-            <div id="loginModalPersonalizado" class="modal" style="display:flex; z-index: 99999; background: rgba(0,20,30,0.9);">
-                <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px;">
-                    <h2 style="color: #075e54; margin-bottom: 20px;">🔐 Acceso al Sistema</h2>
-                    <div id="loginPaso1">
-                        <button id="btnSoyExistente" class="secondary" style="width: 100%; margin-bottom: 12px; background: #25d366; color: white; border: none;">Seleccionar mi usuario</button>
-                        <button id="btnSoyNuevo" class="secondary" style="width: 100%;">Soy vendedor nuevo</button>
-                    </div>
+           const loginHtml = `
+<div id="loginModalPersonalizado" class="modal" style="display:flex; z-index: 99999; background: rgba(0,20,30,0.9);">
+    <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px; padding: 30px;">
+        <h2 style="color: #075e54; margin-bottom: 20px;">🔐 Acceso al Sistema</h2>
+        <div id="loginPaso1" style="display: flex; flex-direction: column; gap: 15px;">
+            <button id="btnSoyExistente" class="secondary" style="width: 100%; background: #25d366; color: white; border: none; padding: 15px; border-radius: 40px; font-weight: bold;">Seleccionar mi usuario</button>
+            <button id="btnSoyNuevo" class="secondary" style="width: 100%; padding: 15px; border-radius: 40px; font-weight: bold;">Soy vendedor nuevo</button>
+        </div>
                     <div id="loginExistente" style="display: none; text-align: left;">
                         <label style="color:#1e3b4f; font-weight:bold;">Selecciona tu cuenta:</label>
                         <select id="selectVendedorExistente" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #b0c7da;">
@@ -1369,14 +1385,33 @@
                                 let linkGPS = "Sin ubicación GPS";
                 if ("geolocation" in navigator) {
                     try {
+                        // Le damos 15 segundos al GPS usando la estructura correcta de Promesa
                         const position = await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                            navigator.geolocation.getCurrentPosition(
+                                resolve, 
+                                reject, 
+                                { 
+                                    enableHighAccuracy: true, 
+                                    timeout: 15000, 
+                                    maximumAge: 10000 
+                                }
+                            );
                         });
-                        linkGPS = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
-                    } catch (error) { 
-                        console.warn("⚠️ GPS Denegado o sin señal. Se guardará sin ubicación. Detalle:", error.message); 
+                        
+                        // Si el GPS responde a tiempo, capturamos las coordenadas
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        linkGPS = `https://www.google.com/maps?q=${lat},${lng}`;
+                        
+                    } catch (error) {
+                        // Si pasan los 15 segundos o no hay señal, atrapamos el error sin romper el sistema
+                        console.warn("⚠️ GPS Denegado o sin señal. Detalle:", error.message);
+                        linkGPS = "Sin ubicación GPS";
                     }
                 }
+
+                // ... AQUÍ DEBE CONTINUAR EL RESTO DE TU FUNCIÓN GUARDAR VENTA ...
+                // (Donde guardas el cliente en el array, restas el inventario, etc.)
 
 
                 const filas = [];
@@ -2145,7 +2180,15 @@ function evaluarComportamientoCliente(clienteId) {
 
                     const creditosPendientes = ventas.filter(v => v.clienteId === cli.id && v.tipoVenta === 'Crédito' && v.estado === 'normal' && v.saldoPendiente > 0);
                     const saldoTotalCliente = creditosPendientes.reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
-                    
+                    // --- PARCHE GPS INTELIGENTE ---
+                    const ventasCliente = ventas.filter(v => v.clienteId === cli.id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                    let botonGpsHtml = '';
+                    if (ventasCliente.length > 0 && ventasCliente[0].ubicacionGPS && ventasCliente[0].ubicacionGPS !== 'Sin ubicación GPS' && ventasCliente[0].ubicacionGPS !== 'Sin ubicación') {
+                        botonGpsHtml = `<button class="secondary small btn-gps-cliente" data-link="${ventasCliente[0].ubicacionGPS}" style="background-color: #0288d1; color: white; border: none; padding: 4px; border-radius: 12px; margin:0; width:110px; font-size: 0.8rem;" title="Abrir última ubicación">📍 Abrir Mapa</button>`;
+                    } else {
+                        botonGpsHtml = `<span style="background-color: #9e9e9e; color: white; padding: 4px; border-radius: 12px; margin:0; width:110px; display:inline-block; text-align:center; font-size: 0.8rem; cursor: not-allowed;" title="No hay GPS registrado">🚫 Sin GPS</span>`;
+                    }
+                    // --- FIN PARCHE GPS ---
                     let docsHtml = '';
                     if (creditosPendientes.length > 0) {
                         let facturasList = '';
@@ -2180,8 +2223,9 @@ function evaluarComportamientoCliente(clienteId) {
                                 <option value="historial">📜 Historial</option>
                                 <option value="editar">✏️ Editar</option>
                                 <option value="estado">📊 Estado Cta.</option>
-                                <option value="gps">📍 Abrir GPS</option>
+                                
                             </select>
+                            ${botonGpsHtml}
                             <button class="danger small eliminarClienteBtn" data-id="${cli.id}" title="Eliminar" style="margin:0; min-width:35px; padding: 4px 8px;">🗑</button>
                         </td>
                     `;
@@ -2230,24 +2274,27 @@ function evaluarComportamientoCliente(clienteId) {
                         if (accion === 'historial') generarHistorialClientePDF(id);
                         if (accion === 'editar') { const cli = clientes.find(c => c.id === id); if (cli) mostrarModalEditarCliente(cli); }
                         if (accion === 'estado') mostrarEstadoCuenta(id);
-                        if (accion === 'gps') {
-                            const ventasCli = ventas.filter(v => v.clienteId === id).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                            const link = (ventasCli.length > 0 && ventasCli[0].ubicacionGPS) ? ventasCli[0].ubicacionGPS : null;
-                            if (link && link !== 'Sin ubicación GPS' && link !== 'Sin ubicación') window.open(link, '_blank');
-                            else alert('No hay coordenadas GPS registradas en las ventas de este cliente.');
-                        }
                     });
                 });
 
-                document.querySelectorAll('.eliminarClienteBtn').forEach(btn => btn.addEventListener('click', () => {
-                    const cli = clientes.find(c => c.id === btn.dataset.id);
-                    if (cli && confirm(`¿Eliminar al cliente ${cli.razonSocial} y todas sus ventas? Esta acción es irreversible.`)) {
-                        ventas = ventas.filter(v => v.clienteId !== cli.id);
-                        clientes = clientes.filter(c => c.id !== cli.id);
-                        saveData();
-                        filtrarClientes();
-                    }
-                }));
+                // --- ACTIVADOR DEL NUEVO BOTÓN GPS ---
+                document.querySelectorAll('.btn-gps-cliente').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        window.open(btn.dataset.link, '_blank');
+                    });
+                });
+
+                document.querySelectorAll('.eliminarClienteBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const cli = clientes.find(c => c.id === btn.dataset.id);
+                        if (cli && confirm(`¿Eliminar al cliente ${cli.razonSocial} y todas sus ventas? Esta acción es irreversible.`)) {
+                            ventas = ventas.filter(v => v.clienteId !== cli.id);
+                            clientes = clientes.filter(c => c.id !== cli.id);
+                            saveData();
+                            filtrarClientes();
+                        }
+                    });
+                });
             }
 
             subTabs.forEach(tab => {
@@ -2776,6 +2823,7 @@ if (prod && nombre) {
                     <button id="resumenMensualBtn" class="secondary">📊 Resumen Mensual</button>
                     <button id="resumenComisionesBtn" class="secondary">📊 Resumen comisiones</button>
                     <button id="abrirModalTrimestralBtn" class="secondary">📈 Reporte Trimestral</button>
+                    <button id="btnModalVisitasInventario" class="secondary" style="border-color:#1976d2; color:#1976d2; font-weight:bold;">📍 Reporte de Visitas</button>
                     <button id="sincronizarInventarioBtn" class="danger">🔄 Sincronizar Historial</button>
                 </div>
 
@@ -3269,6 +3317,89 @@ if (prod && nombre) {
                 document.getElementById('inputAnioResumen').value = hoy.getFullYear();
                 document.getElementById('selectorMesModal').style.display = 'flex';
             });
+            // --- INICIO PARCHE REPORTE VISITAS INVENTARIO ---
+            document.getElementById('btnModalVisitasInventario')?.addEventListener('click', () => {
+                let modal = document.getElementById('modalExportarVisitas');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'modalExportarVisitas';
+                    modal.className = 'modal';
+                    document.body.appendChild(modal);
+                }
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 350px; text-align: center;">
+                        <h3 style="color: #075e54; margin-bottom: 15px;">📍 Reporte de Visitas</h3>
+                        <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">Seleccione el período que desea exportar:</p>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button id="btnVisitasDiario" class="secondary" style="background:#25d366; color:white; border:none;">📅 Diario (Hoy)</button>
+                            <button id="btnVisitasSemanal" class="secondary" style="background:#1976d2; color:white; border:none;">📆 Semanal (Lunes a Domingo)</button>
+                            <button id="btnVisitasMensual" class="secondary" style="background:#075e54; color:white; border:none;">📊 Mensual (Mes actual)</button>
+                            <button id="btnVisitasCerrar" class="secondary small" style="margin-top: 10px; background:#eaf0f6; color:#1f3a57;">Cancelar</button>
+                        </div>
+                    </div>
+                `;
+                modal.style.display = 'flex';
+
+                const exportarVisitasPDF = (tipo) => {
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    
+                    let filtradas = [];
+                    let tituloReporte = '';
+
+                    if (tipo === 'diario') {
+                        filtradas = visitas.filter(v => {
+                            const f = new Date(v.fecha);
+                            f.setHours(0, 0, 0, 0);
+                            return f.getTime() === hoy.getTime();
+                        });
+                        tituloReporte = 'BITÁCORA DE VISITAS (DIARIO)';
+                    } else if (tipo === 'semanal') {
+                        const diaSemana = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1; 
+                        const lunes = new Date(hoy);
+                        lunes.setDate(lunes.getDate() - diaSemana);
+                        const domingo = new Date(lunes);
+                        domingo.setDate(domingo.getDate() + 6);
+                        domingo.setHours(23,59,59,999);
+                        
+                        filtradas = visitas.filter(v => {
+                            const f = new Date(v.fecha);
+                            return f >= lunes && f <= domingo;
+                        });
+                        tituloReporte = 'BITÁCORA DE VISITAS (SEMANAL)';
+                    } else if (tipo === 'mensual') {
+                        filtradas = visitas.filter(v => {
+                            const f = new Date(v.fecha);
+                            return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
+                        });
+                        tituloReporte = 'BITÁCORA DE VISITAS (MENSUAL)';
+                    }
+
+                    if (filtradas.length === 0) { alert('No hay visitas registradas para el período seleccionado.'); return; }
+
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+                    doc.setFillColor(7, 94, 84); doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+                    doc.setTextColor(255, 255, 255); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+                    doc.text('MARIJOSE JHIRE S.A.', 14, 12); doc.setFontSize(10);
+                    doc.text(tituloReporte, doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+                    doc.setTextColor(0); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+                    doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
+                    
+                    const rows = filtradas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(v => [
+                        new Date(v.fecha).toLocaleDateString(), v.nombre, v.clasificacion, v.departamento || '—', v.comentarios || '—', v.ubicacionGPS || 'Sin ubicación'
+                    ]);
+                    doc.autoTable({ startY: 32, head: [['Fecha', 'Prospecto/Cliente', 'Clasificación', 'Depto/Ruta', 'Comentarios', 'Enlace GPS']], body: rows, theme: 'striped', headStyles: { fillColor: [7, 94, 84] }, styles: { fontSize: 8 }, columnStyles: { 5: { textColor: [0, 0, 255] } }, didDrawCell: function(data) { if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin ubicación' && data.cell.raw !== 'Sin ubicación GPS') { doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw }); } }});
+                    doc.save(`Visitas_${tipo}_${new Date().toISOString().slice(0,10)}.pdf`);
+                    modal.style.display = 'none';
+                };
+
+                document.getElementById('btnVisitasDiario').onclick = () => exportarVisitasPDF('diario');
+                document.getElementById('btnVisitasSemanal').onclick = () => exportarVisitasPDF('semanal');
+                document.getElementById('btnVisitasMensual').onclick = () => exportarVisitasPDF('mensual');
+                document.getElementById('btnVisitasCerrar').onclick = () => modal.style.display = 'none';
+            });
+            // --- FIN PARCHE REPORTE VISITAS INVENTARIO ---
 
             // ================== LÓGICA DE BOTONES RESTAURADOS ==================
             document.getElementById('exportarInventarioBtn').addEventListener('click', () => {
@@ -5090,24 +5221,32 @@ if (prod && nombre) {
             document.getElementById('btnAbrirRadar')?.addEventListener('click', () => document.getElementById('radarModal').style.display = 'flex');
             document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => document.getElementById('visitaModal').style.display = 'flex');
 
-            // --- INICIO EVENTO PDF VISITAS ---
+            // --- INICIO EVENTO PDF VISITAS (DASHBOARD - SOLO MES ACTUAL) ---
             document.getElementById('exportarVisitasBtn')?.addEventListener('click', () => {
-                if (visitas.length === 0) { alert('No hay visitas registradas.'); return; }
+                const hoy = new Date();
+                const visitasMes = visitas.filter(v => {
+                    const f = new Date(v.fecha);
+                    return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
+                });
+
+                if (visitasMes.length === 0) { alert('No hay visitas registradas en este mes.'); return; }
+                
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
                 doc.setFillColor(7, 94, 84); doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
                 doc.setTextColor(255, 255, 255); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
                 doc.text('MARIJOSE JHIRE S.A.', 14, 12); doc.setFontSize(10);
-                doc.text('BITÁCORA DE VISITAS (CAMPO)', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+                doc.text('BITÁCORA DE VISITAS (MES ACTUAL)', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
                 doc.setTextColor(0); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
                 doc.text(`Colaborador: ${nombreUsuario}`, 14, 25);
                 
-                const rows = visitas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(v => [
+                const rows = visitasMes.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).map(v => [
                     new Date(v.fecha).toLocaleDateString(), v.nombre, v.clasificacion, v.departamento || '—', v.comentarios || '—', v.ubicacionGPS || 'Sin ubicación'
                 ]);
-                doc.autoTable({ startY: 32, head: [['Fecha', 'Prospecto/Cliente', 'Clasificación', 'Depto/Ruta', 'Comentarios', 'Enlace GPS']], body: rows, theme: 'striped', headStyles: { fillColor: [7, 94, 84] }, styles: { fontSize: 8 }, columnStyles: { 5: { textColor: [0, 0, 255] } }, didDrawCell: function(data) { if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin ubicación') { doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw }); } }});
-                doc.save(`Visitas_${new Date().toISOString().slice(0,10)}.pdf`);
+                doc.autoTable({ startY: 32, head: [['Fecha', 'Prospecto/Cliente', 'Clasificación', 'Depto/Ruta', 'Comentarios', 'Enlace GPS']], body: rows, theme: 'striped', headStyles: { fillColor: [7, 94, 84] }, styles: { fontSize: 8 }, columnStyles: { 5: { textColor: [0, 0, 255] } }, didDrawCell: function(data) { if (data.section === 'body' && data.column.index === 5 && data.cell.raw !== 'Sin ubicación' && data.cell.raw !== 'Sin ubicación GPS') { doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: data.cell.raw }); } }});
+                doc.save(`Visitas_Mes_${new Date().toISOString().slice(0,10)}.pdf`);
             });
+            // --- FIN EVENTO PDF VISITAS ---
 
             // --- LÓGICA MAPA DE CALOR EXCLUSIVO ---
             setTimeout(() => {
