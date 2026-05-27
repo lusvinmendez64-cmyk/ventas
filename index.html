@@ -165,6 +165,7 @@
 <div id="alertaLiquidezModal" class="modal" style="z-index: 1050;"><div class="modal-content" id="alertaLiquidezContent" style="max-width: 400px; text-align: center;"></div></div>
 <div id="detalleRutaModal" class="modal"><div class="modal-content" id="detalleRutaContent" style="max-width: 700px;"></div></div>
 
+
 <div id="nuevoProductoModal" class="modal">
     <div class="modal-content">
         <h3 style="color: #075e54; margin-bottom: 15px;">📦 Agregar Nuevo Producto</h3>
@@ -385,7 +386,91 @@
         let cobros = [];
         let pagosCobro = [];
         let calificacionesClientes = [];
-        let visitas = []; // VARIABLE GLOBAL VISITAS
+        let visitas = []; // VARIABLE GLOBAL VISITAS
+        let viaticos = []; // VARIABLE GLOBAL VIATICOS
+
+        const opcionesRutas = `
+            <option value="">-- Seleccione una ruta --</option>
+            <option value="Quetzaltenango">Quetzaltenango (Xela)</option>
+            <option value="Guatemala">Guatemala</option>
+            <option value="Huehuetenango">Huehuetenango</option>
+            <option value="Suchitepéquez">Suchitepéquez</option>
+            <option value="Retalhuleu">Retalhuleu</option>
+            <option value="Alta Verapaz">Alta Verapaz</option>
+            <option value="Baja Verapaz">Baja Verapaz</option>
+            <option value="Chimaltenango">Chimaltenango</option>
+            <option value="Sacatepéquez">Sacatepéquez</option>
+            <option value="Escuintla">Escuintla</option>
+            <option value="San Marcos">San Marcos</option>
+            <option value="Totonicapán">Totonicapán</option>
+            <option value="Sololá">Sololá</option>
+            <option value="Petén">Petén</option>
+            <option value="Izabal">Izabal</option>
+            <option value="Zacapa">Zacapa</option>
+            <option value="Chiquimula">Chiquimula</option>
+            <option value="Jalapa">Jalapa</option>
+            <option value="Jutiapa">Jutiapa</option>
+            <option value="Santa Rosa">Santa Rosa</option>
+            <option value="El Progreso">El Progreso</option>
+        `;
+
+        // INYECCIÓN DINÁMICA DEL MODAL DE VIÁTICOS
+        const viaticosModalHtml = `
+        <div id="viaticosModal" class="modal" style="z-index: 1050;">
+            <div class="modal-content" style="max-width: 850px; width: 95%;">
+                <h3 style="color: #075e54; border-bottom: 2px solid #25d366; padding-bottom: 8px;">💸 Reporte y Liquidación de Viáticos</h3>
+                <div style="background: #f0f7fc; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #c9ddec;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <label style="flex:1; min-width:150px; margin:0;">Gira / Ruta:<select id="viaticosRuta" style="margin-top:4px;">${opcionesRutas}</select></label>
+                        <label style="flex:1; min-width:130px; margin:0;">Lunes (Inicio):<input type="date" id="viaticosInicio" style="margin-top:4px;"></label>
+                        <label style="flex:1; min-width:130px; margin:0;">Viernes (Fin):<input type="date" id="viaticosFin" style="margin-top:4px;"></label>
+                        <label style="flex:1; min-width:120px; margin:0;">Fondo Asignado (Q):<input type="number" id="viaticosAsignado" step="0.01" style="margin-top:4px; border-color:#25d366; font-weight:bold;"></label>
+                    </div>
+                </div>
+                <fieldset style="margin-bottom:15px; background:white;">
+                    <legend>➕ Registrar Factura de Gasto</legend>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:end;">
+                        <label style="margin:0;">Fecha:<input type="date" id="gastoFecha" style="margin-top:2px;"></label>
+                        <label style="margin:0;">Rubro:<select id="gastoRubro" style="margin-top:2px; min-width:130px;">
+                            <option value="Hospedaje">Hospedaje</option>
+                            <option value="Gasolina">Gasolina</option>
+                            <option value="Alimentación">Alimentación</option>
+                            <option value="Peajes">Peajes</option>
+                            <option value="Gastos Varios">Gastos Varios</option>
+                        </select></label>
+                        <label style="margin:0;">Doc/Factura:<input type="text" id="gastoDoc" placeholder="Nº Factura" style="margin-top:2px; width:90px;"></label>
+                        <label style="flex:2; margin:0;">Justificación:<input type="text" id="gastoJustificacion" placeholder="Ej: Cena con prospecto..." style="margin-top:2px;"></label>
+                        <label style="margin:0;">Monto (Q):<input type="number" id="gastoMonto" step="0.01" style="margin-top:2px; width:90px;"></label>
+                        <button id="btnAgregarGasto" class="secondary small" style="background:#25d366; color:white; border:none; padding:12px; margin:0;">➕ Ingresar</button>
+                    </div>
+                </fieldset>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <h4 style="margin:0; color:#1e3b4f;">Desglose Semanal</h4>
+                    <div style="display:flex; gap:5px;">
+                        <select id="selectHistorialViaticos" class="secondary small" style="margin:0; padding:6px; font-size:0.85rem;"><option value="">Cargar Histórico...</option></select>
+                        <button id="btnImprimirViaticos" class="secondary small" style="margin:0; background:#075e54; color:white;">📄 Imprimir Reporte</button>
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height:220px; margin-top:8px;">
+                    <table style="width:100%;">
+                        <thead style="position:sticky; top:0;"><tr><th>Día</th><th>Rubro</th><th>Documento</th><th>Justificación</th><th>Monto</th><th>Acción</th></tr></thead>
+                        <tbody id="viaticosBody"></tbody>
+                    </table>
+                </div>
+                <div style="background:#e8f5e9; border: 1px solid #a5d6a7; padding:15px; border-radius:15px; margin-top:15px; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div style="text-align:center; font-weight:bold; color:#2e7d32;">Fondo Depositado<br><span id="vTotalAsignadoStr" style="font-size:1.4rem;">Q0.00</span></div>
+                    <div style="font-size:2rem; color:#a5d6a7;">-</div>
+                    <div style="text-align:center; font-weight:bold; color:#c62828;">Total Ejecutado<br><span id="vTotalGastadoStr" style="font-size:1.4rem;">Q0.00</span></div>
+                    <div style="font-size:2rem; color:#a5d6a7;">=</div>
+                    <div style="text-align:center; font-weight:bold; color:#1976d2; background:white; padding:8px 20px; border-radius:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Saldo de Caja<br><span id="vSaldoCajaStr" style="font-size:1.5rem;">Q0.00</span></div>
+                </div>
+                <div style="text-align:right; margin-top:15px; display:flex; gap:10px; justify-content:flex-end;">
+                    <button id="btnGuardarSemanaViaticos" class="secondary" style="background:#1976d2; color:white; border:none;">💾 Guardar Historial Semanal</button>
+                    <button id="btnCerrarViaticos" class="secondary small">Cerrar Pestaña</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', viaticosModalHtml);
 
         let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
         let vendedorId = localStorage.getItem('vendedorId') || '';
@@ -655,8 +740,9 @@
                 cobros = JSON.parse(localStorage.getItem('cobros')) || [];
                 pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
                 calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
-                visitas = JSON.parse(localStorage.getItem('visitas')) || [];
-            } catch (e) { console.warn("Error cargando datos", e); }
+                visitas = JSON.parse(localStorage.getItem('visitas')) || [];
+                viaticos = JSON.parse(localStorage.getItem('viaticos')) || [];
+            } catch (e) { console.warn("Error cargando datos", e); }
             migrarDatos();
         }
 
@@ -670,7 +756,8 @@
             localStorage.setItem('cobros', JSON.stringify(cobros));
             localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
             localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
-            localStorage.setItem('visitas', JSON.stringify(visitas));
+            localStorage.setItem('visitas', JSON.stringify(visitas));
+            localStorage.setItem('viaticos', JSON.stringify(viaticos));
             
             // Intento de respaldo silencioso en segundo plano con sello de vendedor (Pares relacionales)
             const ventasSelladas = ventas.map(v => ({ ...v, vendedor_id: vendedorId }));
@@ -1007,6 +1094,7 @@
                     <label>Correo (opcional): <input type="email" id="correo"></label>
                     <label>Categoría <span class="req">*</span>: <select id="categoria" required><option value="">Seleccionar</option><option value="Clínica">Clínica</option><option value="Farmacia">Farmacia</option><option value="Hospital">Hospital</option><option value="Otro">Otro</option></select></label>
                     <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="ruta" placeholder="Ej: Zona 10, Ruta 1" required></label>
+                    <label>Ruta/Zona <span class="req">*</span>: <select id="ruta" required>${opcionesRutas}</select></label>
                     <label>Límite de crédito (Q): <input type="number" id="limiteCredito" step="0.01" placeholder="Dejar vacío si no tiene límite"></label>
                 </fieldset>
 
@@ -1523,15 +1611,26 @@
                 generarComprobanteVenta(nuevaVenta, clienteFinal, correlativo);
 
                 if (tipoVenta === 'Contado') {
-                    if (confirm("Venta Exitosa.\n¿Deseas enviar el comprobante por WhatsApp al cliente?")) {
-                        const saludo = obtenerSaludo();
-                        let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
-                        let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
-                        let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le compartimos el detalle de su compra:\n\n📄 *COMPROBANTE DE VENTA CONTADO*\nDoc: ${correlativo}\nFecha: ${new Date(nuevaVenta.fecha).toLocaleDateString()}\nCliente: [Cód: ${clienteFinal.codigo || 'S/C'}] ${clienteFinal.razonSocial}\nNIT: ${clienteFinal.nit || 'C/F'}\n\n*Productos:*\n`;
-                        nuevaVenta.productos.forEach(p => { mensaje += `- ${p.unidades} x ${p.producto} a Q${parseFloat(p.precioUnitario).toFixed(2)} c/u = Q${parseFloat(p.monto).toFixed(2)}\n`; });
-                        mensaje += `\n*Total Pagado: Q${parseFloat(nuevaVenta.total).toFixed(2)}*\n\nLe enviamos el PDF adjunto. ¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
-                        window.open(baseUrl + encodeURIComponent(mensaje), '_blank');
-                    }
+                    const saludo = obtenerSaludo();
+                    let numTel = clienteFinal.telefono ? clienteFinal.telefono.replace(/\D/g, '') : '';
+                    let baseUrl = numTel ? `https://wa.me/502${numTel}?text=` : `https://wa.me/?text=`;
+                    let mensaje = `¡${saludo}! Esperamos que se encuentre excelente.\n\nDe parte de *MARIJOSE JHIRE S.A.*, le compartimos el detalle de su compra:\n\n📄 *COMPROBANTE DE VENTA CONTADO*\nDoc: ${correlativo}\nFecha: ${new Date(nuevaVenta.fecha).toLocaleDateString()}\nCliente: [Cód: ${clienteFinal.codigo || 'S/C'}] ${clienteFinal.razonSocial}\nNIT: ${clienteFinal.nit || 'C/F'}\n\n*Productos:*\n`;
+                    nuevaVenta.productos.forEach(p => { mensaje += `- ${p.unidades} x ${p.producto} a Q${parseFloat(p.precioUnitario).toFixed(2)} c/u = Q${parseFloat(p.monto).toFixed(2)}\n`; });
+                    mensaje += `\n*Total Pagado: Q${parseFloat(nuevaVenta.total).toFixed(2)}*\n\nLe enviamos el PDF adjunto. ¡Estamos siempre a sus órdenes para lo que necesite! Un saludo cordial.`;
+                    
+                    const modalWa = document.createElement('div');
+                    modalWa.innerHTML = `
+                        <div class="modal" style="display:flex; z-index:99999; background: rgba(0,0,0,0.6);">
+                            <div class="modal-content" style="text-align:center; max-width:400px; padding: 30px;">
+                                <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+                                <h3 style="color:#075e54; margin-bottom: 10px;">Venta Guardada con Éxito</h3>
+                                <p style="color:#333; margin-bottom: 20px;">¿Deseas enviar el comprobante al cliente?</p>
+                                <a href="${baseUrl + encodeURIComponent(mensaje)}" target="_blank" class="secondary" style="background:#25d366; color:white; padding:14px 20px; display:inline-block; text-decoration:none; border-radius:30px; font-weight:bold; width: 100%; box-sizing:border-box;" onclick="this.closest('.modal').remove()">📲 Abrir WhatsApp</a>
+                                <button class="secondary small" style="margin-top:15px; background:#eaf0f6; color:#1f3a57; border:none; width: 100%; padding: 12px; border-radius: 30px;" onclick="this.closest('.modal').remove()">No, gracias / Cerrar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modalWa);
                 } else {
                     alert('Venta guardada con éxito.');
                 }
@@ -2454,10 +2553,12 @@ clientesFiltrados.forEach(c => {
                 <label>Correo: <input type="email" id="editCorreo" value="${cliente.correo || ''}"></label>
                 <label>Categoría <span class="req">*</span>: <select id="editCategoria"><option value="">Seleccionar</option><option value="Clínica" ${cliente.categoria === 'Clínica' ? 'selected' : ''}>Clínica</option><option value="Farmacia" ${cliente.categoria === 'Farmacia' ? 'selected' : ''}>Farmacia</option><option value="Hospital" ${cliente.categoria === 'Hospital' ? 'selected' : ''}>Hospital</option><option value="Otro" ${cliente.categoria === 'Otro' ? 'selected' : ''}>Otro</option></select></label>
                 <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="editRuta" value="${cliente.ruta || ''}"></label>
+<label>Ruta/Zona <span class="req">*</span>: <select id="editRuta">${opcionesRutas}</select></label>
                 <label>Límite de crédito (Q): <input type="number" id="editLimiteCredito" step="0.01" value="${cliente.limiteCredito !== null ? cliente.limiteCredito : ''}"></label>
                 <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarEdicionCliente" class="secondary">Guardar</button><button id="cancelarEdicionCliente" class="secondary small">Cancelar</button></div>
             `;
             modal.style.display = 'flex';
+            document.getElementById('editRuta').value = cliente.ruta || '';
 
             document.getElementById('guardarEdicionCliente').addEventListener('click', () => {
                 const razon = document.getElementById('editRazon').value.trim();
@@ -2824,6 +2925,7 @@ if (prod && nombre) {
                     <button id="resumenComisionesBtn" class="secondary">📊 Resumen comisiones</button>
                     <button id="abrirModalTrimestralBtn" class="secondary">📈 Reporte Trimestral</button>
                     <button id="btnModalVisitasInventario" class="secondary" style="border-color:#1976d2; color:#1976d2; font-weight:bold;">📍 Reporte de Visitas</button>
+                    <button id="btnAbrirModuloViaticos" class="secondary" style="background:#ff9800; color:white; border:none;">💸 Módulo de Viáticos</button>
                     <button id="sincronizarInventarioBtn" class="danger">🔄 Sincronizar Historial</button>
                 </div>
 
@@ -2890,6 +2992,17 @@ if (prod && nombre) {
                 </div>
             `;
             document.getElementById('content').innerHTML = html;
+
+            // ACTIVADOR DINÁMICO DE VIÁTICOS (Debe estar aquí para reconocer el botón recién creado)
+            document.getElementById('btnAbrirModuloViaticos')?.addEventListener('click', () => {
+                calcularFechasViaticos();
+                document.getElementById('viaticosRuta').value = document.getElementById('giraInventario')?.value || '';
+                document.getElementById('viaticosAsignado').value = '';
+                viaticoActual = { gastos: [] };
+                renderizarViaticos();
+                poblarHistorialViaticos();
+                document.getElementById('viaticosModal').style.display = 'flex';
+            });
 
             // Fechas por defecto Reporte Físico
             const hoyCorte = new Date();
@@ -3326,15 +3439,24 @@ if (prod && nombre) {
                     modal.className = 'modal';
                     document.body.appendChild(modal);
                 }
+                const opcionesMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((m, i) => `<option value="${i}" ${new Date().getMonth() === i ? 'selected' : ''}>${m}</option>`).join('');
                 modal.innerHTML = `
                     <div class="modal-content" style="max-width: 350px; text-align: center;">
                         <h3 style="color: #075e54; margin-bottom: 15px;">📍 Reporte de Visitas</h3>
-                        <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">Seleccione el período que desea exportar:</p>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
                             <button id="btnVisitasDiario" class="secondary" style="background:#25d366; color:white; border:none;">📅 Diario (Hoy)</button>
                             <button id="btnVisitasSemanal" class="secondary" style="background:#1976d2; color:white; border:none;">📆 Semanal (Lunes a Domingo)</button>
                             <button id="btnVisitasMensual" class="secondary" style="background:#075e54; color:white; border:none;">📊 Mensual (Mes actual)</button>
-                            <button id="btnVisitasCerrar" class="secondary small" style="margin-top: 10px; background:#eaf0f6; color:#1f3a57;">Cancelar</button>
+                            
+                            <div style="background:#f0f7fc; padding:12px; border-radius:12px; border:1px solid #c9ddec; margin-top:8px;">
+                                <label style="font-size:0.85rem; color:#1e3b4f; font-weight:bold; display:block; margin-bottom:5px;">Descargar Mes Histórico:</label>
+                                <div style="display:flex; gap:5px; margin-bottom:8px;">
+                                    <select id="selectVisitasMesHist" style="flex:1; padding:6px; font-size:0.85rem; border-radius:8px; border:1px solid #c9ddec;">${opcionesMeses}</select>
+                                    <input type="number" id="inputVisitasAnioHist" value="${new Date().getFullYear()}" style="width:75px; padding:6px; font-size:0.85rem; border-radius:8px; border:1px solid #c9ddec;">
+                                </div>
+                                <button id="btnVisitasHistorico" class="secondary" style="background:#ff9800; color:white; border:none; width:100%; font-size:0.85rem;">Descargar Histórico</button>
+                            </div>
+                            <button id="btnVisitasCerrar" class="secondary small" style="margin-top: 5px; background:#eaf0f6; color:#1f3a57;">Cancelar</button>
                         </div>
                     </div>
                 `;
@@ -3373,6 +3495,15 @@ if (prod && nombre) {
                             return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
                         });
                         tituloReporte = 'BITÁCORA DE VISITAS (MENSUAL)';
+                    } else if (tipo === 'historico') {
+                        const mHist = parseInt(document.getElementById('selectVisitasMesHist').value);
+                        const aHist = parseInt(document.getElementById('inputVisitasAnioHist').value);
+                        filtradas = visitas.filter(v => {
+                            const f = new Date(v.fecha);
+                            return f.getMonth() === mHist && f.getFullYear() === aHist;
+                        });
+                        const nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                        tituloReporte = `BITÁCORA DE VISITAS (${nombresMeses[mHist].toUpperCase()} ${aHist})`;
                     }
 
                     if (filtradas.length === 0) { alert('No hay visitas registradas para el período seleccionado.'); return; }
@@ -3397,6 +3528,7 @@ if (prod && nombre) {
                 document.getElementById('btnVisitasDiario').onclick = () => exportarVisitasPDF('diario');
                 document.getElementById('btnVisitasSemanal').onclick = () => exportarVisitasPDF('semanal');
                 document.getElementById('btnVisitasMensual').onclick = () => exportarVisitasPDF('mensual');
+                document.getElementById('btnVisitasHistorico').onclick = () => exportarVisitasPDF('historico'); // LÍNEA NUEVA
                 document.getElementById('btnVisitasCerrar').onclick = () => modal.style.display = 'none';
             });
             // --- FIN PARCHE REPORTE VISITAS INVENTARIO ---
@@ -5064,15 +5196,15 @@ if (prod && nombre) {
                     .health-bar-segment { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.85rem; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);}
                 </style>
                 
-                <h2>📈 Dashboard Gerencial</h2>
+                <h2>📈 Dashboard Ventas</h2>
                 ${alertaFacturacion}
                 <div class="action-buttons" style="justify-content: flex-start;">
                     <button id="btnSincronizarNube" class="secondary" style="background:#075e54; color:white; border-color:#075e54;">☁️ Sincronizar BD</button>
                     <button id="btnAbrirRadar" class="secondary">📡 Radar Médico</button>
                     <button id="btnRegistrarVisita" class="secondary">📍 Registrar Visita</button>
                     <button id="imprimirDashboardBtn" class="secondary">📄 Imprimir</button>
-<button id="exportarVisitasBtn" class="secondary" style="border-color:#1976d2; color:#1976d2;">📍 Exportar Visitas (PDF)</button>
-</div>
+                    <button id="exportarVisitasBtn" class="secondary" style="border-color:#1976d2; color:#1976d2;">📍 Exportar Visitas (PDF)</button>
+                    </div>
                 
                 <div class="dashboard-kpi">
                     <div class="kpi-card" style="cursor:pointer;" onclick="document.querySelector('.tab[data-tab=\\'ventas\\']').click()" title="Ir a Ventas">
@@ -5263,9 +5395,17 @@ if (prod && nombre) {
                         }
                     });
                     if (typeof L.heatLayer !== 'undefined' && visitas.length > 0) {
-                        const heatData = visitas.map(v => [v.lat, v.lng, 1]);
-                        L.heatLayer(heatData, {radius: 28, blur: 18, maxZoom: 16, gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'}}).addTo(map);
-                    }
+                        const heatData = visitas.map(v => [v.lat, v.lng, 1]);
+                        L.heatLayer(heatData, {radius: 28, blur: 18, maxZoom: 16, gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'}}).addTo(map);
+                        
+                        // Nuevo: Agregar marcadores físicos interactivos para las visitas
+                        visitas.forEach(v => {
+                            if (v.lat && v.lng) {
+                                const linkStr = (v.ubicacionGPS && v.ubicacionGPS !== 'Sin ubicación GPS') ? `<br><a href="${v.ubicacionGPS}" target="_blank" style="color:#0288d1; text-decoration:underline;">📍 Abrir en Google Maps</a>` : '';
+                                L.marker([v.lat, v.lng]).addTo(map).bindPopup(`<b>Prospecto: ${v.nombre}</b><br>Cat: ${v.clasificacion}${linkStr}`);
+                            }
+                        });
+                    }
                 }
             }, 150);
 
@@ -5811,6 +5951,202 @@ if (prod && nombre) {
                 }
             }, () => { res.innerHTML = "Error calculando posición GPS. Asegúrese de tener la ubicación activada."; }, { timeout: 10000 });
         });
+// ================== LÓGICA MÓDULO DE VIÁTICOS Y ASIGNACIONES ==================
+        let viaticoActual = { gastos: [] };
+
+        function calcularFechasViaticos() {
+            const hoy = new Date();
+            const diaSemana = hoy.getDay() === 0 ? 6 : hoy.getDay() - 1; 
+            const lunes = new Date(hoy); lunes.setDate(lunes.getDate() - diaSemana);
+            const viernes = new Date(lunes); viernes.setDate(lunes.getDate() + 4);
+            document.getElementById('viaticosInicio').value = lunes.toISOString().slice(0, 10);
+            document.getElementById('viaticosFin').value = viernes.toISOString().slice(0, 10);
+            document.getElementById('gastoFecha').value = hoy.toISOString().slice(0, 10);
+        }
+
+        function renderizarViaticos() {
+            const tbody = document.getElementById('viaticosBody');
+            tbody.innerHTML = '';
+            let total = 0;
+            
+            viaticoActual.gastos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha)).forEach((g, index) => {
+                total += g.monto;
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(g.fecha).toLocaleDateString()}</td><td>${g.rubro}</td>
+                    <td>${g.doc || '—'}</td><td style="font-size:0.8rem;">${g.justificacion}</td>
+                    <td style="font-weight:bold;">${formatoQ(g.monto)}</td>
+                    <td><button class="danger small btn-eliminar-gasto" data-idx="${index}" style="padding:4px; min-width:30px;">🗑</button></td>
+                </tr>`;
+            });
+
+            const asignado = parseFloat(document.getElementById('viaticosAsignado').value) || 0;
+            const saldo = asignado - total;
+
+            document.getElementById('vTotalGastadoStr').innerText = formatoQ(total);
+            document.getElementById('vTotalAsignadoStr').innerText = formatoQ(asignado);
+            document.getElementById('vSaldoCajaStr').innerText = formatoQ(saldo);
+            document.getElementById('vSaldoCajaStr').style.color = saldo < 0 ? '#c62828' : '#1976d2';
+
+            document.querySelectorAll('.btn-eliminar-gasto').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    viaticoActual.gastos.splice(e.target.dataset.idx, 1);
+                    renderizarViaticos();
+                });
+            });
+        }
+
+        function poblarHistorialViaticos() {
+            const select = document.getElementById('selectHistorialViaticos');
+            select.innerHTML = '<option value="">Cargar Histórico...</option>';
+            viaticos.sort((a,b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion)).forEach(v => {
+                select.innerHTML += `<option value="${v.id}">${new Date(v.inicio).toLocaleDateString()} - ${v.ruta}</option>`;
+            });
+        }
+
+        
+
+        document.getElementById('btnAgregarGasto').addEventListener('click', () => {
+            const fecha = document.getElementById('gastoFecha').value;
+            const rubro = document.getElementById('gastoRubro').value;
+            const doc = document.getElementById('gastoDoc').value.trim();
+            const justificacion = document.getElementById('gastoJustificacion').value.trim();
+            const monto = parseFloat(document.getElementById('gastoMonto').value);
+
+            if (!fecha || !justificacion || isNaN(monto) || monto <= 0) {
+                alert('Complete Fecha, Justificación y Monto válido.'); return;
+            }
+
+            viaticoActual.gastos.push({ id: Date.now().toString(), fecha, rubro, doc, justificacion, monto });
+            document.getElementById('gastoDoc').value = '';
+            document.getElementById('gastoJustificacion').value = '';
+            document.getElementById('gastoMonto').value = '';
+            renderizarViaticos();
+        });
+
+        document.getElementById('viaticosAsignado').addEventListener('input', renderizarViaticos);
+
+        document.getElementById('btnGuardarSemanaViaticos').addEventListener('click', () => {
+            const inicio = document.getElementById('viaticosInicio').value;
+            const fin = document.getElementById('viaticosFin').value;
+            const ruta = document.getElementById('viaticosRuta').value;
+            const asignado = parseFloat(document.getElementById('viaticosAsignado').value) || 0;
+
+            if (!ruta || viaticoActual.gastos.length === 0) { alert('Asigne una ruta e ingrese al menos un gasto.'); return; }
+
+            const idSemana = 'viat_' + inicio + '_' + ruta.substring(0,4);
+            const existenteIndex = viaticos.findIndex(v => v.id === idSemana);
+            
+            const registro = { id: idSemana, fechaCreacion: new Date().toISOString(), inicio, fin, ruta, asignado, gastos: [...viaticoActual.gastos] };
+
+            if (existenteIndex >= 0) viaticos[existenteIndex] = registro;
+            else viaticos.push(registro);
+
+            saveData();
+            poblarHistorialViaticos();
+            alert('Semana de Viáticos Guardada/Actualizada en el Historial.');
+        });
+
+        document.getElementById('selectHistorialViaticos').addEventListener('change', (e) => {
+            const hist = viaticos.find(v => v.id === e.target.value);
+            if (hist) {
+                document.getElementById('viaticosInicio').value = hist.inicio;
+                document.getElementById('viaticosFin').value = hist.fin;
+                document.getElementById('viaticosRuta').value = hist.ruta;
+                document.getElementById('viaticosAsignado').value = hist.asignado;
+                viaticoActual.gastos = [...hist.gastos];
+                renderizarViaticos();
+            }
+        });
+
+        document.getElementById('btnCerrarViaticos').onclick = () => document.getElementById('viaticosModal').style.display = 'none';
+
+        // --- IMPRESIÓN DE VIÁTICOS PDF ---
+        document.getElementById('btnImprimirViaticos').addEventListener('click', () => {
+            if (viaticoActual.gastos.length === 0) { alert('No hay gastos para imprimir.'); return; }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
+            
+            doc.setFillColor(7, 94, 84); doc.rect(0, 0, doc.internal.pageSize.getWidth(), 18, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+            doc.text('MARIJOSE JHIRE S.A.', 14, 12); doc.setFontSize(10);
+            doc.text('REPORTE Y LIQUIDACIÓN DE VIÁTICOS', doc.internal.pageSize.getWidth() - 14, 12, { align: 'right' });
+
+            doc.setTextColor(0); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+            doc.text('7 calle 0-36 zona 1, Ciudad de Guatemala', 14, 23);
+            doc.text('PBX: 2250-0859 | WhatsApp: 5015-9647', 14, 28);
+            
+            const inicio = document.getElementById('viaticosInicio').value;
+            const fin = document.getElementById('viaticosFin').value;
+            const ruta = document.getElementById('viaticosRuta').value || 'S/R';
+            
+            doc.text(`Colaborador: ${nombreUsuario}`, doc.internal.pageSize.getWidth() / 2, 23, { align: 'center' });
+            doc.text(`Gira / Ruta: ${ruta}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+
+            doc.text(`Del: ${new Date(inicio+'T00:00:00').toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 23, { align: 'right' });
+            doc.text(`Al: ${new Date(fin+'T00:00:00').toLocaleDateString()}`, doc.internal.pageSize.getWidth() - 14, 28, { align: 'right' });
+            doc.setDrawColor(200); doc.line(14, 32, doc.internal.pageSize.getWidth() - 14, 32);
+
+            // --- Cálculo seguro de rubros y total ---
+const formatQ = (val) => 'Q ' + (Number(val) || 0).toFixed(2);
+const sumaRubros = {};
+let total = 0;
+viaticoActual.gastos.forEach(g => {
+    const rubro = g.rubro || 'Sin rubro';
+    const monto = Number(g.monto) || 0;
+    sumaRubros[rubro] = (sumaRubros[rubro] || 0) + monto;
+    total += monto;
+});
+
+            // 2. TABLA DE RESUMEN DE RUBROS
+            doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+            doc.setTextColor(7, 94, 84);
+            doc.text('RESUMEN DE GASTOS POR RUBRO', 14, 40);
+            
+            doc.autoTable({
+                startY: 45,
+                head: [['Rubro', 'Monto Total']],
+                body: Object.entries(sumaRubros).map(([rubro, monto]) => [rubro, formatoQ(monto)]),
+                theme: 'grid',
+                headStyles: { fillColor: [7, 94, 84], textColor: 255 },
+                styles: { fontSize: 10, cellPadding: 4 }
+            });
+
+            // 3. CUADRO DE FLUJO DE CAJA (AMPLIADO)
+            let finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFillColor(230, 245, 235);
+            doc.rect(14, finalY, doc.internal.pageSize.getWidth() - 28, 25, 'F');
+            
+            const asignado = parseFloat(document.getElementById('viaticosAsignado').value) || 0;
+            const saldo = asignado - total;
+
+            doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+            doc.setTextColor(7, 94, 84);
+            doc.text(`Fondo Asignado: ${formatoQ(asignado)}`, 20, finalY + 15);
+            
+            doc.setTextColor(198, 40, 40);
+            doc.text(`Total Ejecutado: ${formatoQ(total)}`, 80, finalY + 15);
+            
+            doc.setTextColor(saldo < 0 ? 198 : 25, saldo < 0 ? 40 : 118, saldo < 0 ? 40 : 210);
+            doc.text(`Saldo de Caja: ${formatoQ(saldo)}`, 140, finalY + 15);
+
+            // Nota al pie
+            finalY += 35;
+            doc.setTextColor(100); doc.setFontSize(8); doc.setFont('helvetica', 'italic');
+            doc.text('* NOTA: Los presentes gastos serán confrontados con el escáner de las facturas semanales físicas presentadas a gerencia.', doc.internal.pageSize.getWidth() / 2, finalY, { align: 'center' });
+            // Líneas de firma
+            let signY = finalY + 25;
+            if (signY > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); signY = 40; }
+            doc.setDrawColor(0); 
+            doc.line(40, signY, 90, signY);
+            doc.setFontSize(9); doc.setTextColor(0); doc.setFont('helvetica', 'normal');
+            doc.text('Firma Colaborador', 65, signY + 5, { align: 'center' });
+            doc.line(doc.internal.pageSize.getWidth() - 90, signY, doc.internal.pageSize.getWidth() - 40, signY);
+            doc.text('Firma Gerencia / Auditoría', doc.internal.pageSize.getWidth() - 65, signY + 5, { align: 'center' });  
+            doc.save(`Viaticos_${ruta.substring(0,5)}_${inicio}.pdf`);
+        });
+
+       // ==============================================================================
 
         // INICIALIZACIÓN
         showTab('dashboard'); // Arrancamos en el Dashboard por defecto
