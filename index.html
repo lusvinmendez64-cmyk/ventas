@@ -2293,7 +2293,20 @@
                 </div>
                 <div class="buscador"><input type="text" id="buscarClienteCatalogo" placeholder="Buscar por nombre o código..."></div>
                 <div class="sub-tabs"><div class="sub-tab active" data-vista="todos">Todos</div><div class="sub-tab" data-vista="credito">Crédito</div><div class="sub-tab" data-vista="contado">Contado</div></div>
-                <div style="display: flex; gap: 10px; margin: 15px 0;"><input type="text" id="filtroCategoria" placeholder="Filtrar por categoría"><input type="text" id="filtroRuta" placeholder="Filtrar por ruta/zona"><button id="aplicarFiltrosCat" class="secondary small">Aplicar filtros</button></div>
+                <div style="display: flex; gap: 10px; margin: 15px 0; align-items: center; flex-wrap: wrap;">
+                    <select id="filtroCategoria" style="flex:1; min-width:140px; margin:0; border-radius: 40px; border: 1px solid #b0c7da; padding: 8px 12px; font-size: 0.9rem;">
+                        <option value="">Todas las categorías</option>
+                        <option value="Clínica">Clínica</option>
+                        <option value="Farmacia">Farmacia</option>
+                        <option value="Hospital">Hospital</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <select id="filtroRuta" style="flex:1; min-width:140px; margin:0; border-radius: 40px; border: 1px solid #b0c7da; padding: 8px 12px; font-size: 0.9rem;">
+                        <option value="">Todas las rutas</option>
+                        ${opcionesRutas.replace('<option value="">-- Seleccione una ruta --</option>', '')}
+                    </select>
+                    <button id="aplicarFiltrosCat" class="secondary small" style="margin:0;">Aplicar filtros</button>
+                </div>
                 <div class="table-responsive">
                     <table class="clientes-ejecutivos-table">
                         <thead>
