@@ -595,47 +595,157 @@
         const formatoQ = (val) => 'Q' + redondearDinero(val).toFixed(2);
          function normalizarRuta(rutaIngresada, automatico = false) {
             if (!rutaIngresada) return '';
-            // Normalizamos quitando tildes para que la búsqueda no falle (ej. "Panajachél" será leído limpio)
             const rLimpia = rutaIngresada.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
             
+            // Diccionario expandido: Incluye departamentos, sinónimos y municipios principales
             const diccionario = {
-                'Quetzaltenango': ['xela', 'quetgo', 'qtz', 'quetzaltenango'],
-                'Guatemala': ['guate', 'capital', 'ciudad', 'guatemala'],
-                'Huehuetenango': ['huehue', 'huehuetenango'],
-                'Suchitepéquez': ['mazate', 'mazatenango', 'suchi', 'suchitepequez'],
-                'Retalhuleu': ['reu', 'retalhuleu'],
-                'Alta Verapaz': ['coban', 'alta verapaz'],
-                'Baja Verapaz': ['salama', 'baja verapaz'],
-                'Chimaltenango': ['chimal', 'chimaltenango'],
-                'Sacatepéquez': ['antigua', 'sacatepequez'],
-                'Escuintla': ['puerto san jose', 'palin', 'escuintla'],
-                'San Marcos': ['san marcos'],
-                'Totonicapán': ['toto', 'totonicapan'],
-                'Sololá': ['solola', 'pana', 'panajachel'],
-                'Petén': ['peten', 'flores'],
-                'Izabal': ['puerto barrios', 'morales', 'rio dulce', 'izabal'],
-                'Zacapa': ['zacapa'],
-                'Chiquimula': ['chiquimula'],
-                'Jalapa': ['jalapa'],
-                'Jutiapa': ['jutiapa'],
-                'Santa Rosa': ['santa rosa', 'cuilapa'],
-                'El Progreso': ['progreso', 'guastatoya', 'el progreso']
+                 'Quetzaltenango': [
+        'xela', 'quetgo', 'qtz', 'quetzaltenango',
+        'salcaja', 'olintepeque', 'san carlos sija', 'sibilia', 'cabrican', 'cajola',
+        'san miguel siguila', 'ostuncalco', 'san juan ostuncalco', 'san mateo',
+        'concepcion chiquirichapa', 'san martin sacatepequez', 'almolonga', 'cantel',
+        'huitan', 'zunil', 'colomba', 'flores costa cuca', 'palestina', 'coatepeque',
+        'genova', 'el palmar', 'la esperanza', 'san francisco la union'
+    ],
+    'Guatemala': [
+        'guate', 'capital', 'ciudad', 'guatemala', 'gt',
+        'mixco', 'villa nueva', 'amatitlan', 'san miguel petapa', 'chinautla',
+        'fraijanes', 'pinula', 'santa catarina pinula', 'san jose pinula',
+        'san jose del golfo', 'palencia', 'san pedro ayampuc', 'san pedro sacatepequez',
+        'san juan sacatepequez', 'san raymundo', 'chuarrancho', 'villa canales'
+    ],
+    'Huehuetenango': [
+        'huehue', 'huehuetenango',
+        'chiantla', 'malacatancito', 'aguacatan', 'san sebastian huehuetenango',
+        'san juan atitan', 'san rafael petzal', 'san gaspar ixchil',
+        'santiago chimaltenango', 'todos santos cuchumatan', 'concepcion huista',
+        'san antonio huista', 'jacaltenango', 'santa ana huista', 'san pedro necta',
+        'la democracia', 'la libertad', 'san miguel acatan', 'san rafael la independencia',
+        'san sebastian coatan', 'santa barbara', 'san juan ixcoy', 'soloma',
+        'santa eulalia', 'barillas', 'san mateo ixtatan', 'nenton', 'colotenango',
+        'cuilco', 'tectitan', 'union cantinil'
+    ],
+    'Suchitepéquez': [
+        'mazate', 'mazatenango', 'suchi', 'suchitepequez',
+        'cuyotenango', 'san francisco zapotitlan', 'san bernardino',
+        'san jose el idolo', 'santo domingo suchitepequez', 'san lorenzo',
+        'san miguel panan', 'san gabriel', 'chicacao', 'patulul',
+        'san antonio suchitepequez', 'san juan bautista', 'san pablo jocopilas',
+        'santa barbara', 'samayac', 'san jose la maquina', 'rio bravo', 'pueblo nuevo'
+    ],
+    'Retalhuleu': [
+        'reu', 'retalhuleu',
+        'champerico', 'san felipe', 'nuevo san carlos', 'san sebastian',
+        'santa cruz mulua', 'san martin zapotitlan', 'san andres villa seca', 'el asintal'
+    ],
+    'Alta Verapaz': [
+        'coban', 'alta verapaz',
+        'san pedro carcha', 'carcha', 'tactic', 'fray bartolome',
+        'san juan chamelco', 'san cristobal verapaz', 'tamahu', 'tucuru',
+        'panzos', 'senahu', 'cahabon', 'lanquin', 'chisec', 'raxruha',
+        'chahal', 'santa cruz verapaz', 'santa maria cahabon'
+    ],
+    'Baja Verapaz': [
+        'salama', 'baja verapaz',
+        'rabinal', 'purulha', 'cubulco', 'san miguel chicaj', 'granados',
+        'santa cruz el chol', 'san jeronimo'
+    ],
+    'Chimaltenango': [
+        'chimal', 'chimaltenango',
+        'patzun', 'tepan', 'tecpán', 'patzicia', 'zumpango',
+        'san jose poaquil', 'san martin jilotepeque', 'comalapa', 'santa apolonia',
+        'pochuta', 'santa cruz balanya', 'acatenango', 'yepocapa',
+        'san andres itzapa', 'parramos', 'zaragoza', 'el tejar'
+    ],
+    'Sacatepéquez': [
+        'antigua', 'sacatepequez',
+        'jocotenango', 'santiago', 'sumpango', 'lucas',
+        'santiago sacatepequez', 'san lucas sacatepequez', 'santo domingo xenacoj',
+        'san bartolome milpas altas', 'santa lucia milpas altas',
+        'magdalena milpas altas', 'santa maria de jesus', 'ciudad vieja',
+        'san miguel duenas', 'alotenango', 'san antonio aguas calientes',
+        'santa catarina barahona', 'pastores'
+    ],
+    'Escuintla': [
+        'puerto san jose', 'palin', 'escuintla',
+        'santa lucia', 'cotzumalguapa', 'tiquisate', 'masagua', 'siquinala',
+        'la democracia', 'la gomera', 'guanagazapa', 'iztapa',
+        'san vicente pacaya', 'nueva concepcion', 'sipacate'
+    ],
+    'San Marcos': [
+        'san marcos', 'malacatan', 'san pedro sacatepequez', 'tajumulco',
+        'ayutla', 'tecun uman', 'catarina',
+        'comitancillo', 'concepcion tutuapa', 'el quetzal', 'el rodeo',
+        'el tumbador', 'esquipulas palo gordo', 'ixchiguan', 'la blanca',
+        'la reforma', 'nuevo progreso', 'ocos', 'pajapita', 'rio blanco',
+        'san antonio sacatepequez', 'san cristobal cucho', 'san jose ojetenam',
+        'san lorenzo', 'san miguel ixtahuacan', 'san pablo',
+        'san rafael pie de la cuesta', 'sibinal', 'sipacapa', 'tacana', 'tejutla'
+    ],
+    'Totonicapán': [
+        'toto', 'totonicapan',
+        'san cristobal', 'momostenango', 'san francisco el alto',
+        'san andres xecul', 'santa maria chiquimula', 'santa lucia la reforma',
+        'san bartolo aguas calientes'
+    ],
+    'Sololá': [
+        'solola', 'pana', 'panajachel', 'nahuala',
+        'san pedro la laguna', 'santiago atitlan',
+        'san jose chacaya', 'santa maria visitacion', 'santa lucia utatlan',
+        'santa catarina ixtahuacan', 'san juan la laguna', 'san pablo la laguna',
+        'san marcos la laguna', 'santa cruz la laguna', 'san andres semetabaj',
+        'santa catarina palopo', 'san antonio palopo', 'san lucas toliman',
+        'concepcion', 'santa clara la laguna'
+    ],
+    'Petén': [
+        'peten', 'flores', 'poptun', 'san benito', 'sayaxche', 'melchor',
+        'san andres', 'san jose', 'la libertad', 'santa ana',
+        'san francisco', 'dolores', 'las cruces'
+    ],
+    'Izabal': [
+        'puerto barrios', 'morales', 'rio dulce', 'izabal',
+        'los amates', 'livingston', 'el estor'
+    ],
+    'Zacapa': [
+        'zacapa', 'tecoulutan', 'teculutan', 'gualan', 'estanzuela',
+        'rio hondo', 'usumatlan', 'cabanas', 'san diego', 'la union', 'huite'
+    ],
+    'Chiquimula': [
+        'chiquimula', 'esquipulas', 'camotan', 'jocotan',
+        'olopa', 'concepcion las minas', 'san juan ermita', 'ipala',
+        'san jose la arada', 'san jacinto', 'quezaltepeque'
+    ],
+    'Jalapa': [
+        'jalapa', 'mataquescuintla', 'san pedro pinula',
+        'san luis jilotepeque', 'san manuel chaparron', 'san carlos alzatate', 'monjas'
+    ],
+    'Jutiapa': [
+        'jutiapa', 'asuncion mita', 'mita', 'agua blanca', 'moyuta',
+        'yupiltepeque', 'atescatempa', 'jerez', 'zapotitlan', 'comapa',
+        'coguaco', 'pasaco', 'san jose acatempa', 'jalpatagua', 'quezada',
+        'santa catarina mita', 'el adelanto', 'el progreso'
+    ],
+    'Santa Rosa': [
+        'santa rosa', 'cuilapa', 'chiquimulilla', 'barberena', 'guazacapan',
+        'santa rosa de lima', 'casillas', 'san rafael las flores',
+        'pueblo nuevo vinas', 'nueva santa rosa', 'san juan tecuaco',
+        'santa cruz naranjo', 'taxisco', 'oratorio', 'santa maria ixhuatan'
+    ],
+    'El Progreso': [
+        'progreso', 'guastatoya', 'el progreso', 'sanarate', 'morazan',
+        'san agustin acasaguastlan', 'san cristobal acasaguastlan',
+        'el jicaro', 'sansare', 'san antonio la paz'
+    ]
             };
 
             for (const [departamento, sinonimos] of Object.entries(diccionario)) {
-                for (const s of sinonimos) {
-                    // \b indica Límite de Palabra. Ahora "toto" solo se activa si es la palabra exacta, no si escriben "totoral"
-                    const regex = new RegExp(`\\b${s}\\b`, 'i');
-                    if (regex.test(rLimpia)) {
-                        if (automatico || confirm(`🗺️ El sistema detectó la zona "${rutaIngresada}".\n¿Deseas estandarizar la ruta a "${departamento}"?`)) {
-                            return departamento;
-                        }
-                        return rutaIngresada.trim();
+                // Buscamos si alguna palabra clave está contenida en la dirección ingresada
+                if (sinonimos.some(s => rLimpia.includes(s))) {
+                    if (automatico || confirm(`🗺️ El sistema detectó la zona "${rutaIngresada}".\n¿Deseas estandarizar la ruta a "${departamento}"?`)) {
+                        return departamento;
                     }
                 }
             }
-            
-            // Si es una ruta personalizada (ej. "Avenida las americas"), devuelve el texto capitalizado
             return rutaIngresada.trim().replace(/\b\w/g, c => c.toUpperCase());
         }
             
@@ -5162,8 +5272,10 @@ if (prod && nombre) {
             });
             // --- FIN PARCHE 4 ---
 
-            let heatmapRows = Object.keys(rutasMap).sort().map(ruta => {
-                let data = rutasMap[ruta];
+           let heatmapRows = Object.keys(rutasMap).sort().map(ruta => {
+            let data = rutasMap[ruta];
+            // NUEVO FILTRO: Si no hubo nada en el mes, no mostrar
+    if (data.contado === 0 && data.cobros === 0 && data.sana === 0 && data.vencida === 0) return '';
                 return `<tr>
                     <td>
                         <strong>${ruta}</strong><br>
@@ -5356,12 +5468,11 @@ if (prod && nombre) {
             // --- INICIO EVENTO PDF VISITAS (DASHBOARD - SOLO MES ACTUAL) ---
             document.getElementById('exportarVisitasBtn')?.addEventListener('click', () => {
                 const hoy = new Date();
-                const visitasMes = visitas.filter(v => {
-                    const f = new Date(v.fecha);
-                    return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
-                });
+                const hoyStr = new Date().toDateString();
+                const visitasMes = visitas.filter(v => new Date(v.fecha).toDateString() === hoyStr);
+              
 
-                if (visitasMes.length === 0) { alert('No hay visitas registradas en este mes.'); return; }
+                if (visitasMes.length === 0) { alert('No hay visitas registradas en el día.'); return; }
                 
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', format: 'letter' });
