@@ -244,9 +244,48 @@
         <label>Dirección: <input type="text" id="vDireccion"></label>
         <label>Teléfono: <input type="tel" id="vTelefono"></label>
         <label>Departamento / Ruta: <input type="text" id="vDepartamento"></label>
-        <label>Clasificación: <select id="vClasificacion"><option value="Nuevo">Cliente Nuevo</option><option value="Seguimiento">Seguimiento</option><option value="Cobranza">Cobro</option><option value="Venta">Venta</option></select></label>
-        <label>Comentarios: <textarea id="vComentarios" rows="2"></textarea></label>
-        <div style="margin-top:20px; display:flex; gap:10px;">
+        <label>Clasificación: <select id="vClasificacion"><option value="Nuevo">Prospecto Nuevo</option><option value="Seguimiento">Seguimiento / Rutina</option><option value="Cobranza">Gestión de Cobro</option><option value="Venta">Cierre de Venta</option></select></label>
+            
+            <div style="background: #fdfaf0; border: 1px solid #e1e8e3; padding: 12px; border-radius: 12px; margin-bottom: 14px;">
+                <h4 style="margin: 0 0 10px 0; color: #075e54; font-size: 0.9rem;">🩺 Detalle de la Visita Médica</h4>
+                <label style="margin-bottom: 8px;">Especialidad / Tipo: <input type="text" id="vEspecialidad" placeholder="Ej: Pediatría, Farmacia Interna..."></label>
+                <label style="margin-bottom: 8px;">Muestras / Productos presentados: <input type="text" id="vMuestras" placeholder="Ej: OMEZIL, AZIREN 500..."></label>
+                <label style="margin-bottom: 0;">Fecha próxima visita (Agenda): <input type="date" id="vProximaVisita"></label>
+            </div>
+            
+            <label>Comentarios y Acuerdos: <textarea id="vComentarios" rows="2" placeholder="Resumen de lo conversado..."></textarea></label>
+            
+            <div style="margin-top: 15px; background: #f0f7fc; padding: 12px; border-radius: 15px; border: 1px solid #c9ddec;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                    <label style="margin:0; font-weight:bold; color:#075e54;">📍 Ubicación Geográfica</label>
+                    <button type="button" id="btnMiUbicacionVisita" class="secondary small" style="margin:0; background:white;">🗺️ Mi ubicación</button>
+                </div>
+                <div id="mapaVisitaInteractivo" style="height: 200px; border-radius: 12px; border: 1px solid #a0b9cf; z-index: 1;"></div>
+            </div>
+
+            <div style="margin-top: 15px; border-top: 2px dashed #25d366; padding-top: 15px;">
+                <h4 style="color:#075e54; margin-bottom:10px;">🛒 Cotización Rápida (Opcional)</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="buscarProductoCotizacion" list="datalistProductosCot" placeholder="Nombre del producto..." style="flex: 3; padding: 8px; border-radius: 12px; border: 1px solid #b0c7da; margin:0;">
+                    <datalist id="datalistProductosCot"></datalist>
+                    <button type="button" id="btnAgregarProductoCotizacion" class="secondary small" style="flex: 1; background:#1976d2; color:white; border:none; margin:0;">➕ Agregar</button>
+                </div>
+                <div class="table-responsive">
+                    <table style="width:100%;">
+                        <thead style="background:#e3f0fa;"><tr><th>Producto</th><th>Cant</th><th>P/U (Q)</th><th>Subtotal</th><th></th></tr></thead>
+                        <tbody id="tablaCotizacionBody"></tbody>
+                    </table>
+                </div>
+                <div style="text-align: right; font-weight: bold; margin-top: 8px; font-size:1.1rem; color:#1e3b4f;">
+                    Total: <span id="totalCotizacionSpan" style="color:#2e7d32;">Q0.00</span>
+                </div>
+                <label class="checkbox-label" style="margin-top: 10px; font-size:0.9rem; justify-content:flex-end;">
+                    <input type="checkbox" id="enviarWhatsAppCotizacion" checked style="width:18px; height:18px;"> 
+                    📲 Enviar por WhatsApp al guardar
+                </label>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
             <button id="guardarVisitaBtn" class="secondary" style="background:#25d366; color:white; border-color:#1a8a4a;">Guardar y Ubicar</button>
             <button id="cerrarVisitaBtn" class="secondary small">Cancelar</button>
         </div>
@@ -255,10 +294,10 @@
 
 <script>
     (async function() {
-       // --- CONEXIÓN SUPABASE ---
-        const SUPABASE_URL = 'https://xyzabcdefghijklmnopqrst.supabase.co'; // Texto simulado para evitar colapso
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU4NjU2MDAsImV4cCI6MjAzMTU0MjQwMH0.dummy_signature_do_not_use_in_production_123456789'; // Texto simulado para evitar colapso
-
+      // --- CONEXIÓN SUPABASE (DATOS DE PRUEBA) ---
+const SUPABASE_URL = 'https://xyzkjlmnpqrstuvwxyza.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emtqbG1ucHFyc3R1dnd4eXphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTYyMDAwMDAsImV4cCI6MjAzMTc3NjAwMH0.F4k3S1gn4tur3F0rT3st1ngPurp0s3s0nly987654321';
+       
         // Inicializar cliente (El "Enchufe")
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         // Test rápido de conexión a Supabase
@@ -283,6 +322,81 @@
         
         // Ejecutamos el test al cargar
         probarConexionSupabase();
+
+        // --- REAL-TIME SUBSCRIPTIONS ---
+        function inicializarRealTime() {
+            // 1. Suscripción para Clientes
+            supabase.channel('public:clientes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, payload => {
+                    console.log('🔄 Cambio detectado en la nube (Clientes):', payload);
+                    const index = clientes.findIndex(c => c.id === payload.new.id);
+                    if (index !== -1) clientes[index] = payload.new;
+                    else clientes.push(payload.new);
+                    localStorage.setItem('clientes', JSON.stringify(clientes));
+                    
+                    if (document.querySelector('.tab.active')?.dataset.tab === 'catalogo') renderCatalogo();
+                })
+                .subscribe();
+
+            // 2. Suscripción Prioritaria para Inventario con Alertas Toast
+supabase.channel('public:inventario')
+    .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'inventario',
+        filter: `vendedor_id=eq.${vendedorId}` // <-- ESTE FILTRO AISLA LAS ALERTAS
+    }, payload => {
+                    console.log('📦 Cambio de stock detectado (Inventario):', payload);
+                    const index = inventario.findIndex(i => i.productoId === payload.new.productoId || i.id === payload.new.id);
+                    
+                    let nombreProductoAlert = payload.new.nombre || 'Producto';
+
+                    if (index !== -1) {
+                        nombreProductoAlert = inventario[index].nombre;
+                        inventario[index] = { ...inventario[index], ...payload.new };
+                    } else {
+                        inventario.push(payload.new);
+                    }
+                    localStorage.setItem('inventario', JSON.stringify(inventario));
+                    
+                    // --- CREACIÓN DEL TOAST VISUAL ---
+                    let toastContainer = document.getElementById('toast-container');
+                    if (!toastContainer) {
+                        toastContainer = document.createElement('div');
+                        toastContainer.id = 'toast-container';
+                        toastContainer.style.cssText = 'position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px;';
+                        document.body.appendChild(toastContainer);
+                    }
+                    const toast = document.createElement('div');
+                    toast.style.cssText = 'background:#1e3b4f; color:white; padding:12px 20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.2); display:flex; align-items:center; gap:10px; opacity:0; transform:translateX(100%); transition:all 0.3s ease; border-left:4px solid #ff9800;';
+                    toast.innerHTML = `<span style="font-size:1.2rem;">📦</span> <div><strong style="display:block; font-size:0.85rem; color:#ffb74d;">Stock Actualizado</strong><span style="font-size:0.9rem;">${nombreProductoAlert}: <b>${payload.new.stock}</b> unds</span></div>`;
+                    toastContainer.appendChild(toast);
+                    
+                    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+                    setTimeout(() => {
+                        toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)';
+                        setTimeout(() => toast.remove(), 300);
+                    }, 5000); // El toast desaparece después de 5 segundos
+
+                    // --- REFRESCO DE PANTALLAS ---
+                    const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+                    if (activeTab === 'inventario') {
+                        renderInventarioTabla();
+                    } else if (activeTab === 'venta') {
+                        document.querySelectorAll('#productosBody tr').forEach(tr => {
+                            const select = tr.querySelector('.prod-select');
+                            const stockSpan = tr.querySelector('.stock-display');
+                            if (select && stockSpan && select.value === (payload.new.productoId || payload.new.id)) {
+                                stockSpan.textContent = payload.new.stock;
+                                stockSpan.style.color = '#e65100';
+                                setTimeout(() => stockSpan.style.color = '', 2000);
+                            }
+                        });
+                    }
+                })
+                .subscribe();
+        }
+        
         async function migrarTodoASupabase() {
             showLoader();
             console.log("🚀 Iniciando Sincronización Total y Diagnóstico...");
@@ -292,17 +406,59 @@
                 // =========================================================
                 // 1. FASE DE SUBIDA (Bloque a Bloque aislado)
                 // =========================================================
-                const tablasSubida = [
-                    { nombre: 'clientes', data: clientes, key: 'id' },
-                    { nombre: 'ventas', data: ventas, key: 'id' },
-                    { nombre: 'inventario', data: inventario, key: 'id' },
-                    { nombre: 'movimientosinventario', data: movimientosInventario, key: 'id' },
-                    { nombre: 'abonos', data: abonos, key: 'id' },
-                    { nombre: 'cobros', data: cobros, key: 'id' },
-                    { nombre: 'pagoscobro', data: pagosCobro, key: 'id' },
-                    { nombre: 'calificacionesclientes', data: calificacionesClientes, key: 'id' },
-                    { nombre: 'visitas', data: visitas, key: 'id' } 
-                ];
+                // Reemplaza tu arreglo 'tablasSubida' actual por una versión mapeada y limpia.
+// Asegúrate de usar los nombres exactos que tienes en las columnas de Supabase.
+
+const tablasSubida = [
+    { 
+        nombre: 'clientes', 
+        key: 'id', 
+        data: clientes.map(c => ({
+            id: c.id,
+            vendedor_id: vendedorId,
+            codigo: c.codigo,
+            nit: c.nit,
+            direccion: c.direccion,
+            telefono: c.telefono,
+            correo: c.correo,
+            categoria: c.categoria,
+            ruta: c.ruta,
+            limite_credito: c.limiteCredito || c.limite_credito, 
+            razonSocial: c.razonSocial || c.razon_social, // <-- ¡Corregido para hacer match con tu BD!
+            fecha_creacion: c.fechaCreacion || c.fecha_creacion, 
+            encargado: c.encargado
+        }))
+    },
+    { 
+        nombre: 'ventas', 
+        key: 'id', 
+        data: ventas.map(v => ({
+            id: v.id,
+            vendedor_id: vendedorId,
+            cliente_id: v.clienteId || v.cliente_id,
+            fecha: v.fecha,
+            total: v.total,
+            tipoVenta: v.tipoVenta || v.tipo_venta, // <-- ¡Corregido para hacer match con tu BD!
+            dias_credito: v.diasCredito || v.dias_credito,
+            numero_factura: v.numeroFactura || v.numero_factura,
+            saldo_pendiente: v.saldoPendiente || v.saldo_pendiente,
+            fecha_vencimiento: v.fechaVencimiento || v.fecha_vencimiento,
+            fecha_cancelacion: v.fechaCancelacion || v.fecha_cancelacion,
+            ubicacion_gps: v.ubicacionGPS || v.ubicacion_gps,
+            estado: v.estado,
+            facturado: v.facturado,
+            productos: v.productos 
+        }))
+    },
+    // El resto de las tablas siguen exactamente igual:
+    { nombre: 'inventario', data: inventario, key: 'id' },
+    { nombre: 'movimientosinventario', data: movimientosInventario, key: 'id' },
+    { nombre: 'abonos', data: abonos, key: 'id' },
+    { nombre: 'cobros', data: cobros, key: 'id' },
+    { nombre: 'pagoscobro', data: pagosCobro, key: 'id' },
+    { nombre: 'calificacionesclientes', data: calificacionesClientes, key: 'id' },
+    { nombre: 'visitas', data: visitas, key: 'id' } 
+];
 
                 for (const tabla of tablasSubida) {
                     if (tabla.data && tabla.data.length > 0) {
@@ -326,7 +482,7 @@
                 const tablasDescarga = [
                     { nombre: 'clientes', localKey: 'clientes', global: false },
                     { nombre: 'ventas', localKey: 'ventas', global: false },
-                    { nombre: 'inventario', localKey: 'inventario', global: true }, 
+                    { nombre: 'inventario', localKey: 'inventario', global: false },
                     { nombre: 'movimientosinventario', localKey: 'movimientosInventario', global: false },
                     { nombre: 'abonos', localKey: 'abonos', global: false },
                     { nombre: 'cobros', localKey: 'cobros', global: false },
@@ -387,6 +543,7 @@
         let pagosCobro = [];
         let calificacionesClientes = [];
         let visitas = []; // VARIABLE GLOBAL VISITAS
+        let cotizaciones = []; // VARIABLE GLOBAL COTIZACIONES
         let viaticos = []; // VARIABLE GLOBAL VIATICOS
 
         const opcionesRutas = `
@@ -412,6 +569,7 @@
             <option value="Jutiapa">Jutiapa</option>
             <option value="Santa Rosa">Santa Rosa</option>
             <option value="El Progreso">El Progreso</option>
+            <option value="Quiché">Quiché</option>
         `;
 
         // INYECCIÓN DINÁMICA DEL MODAL DE VIÁTICOS
@@ -472,85 +630,69 @@
         </div>`;
         document.body.insertAdjacentHTML('beforeend', viaticosModalHtml);
 
-        let nombreUsuario = localStorage.getItem('nombreUsuario') || '';
-        let vendedorId = localStorage.getItem('vendedorId') || '';
+       let nombreUsuario = '';
+        let vendedorId = '';
 
-        if (!vendedorId || !nombreUsuario) {
-            // Catálogo predefinido de vendedores (Puedes agregar a todo tu equipo aquí)
-            const vendedoresRegistrados = [
-                { id: 'V-LM123', nombre: 'Lusvin Méndez' },
-                
-            ];
+        // --- AUTENTICACIÓN LOCAL (OFFLINE) ---
+        async function verificarSesion() {
+            // Buscamos si ya hay una sesión guardada en la memoria del navegador
+            const sesionLocal = localStorage.getItem('sesionActiva');
+            
+            if (sesionLocal) {
+                // Si ya existe, cargamos los datos
+                const datosUsuario = JSON.parse(sesionLocal);
+                vendedorId = datosUsuario.id;
+                nombreUsuario = datosUsuario.nombre;
+            } else {
+                // Si es la primera vez, mostramos la pantalla de bienvenida
+                mostrarLoginLocal();
+            }
+        }
 
-            const opcionesHtml = vendedoresRegistrados.map(v => `<option value="${v.id}|${v.nombre}">${v.nombre} (${v.id})</option>`).join('');
+        function mostrarLoginLocal() {
+            const loginHtml = `
+            <div id="loginModalLocal" class="modal" style="display:flex; z-index: 99999; background: rgba(0,20,30,0.9);">
+                <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px; padding: 30px;">
+                    <h2 style="color: #075e54; margin-bottom: 10px;">🏥 Acceso al Sistema</h2>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">Modo de trabajo local activado.</p>
+                    
+                    <input type="text" id="authNombre" placeholder="Ingresa tu nombre (Ej: Lusvin)" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #b0c7da; font-size: 1rem;">
+                    
+                    <button id="btnIngresarAuth" class="secondary" style="width: 100%; background: #25d366; color: white; border: none; padding: 15px; border-radius: 40px; font-weight: bold; font-size: 1.1rem;">Ingresar al CRM</button>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', loginHtml);
 
-           const loginHtml = `
-<div id="loginModalPersonalizado" class="modal" style="display:flex; z-index: 99999; background: rgba(0,20,30,0.9);">
-    <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px; padding: 30px;">
-        <h2 style="color: #075e54; margin-bottom: 20px;">🔐 Acceso al Sistema</h2>
-        <div id="loginPaso1" style="display: flex; flex-direction: column; gap: 15px;">
-            <button id="btnSoyExistente" class="secondary" style="width: 100%; background: #25d366; color: white; border: none; padding: 15px; border-radius: 40px; font-weight: bold;">Seleccionar mi usuario</button>
-            <button id="btnSoyNuevo" class="secondary" style="width: 100%; padding: 15px; border-radius: 40px; font-weight: bold;">Soy vendedor nuevo</button>
-        </div>
-                    <div id="loginExistente" style="display: none; text-align: left;">
-                        <label style="color:#1e3b4f; font-weight:bold;">Selecciona tu cuenta:</label>
-                        <select id="selectVendedorExistente" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #b0c7da;">
-                            <option value="">-- Lista de Vendedores --</option>
-                            ${opcionesHtml}
-                        </select>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="btnIngresarExistente" class="secondary" style="background:#25d366; color:white; flex: 2; border:none;">Ingresar</button>
-                            <button id="btnVolver1" class="secondary small" style="flex: 1;">Volver</button>
-                        </div>
-                    </div>
-                    <div id="loginNuevo" style="display: none; text-align: left;">
-                        <label style="color:#1e3b4f; font-weight:bold;">Nombre y Apellido:</label>
-                        <input type="text" id="inputNombreNuevo" placeholder="Ej: Carlos Lopez" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #b0c7da;">
-                        <div style="display: flex; gap: 10px;">
-                            <button id="btnCrearNuevo" class="secondary" style="background:#25d366; color:white; flex: 2; border:none;">Crear Código</button>
-                            <button id="btnVolver2" class="secondary small" style="flex: 1;">Volver</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-            
-            document.body.insertAdjacentHTML('beforeend', loginHtml);
-
-            await new Promise((resolve) => {
-                const paso1 = document.getElementById('loginPaso1');
-                const pasoExistente = document.getElementById('loginExistente');
-                const pasoNuevo = document.getElementById('loginNuevo');
-
-                document.getElementById('btnSoyExistente').onclick = () => { paso1.style.display = 'none'; pasoExistente.style.display = 'block'; };
-                document.getElementById('btnSoyNuevo').onclick = () => { paso1.style.display = 'none'; pasoNuevo.style.display = 'block'; };
-                document.getElementById('btnVolver1').onclick = () => { pasoExistente.style.display = 'none'; paso1.style.display = 'block'; };
-                document.getElementById('btnVolver2').onclick = () => { pasoNuevo.style.display = 'none'; paso1.style.display = 'block'; };
-
-                document.getElementById('btnIngresarExistente').onclick = () => {
-                    const sel = document.getElementById('selectVendedorExistente').value;
-                    if (!sel) { alert('Por favor selecciona tu usuario'); return; }
-                    const [id, nombre] = sel.split('|');
-                    vendedorId = id;
-                    nombreUsuario = nombre;
-                    resolve();
-                };
-
-                document.getElementById('btnCrearNuevo').onclick = () => {
-                    let nom = document.getElementById('inputNombreNuevo').value.trim();
-                    if (!nom) { alert('Ingresa tu nombre'); return; }
-                    const partesNombre = nom.split(' ').filter(n => n.length > 0);
-                    const iniciales = partesNombre.map(n => n[0].toUpperCase()).join('').substring(0, 2);
-                    vendedorId = 'V-' + iniciales + Math.floor(100 + Math.random() * 900);
-                    nombreUsuario = nom;
-                    alert('✨ Tu código permanente es: ' + vendedorId + '\n¡Guárdalo!');
-                    resolve();
-                };
-            });
-
-            localStorage.setItem('nombreUsuario', nombreUsuario);
-            localStorage.setItem('vendedorId', vendedorId);
-            document.getElementById('loginModalPersonalizado').remove();
-        }
+            document.getElementById('btnIngresarAuth').onclick = () => {
+                const nombreInput = document.getElementById('authNombre').value.trim();
+                
+                if (!nombreInput) {
+                    alert('Por favor, ingresa tu nombre para continuar.');
+                    return;
+                }
+                
+                showLoader();
+                
+                // Generamos un ID único simulado para tus registros de ventas
+                const nuevoId = 'vend_' + Math.random().toString(36).substr(2, 9);
+                const usuario = { id: nuevoId, nombre: nombreInput };
+                
+                // Guardamos en localStorage para que no te lo vuelva a pedir mañana
+                localStorage.setItem('sesionActiva', JSON.stringify(usuario));
+                
+                vendedorId = usuario.id;
+                nombreUsuario = usuario.nombre;
+                
+                document.getElementById('loginModalLocal').remove();
+                
+                // Actualizamos el saludo en pantalla
+                document.getElementById('greeting').innerText = \`👋 Bienvenido, \${nombreUsuario}\`;
+                
+                hideLoader();
+            };
+        }
+        await verificarSesion();
+        inicializarRealTime();
         document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario} (${vendedorId})`;
         function obtenerSaludo() {
             const hora = new Date().getHours();
@@ -735,7 +877,9 @@
         'progreso', 'guastatoya', 'el progreso', 'sanarate', 'morazan',
         'san agustin acasaguastlan', 'san cristobal acasaguastlan',
         'el jicaro', 'sansare', 'san antonio la paz'
-    ]
+    ],
+    'Quiché': ['quiche', 'santa cruz del quiche', 'chichicastenango', 'joyabaj', 'nebaj', 'sacapulas', 'uspantan', 'cunen', 'chajul', 'cotzal', 'zacualpa', 'chiche', 'chinique', 'pachalum'],
+    
             };
 
             for (const [departamento, sinonimos] of Object.entries(diccionario)) {
@@ -751,36 +895,59 @@
             
             
         
-        const productosPredefinidos = [
-            { nombre: 'AZIREN 500', precio: 18.00 }, { nombre: 'CLARIRON IV', precio: 78.00 }, { nombre: 'CLARIRON TABLETAS', precio: 66.00 }, { nombre: 'CORTICINATE 500', precio: 25.00 },
-            { nombre: 'ESOMEREN', precio: 149.00 }, { nombre: 'ITRACOREN', precio: 49.00 }, { nombre: 'MEROPE', precio: 54.00 }, { nombre: 'OMEZIL CAPSULAS', precio: 35.00 },
-            { nombre: 'OMEZIL IV', precio: 55.00 }, { nombre: 'PANZITOP', precio: 67.00 }, { nombre: 'VANCOREAN', precio: 105.00 }, { nombre: 'DOLO NERVIPLEX', precio: 25.00 }
+       const productosPredefinidos = [
+            { nombre: 'AZIREN 500', lote: 'RAR2501', vencimiento: '2028-08-31', precio: 31.00 },
+            { nombre: 'CORTICINATE 500 MG', lote: 'D1562304A', vencimiento: '2026-11-30', precio: 28.00 },
+            { nombre: 'ITRACOREN 100 MG', lote: 'RIC2501', vencimiento: '2028-10-31', precio: 54.00 },
+            { nombre: 'MEROPE 1 G', lote: 'EUM25002', vencimiento: '2028-11-30', precio: 86.00 },
+            { nombre: 'OMEZIL 20 MG', lote: 'ROC2501', vencimiento: '2028-10-31', precio: 56.00 },
+            { nombre: 'CLARIRON 500 MG (TABLETAS)', lote: 'RCN2501', vencimiento: '2028-06-30', precio: 78.00 },
+            { nombre: 'CLARIRON 500 MG (INYECTABLE)', lote: 'L25HF003', vencimiento: '2028-03-31', precio: 90.00 },
+            { nombre: 'ESOMEREN 40 MG', lote: 'L25KB001', vencimiento: '2028-03-31', precio: 165.00 },
+            { nombre: 'OMEZIL 40 MG', lote: 'L25KC001', vencimiento: '2028-03-31', precio: 64.00 },
+            { nombre: 'PANZITOP 40 MG', lote: 'L25KV003', vencimiento: '2028-03-31', precio: 79.00 },
+            { nombre: 'VANCOREAN 500 MG', lote: 'L25LS001', vencimiento: '2028-05-31', precio: 120.00 },
+            { nombre: 'BILASNIZ 20 MG', lote: 'RBT2501', vencimiento: '2028-10-31', precio: 147.00 },
+            { nombre: 'ETORENOXIB 60 MG', lote: 'RET2501', vencimiento: '2028-10-31', precio: 122.00 },
+            { nombre: 'FLEKTON 100 MG/2 ML', lote: 'MKAO25001', vencimiento: '2028-08-31', precio: 65.00 },
+            { nombre: 'NOOSID 250 MG/ML', lote: 'MCAW25001', vencimiento: '2028-11-30', precio: 222.00 },
+            { nombre: 'R-SUVON 20 MG', lote: 'RSH2501', vencimiento: '2028-06-30', precio: 303.00 },
+            { nombre: 'DICLOFENACO 1% GEL (30G)', lote: '', vencimiento: '2028-04-30', precio: 7.00 },
+            { nombre: 'AMOXICILINA + CLAVULANATO 875/125 MG X15', lote: '', vencimiento: '2027-10-31', precio: 38.00 },
+            { nombre: 'CEFIXIMA 400 MG CÁPSULAS', lote: '', vencimiento: '2027-08-31', precio: 47.00 },
+            { nombre: 'CEFTRIAXONA 1 G + LIDOCAÍNA (IM)', lote: '', vencimiento: '2027-04-30', precio: 16.00 },
+            { nombre: 'LOSARTÁN POTÁSICO 50 MG TABLETAS', lote: '', vencimiento: '2027-02-28', precio: 34.00 },
+            { nombre: 'ESOMEPRAZOL 40 MG COMPRIMIDOS', lote: '', vencimiento: '2028-04-30', precio: 55.00 },
+            { nombre: 'LANSOPRAZOL 30 MG CÁPSULAS', lote: '', vencimiento: '2028-12-31', precio: 50.00 },
+            { nombre: 'SULFADIAZINA DE PLATA 1% CREMA TUBO DE 30', lote: '', vencimiento: '2027-08-31', precio: 12.00 }
         ];
 
         function migrarDatos() {
             let migrado = false;
+            
             clientes.forEach(c => {
                 if (!c.id) { c.id = generarIdCliente(); migrado = true; }
                 if (c.encargado === undefined) { c.encargado = ''; migrado = true; }
                 if (c.categoria === undefined) { c.categoria = ''; migrado = true; }
                 if (c.ruta === undefined) { c.ruta = ''; migrado = true; }
-                // --- INICIO PARCHE 8 (CORREGIDO): SANEAMIENTO AUTOMÁTICO DE HISTORIAL ---
-                if ((c.ruta === '' || c.ruta === 'Sin Ruta Asignada') && c.direccion) {
-                    const deptoDetectado = normalizarRuta(c.direccion, true);
-                    const diccionario = ['Quetzaltenango', 'Guatemala', 'Huehuetenango', 'Suchitepéquez', 'Retalhuleu', 'Alta Verapaz', 'Baja Verapaz', 'Chimaltenango', 'Sacatepéquez', 'Escuintla', 'San Marcos', 'Totonicapán', 'Sololá', 'Petén', 'Izabal', 'Zacapa', 'Chiquimula', 'Jalapa', 'Jutiapa', 'Santa Rosa', 'El Progreso'];
-                    
-                    if (diccionario.includes(deptoDetectado)) {
-                        c.ruta = deptoDetectado;
-                        migrado = true;
-                    }
-                }
-                // --- FIN PARCHE 8 ---
-                else if (c.ruta.trim() !== '') {
-                    const rutaLimpia = normalizarRuta(c.ruta, true); // true = modo automático (sin confirm)
-                    if (c.ruta !== rutaLimpia) { c.ruta = rutaLimpia; migrado = true; }
-                }
-                if (c.limiteCredito === undefined) { c.limiteCredito = null; migrado = true; }
+                // --- INICIO PARCHE 8 (CORREGIDO): SANEAMIENTO AUTOMÁTICO DE HISTORIAL ---
+                if ((c.ruta === '' || c.ruta === 'Sin Ruta Asignada') && c.direccion) {
+                    const deptoDetectado = normalizarRuta(c.direccion, true);
+                    const diccionario = ['Quetzaltenango', 'Guatemala', 'Huehuetenango', 'Suchitepéquez', 'Retalhuleu', 'Alta Verapaz', 'Baja Verapaz', 'Chimaltenango', 'Sacatepéquez', 'Escuintla', 'San Marcos', 'Totonicapán', 'Sololá', 'Petén', 'Izabal', 'Zacapa', 'Chiquimula', 'Jalapa', 'Jutiapa', 'Santa Rosa', 'El Progreso'];
+                    
+                    if (diccionario.includes(deptoDetectado)) {
+                        c.ruta = deptoDetectado;
+                        migrado = true;
+                    }
+                }
+                // --- FIN PARCHE 8 ---
+                else if (c.ruta.trim() !== '') {
+                    const rutaLimpia = normalizarRuta(c.ruta, true);
+                    if (c.ruta !== rutaLimpia) { c.ruta = rutaLimpia; migrado = true; }
+                }
+                if (c.limiteCredito === undefined) { c.limiteCredito = null; migrado = true; }
             });
+
             ventas.forEach(v => {
                 if (!v.clienteId && v.clienteCodigo) { const cliente = clientes.find(c => c.codigo === v.clienteCodigo); v.clienteId = cliente ? cliente.id : null; migrado = true; }
                 if (v.fecha && !v.fecha.includes('T')) { v.fecha = new Date(v.fecha).toISOString(); }
@@ -793,6 +960,7 @@
                 if (v.estado === undefined) { v.estado = 'normal'; migrado = true; }
                 if (v.facturado === undefined) { v.facturado = false; migrado = true; }
             });
+
             inventario.forEach(i => {
                 if (i.costoUnitario === undefined) i.costoUnitario = i.precioUnitario * 0.7;
                 if (i.fechaVencimiento === undefined) {
@@ -802,85 +970,140 @@
                     migrado = true;
                 }
             });
+
             movimientosInventario.forEach(m => { if (m.usuario === undefined) m.usuario = 'admin'; if (m.documento === undefined) m.documento = ''; });
+            
             if (!abonos) abonos = [];
             if (!cobros) cobros = [];
             if (!pagosCobro) pagosCobro = [];
             if (!calificacionesClientes) calificacionesClientes = [];
 
-            if (catalogoProductos.length === 0) {
-                productosPredefinidos.forEach(p => {
-                    const id = generarIdProducto();
-                    catalogoProductos.push({ id, nombre: p.nombre, precioSugerido: p.precio, activo: true });
-                    const fechaVencimiento = new Date();
-                    fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 1);
-                    inventario.push({ productoId: id, nombre: p.nombre, stock: 10, precioUnitario: p.precio, costoUnitario: p.precio * 0.7, fechaVencimiento: fechaVencimiento.toISOString().slice(0,10), lote: '' });
-                });
-                migrado = true;
-            } else {
-                catalogoProductos.forEach(prod => {
-                    if (prod.activo === undefined) { prod.activo = true; migrado = true; }
-                    let item = inventario.find(i => i.productoId === prod.id);
-                    if (!item) {
-                        const fechaVencimiento = new Date();
-                        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 1);
-                        inventario.push({ productoId: prod.id, nombre: prod.nombre, stock: 0, precioUnitario: prod.precioSugerido, costoUnitario: prod.precioSugerido * 0.7, fechaVencimiento: fechaVencimiento.toISOString().slice(0,10), lote: '' });
-                    } else {
-                        item.nombre = prod.nombre;
-                        item.precioUnitario = prod.precioSugerido;
-                        if (!item.fechaVencimiento) {
-                            const fechaDef = new Date();
-                            fechaDef.setFullYear(fechaDef.getFullYear() + 1);
-                            item.fechaVencimiento = fechaDef.toISOString().slice(0,10);
-                        }
+            // --- INICIO NUEVA SINCRONIZACIÓN DE CATÁLOGO ---
+            productosPredefinidos.forEach(p => {
+                let prodExistente = catalogoProductos.find(cat => cat.nombre === p.nombre);
+                let idProducto;
+                
+                if (!prodExistente) {
+                    idProducto = generarIdProducto();
+                    catalogoProductos.push({ id: idProducto, nombre: p.nombre, precioSugerido: p.precio, activo: true });
+                    migrado = true;
+                } else {
+                    idProducto = prodExistente.id;
+                    if (prodExistente.precioSugerido !== p.precio || prodExistente.activo === false) {
+                        prodExistente.precioSugerido = p.precio;
+                        prodExistente.activo = true;
+                        migrado = true;
                     }
-                });
-                inventario = inventario.filter(i => catalogoProductos.some(p => p.id === i.productoId));
-            }
+                }
+
+                let itemInv = inventario.find(i => i.productoId === idProducto);
+                if (!itemInv) {
+                    inventario.push({ 
+                        productoId: idProducto, 
+                        nombre: p.nombre, 
+                        stock: 0, 
+                        precioUnitario: p.precio, 
+                        costoUnitario: p.precio * 0.7, 
+                        fechaVencimiento: p.vencimiento, 
+                        lote: p.lote 
+                    });
+                    migrado = true;
+                } else {
+                    if (itemInv.precioUnitario !== p.precio || itemInv.lote !== p.lote || itemInv.fechaVencimiento !== p.vencimiento) {
+                        itemInv.precioUnitario = p.precio;
+                        itemInv.lote = p.lote; 
+                        itemInv.fechaVencimiento = p.vencimiento;
+                        migrado = true;
+                    }
+                }
+            });
+
+            catalogoProductos.forEach(cat => {
+                if (!productosPredefinidos.some(p => p.nombre === cat.nombre)) {
+                    if (cat.activo !== false) {
+                        cat.activo = false;
+                        migrado = true;
+                    }
+                }
+            });
+
+            inventario = inventario.filter(i => catalogoProductos.some(p => p.id === i.productoId));
+            // --- FIN NUEVA SINCRONIZACIÓN DE CATÁLOGO ---
+
             if (migrado) saveData();
         }
+
         function loadData() {
-            try {
-                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
-                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
-                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
-                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
-                abonos = JSON.parse(localStorage.getItem('abonos')) || [];
-                cobros = JSON.parse(localStorage.getItem('cobros')) || [];
-                pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
-                calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
+            try {
+                clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+                ventas = JSON.parse(localStorage.getItem('ventas')) || [];
+                catalogoProductos = JSON.parse(localStorage.getItem('catalogoProductos')) || [];
+                inventario = JSON.parse(localStorage.getItem('inventario')) || [];
+                movimientosInventario = JSON.parse(localStorage.getItem('movimientosInventario')) || [];
+                abonos = JSON.parse(localStorage.getItem('abonos')) || [];
+                cobros = JSON.parse(localStorage.getItem('cobros')) || [];
+                pagosCobro = JSON.parse(localStorage.getItem('pagosCobro')) || [];
+                calificacionesClientes = JSON.parse(localStorage.getItem('calificacionesClientes')) || [];
                 visitas = JSON.parse(localStorage.getItem('visitas')) || [];
+                cotizaciones = JSON.parse(localStorage.getItem('cotizaciones')) || [];
                 viaticos = JSON.parse(localStorage.getItem('viaticos')) || [];
             } catch (e) { console.warn("Error cargando datos", e); }
-            migrarDatos();
-        }
+            migrarDatos();
+        }
 
-        function saveData() {
-            localStorage.setItem('clientes', JSON.stringify(clientes));
-            localStorage.setItem('ventas', JSON.stringify(ventas));
-            localStorage.setItem('catalogoProductos', JSON.stringify(catalogoProductos));
-            localStorage.setItem('inventario', JSON.stringify(inventario));
-            localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
-            localStorage.setItem('abonos', JSON.stringify(abonos));
-            localStorage.setItem('cobros', JSON.stringify(cobros));
-            localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
-            localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
+        function saveData() {
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+            localStorage.setItem('ventas', JSON.stringify(ventas));
+            localStorage.setItem('catalogoProductos', JSON.stringify(catalogoProductos));
+            localStorage.setItem('inventario', JSON.stringify(inventario));
+            localStorage.setItem('movimientosInventario', JSON.stringify(movimientosInventario));
+            localStorage.setItem('abonos', JSON.stringify(abonos));
+            localStorage.setItem('cobros', JSON.stringify(cobros));
+            localStorage.setItem('pagosCobro', JSON.stringify(pagosCobro));
+            localStorage.setItem('calificacionesClientes', JSON.stringify(calificacionesClientes));
             localStorage.setItem('visitas', JSON.stringify(visitas));
+            localStorage.setItem('cotizaciones', JSON.stringify(cotizaciones));
             localStorage.setItem('viaticos', JSON.stringify(viaticos));
-            
-            // Intento de respaldo silencioso en segundo plano con sello de vendedor (Pares relacionales)
-            const ventasSelladas = ventas.map(v => ({ ...v, vendedor_id: vendedorId }));
-            const clientesSellados = clientes.map(c => ({ ...c, vendedor_id: vendedorId }));
-            Promise.all([
-                supabase.from('clientes').upsert(clientesSellados, { onConflict: 'id' }),
-                supabase.from('ventas').upsert(ventasSelladas, { onConflict: 'id' })
-            ]).then(() => console.log("☁️ Nube actualizada (Clientes y Ventas)"));
-        }
+            
+            // --- MODO OFFLINE-FIRST: Cola de Sincronización ---
+            const queue = JSON.parse(localStorage.getItem('syncQueue')) || [];
+            const ventasSelladas = ventas.map(v => ({ ...v, vendedor_id: vendedorId, updated_at: new Date().toISOString() }));
+            const clientesSellados = clientes.map(c => ({ ...c, vendedor_id: vendedorId, updated_at: new Date().toISOString() }));
+            const cotizSelladas = cotizaciones.map(c => ({ ...c, vendedor_id: vendedorId, updated_at: new Date().toISOString() }));
 
-        // 1. Ejecutar carga y guardado PRIMERO
-        loadData();
-        saveData();
+            queue.push({ tabla: 'clientes', payload: clientesSellados });
+            queue.push({ tabla: 'ventas', payload: ventasSelladas });
+            queue.push({ tabla: 'cotizaciones', payload: cotizSelladas });
+            localStorage.setItem('syncQueue', JSON.stringify(queue));
+
+            if (typeof procesarColaSync === 'function') procesarColaSync();
+        }
+
+        // Definición GLOBAL de la cola de sincronización (SOLO UNA VEZ)
+        async function procesarColaSync() {
+            if (!navigator.onLine) return; 
+            let currentQueue = JSON.parse(localStorage.getItem('syncQueue')) || [];
+            if (currentQueue.length === 0) return;
+            let remainingQueue = [];
+            for (let operacion of currentQueue) {
+                try {
+                    const { error } = await supabase.from(operacion.tabla).upsert(operacion.payload, { onConflict: 'id' });
+                    if (error) throw error;
+                    console.log(`✅ [Sync] Datos sincronizados: ${operacion.tabla}`);
+                } catch (err) {
+                    console.warn(`⏳ [Sync] Fallo al subir ${operacion.tabla}, encolando para reintento...`, err);
+                    remainingQueue.push(operacion);
+                }
+            }
+            localStorage.setItem('syncQueue', JSON.stringify(remainingQueue));
+        }
+
+        // 1. Ejecutar carga y guardado PRIMERO
+        loadData();
+        saveData();
+        
+        // Listener global para reconexiones
+        window.addEventListener('online', procesarColaSync);
 
         // --- INICIO PARCHE GERENCIA (ACTUALIZADO PARA REGLAS INDIVIDUALES) ---
         async function syncDesdeGerencia() {
@@ -1030,7 +1253,11 @@
                         const checksPendientes = abonos.some(a => a.ventaId === vAsoc.id && a.estado === 'pendiente');
                         if (!checksPendientes) vAsoc.fechaCancelacion = new Date().toISOString();
                     }
-                    saveData();
+                  
+
+
+
+saveData();
                     showTab(document.querySelector('.tab.active').dataset.tab); 
                     alert('✅ Cheque validado exitosamente.');
                 }
@@ -1203,7 +1430,7 @@
                     <label>Teléfono <span class="req">*</span>: <input type="tel" id="telefono" required></label>
                     <label>Correo (opcional): <input type="email" id="correo"></label>
                     <label>Categoría <span class="req">*</span>: <select id="categoria" required><option value="">Seleccionar</option><option value="Clínica">Clínica</option><option value="Farmacia">Farmacia</option><option value="Hospital">Hospital</option><option value="Otro">Otro</option></select></label>
-                    <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="ruta" placeholder="Ej: Zona 10, Ruta 1" required></label>
+                    
                     <label>Ruta/Zona <span class="req">*</span>: <select id="ruta" required>${opcionesRutas}</select></label>
                     <label>Límite de crédito (Q): <input type="number" id="limiteCredito" step="0.01" placeholder="Dejar vacío si no tiene límite"></label>
                 </fieldset>
@@ -1566,11 +1793,11 @@
                     telefono: telefono.value.trim(),
                     correo: correo.value.trim(),
                     categoria: categoria.value,
-                    ruta: normalizarRuta(ruta.value.trim()),
+                    ruta: normalizarRuta(ruta.value.trim()) || 'Sin Ruta Asignada',
                     limiteCredito: limiteCredito.value ? parseFloat(limiteCredito.value) : null
                 };
 
-                if (!datosForm.razonSocial || !datosForm.direccion || !datosForm.telefono || !datosForm.categoria || !datosForm.ruta) {
+               if (!datosForm.razonSocial || !datosForm.direccion || !datosForm.telefono || !datosForm.categoria) {
                     alert('⚠️ Por favor completa TODOS los campos obligatorios del cliente.');
                     hideLoader(); // 🔓 DESBLOQUEO
                     return;
@@ -1714,7 +1941,10 @@
                     }
                 });
 
-                saveData();
+                
+
+
+saveData();
                 ventaEditandoId = null;
                 
                 const correlativo = obtenerCorrelativoRecibo();
@@ -1804,7 +2034,8 @@
                             const venta = ventas.find(v => v.id === a.ventaId);
                             const cliente = venta ? (clientes.find(c => c.id === venta.clienteId) || { razonSocial: '?', codigo: 'S/C' }) : { razonSocial: '?', codigo: 'S/C' };
                             
-                            mensaje += `${i+1}. [Cód: ${cliente.codigo || 'S/C'}] ${cliente.razonSocial} - Monto: ${formatoQ(a.monto)} (${a.tipoPago})`;
+                            const docAbono = venta ? (venta.numeroFactura || venta.id.substr(0,8)) : 'S/D';
+                            mensaje += `${i+1}. [Cód: ${cliente.codigo || 'S/C'}] ${cliente.razonSocial} (Fact: ${docAbono}) - Monto: ${formatoQ(a.monto)} (${a.tipoPago})`;
                             if (venta) mensaje += ` | Saldo restante: ${formatoQ(venta.saldoPendiente)}`;
                             if (a.tipoPago === 'cheque' && a.fechaCobro) mensaje += ` | Fecha cobro: ${new Date(a.fechaCobro).toLocaleDateString()}`;
                             mensaje += '\n';
@@ -2020,7 +2251,11 @@
                                 }
                             });
                             venta.estado = 'anulada';
-                            saveData();
+                           
+
+
+
+saveData();
                             aplicarFiltro();
                         }
                     });
@@ -2161,7 +2396,10 @@
                 });
 
                 if (corregidos > 0) {
-                    saveData(); 
+                    
+
+
+saveData();
                     alert(`✅ ¡Sincronización perfecta! Se reconstruyeron ${corregidos} enlaces. Ahora todos abren directamente en Google Maps.`);
                     aplicarFiltro(); 
                 } else {
@@ -2267,7 +2505,11 @@
                     if (!venta.fechaCancelacion) venta.fechaCancelacion = new Date().toISOString();
                 }
 
-                saveData();
+                
+
+
+
+saveData();
                 alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
                 
@@ -2512,7 +2754,11 @@ function evaluarComportamientoCliente(clienteId) {
                         if (cli && confirm(`¿Eliminar al cliente ${cli.razonSocial} y todas sus ventas? Esta acción es irreversible.`)) {
                             ventas = ventas.filter(v => v.clienteId !== cli.id);
                             clientes = clientes.filter(c => c.id !== cli.id);
-                            saveData();
+                            
+
+
+
+saveData();
                             filtrarClientes();
                         }
                     });
@@ -2534,7 +2780,8 @@ function evaluarComportamientoCliente(clienteId) {
             document.getElementById('exportarExcelBtn').addEventListener('click', () => {
                 const wb = XLSX.utils.book_new();
                 const clientesData = clientes.map(c => {
-                    const comportamiento = obtenerComportamiento(c.id);
+                    const analisis = evaluarComportamientoCliente(c.id);
+                    const comportamiento = analisis; // o directamente usar analisis.texto
                     const saldoTotalCliente = ventas.filter(v => v.clienteId === c.id && v.tipoVenta === 'Crédito' && v.estado === 'normal').reduce((acc, v) => acc + (v.saldoPendiente || 0), 0);
                     return {
                         'Razón Social': c.razonSocial, Código: c.codigo || '', NIT: c.nit || 'C/F', Dirección: c.direccion || '', Teléfono: c.telefono || '',
@@ -2675,8 +2922,8 @@ clientesFiltrados.forEach(c => {
                 <label>Teléfono <span class="req">*</span>: <input type="tel" id="editTelefono" value="${cliente.telefono || ''}"></label>
                 <label>Correo: <input type="email" id="editCorreo" value="${cliente.correo || ''}"></label>
                 <label>Categoría <span class="req">*</span>: <select id="editCategoria"><option value="">Seleccionar</option><option value="Clínica" ${cliente.categoria === 'Clínica' ? 'selected' : ''}>Clínica</option><option value="Farmacia" ${cliente.categoria === 'Farmacia' ? 'selected' : ''}>Farmacia</option><option value="Hospital" ${cliente.categoria === 'Hospital' ? 'selected' : ''}>Hospital</option><option value="Otro" ${cliente.categoria === 'Otro' ? 'selected' : ''}>Otro</option></select></label>
-                <label>Ruta/Zona <span class="req">*</span>: <input type="text" id="editRuta" value="${cliente.ruta || ''}"></label>
-<label>Ruta/Zona <span class="req">*</span>: <select id="editRuta">${opcionesRutas}</select></label>
+                
+                <label>Ruta/Zona <span class="req">*</span>: <select id="editRuta">${opcionesRutas}</select></label>
                 <label>Límite de crédito (Q): <input type="number" id="editLimiteCredito" step="0.01" value="${cliente.limiteCredito !== null ? cliente.limiteCredito : ''}"></label>
                 <div style="margin-top:20px; display:flex; gap:10px;"><button id="guardarEdicionCliente" class="secondary">Guardar</button><button id="cancelarEdicionCliente" class="secondary small">Cancelar</button></div>
             `;
@@ -2705,7 +2952,11 @@ clientesFiltrados.forEach(c => {
                 cliente.ruta = ruta;
                 cliente.limiteCredito = document.getElementById('editLimiteCredito').value ? parseFloat(document.getElementById('editLimiteCredito').value) : null;
                 
-                saveData();
+                
+
+
+
+saveData();
                 modal.style.display = 'none';
                 renderCatalogo();
             });
@@ -2756,7 +3007,11 @@ clientesFiltrados.forEach(c => {
                     usuario: nombreUsuario
                 };
                 calificacionesClientes.push(nuevaCalificacion);
-                saveData();
+               
+
+
+
+saveData();
                 modal.style.display = 'none';
                 renderCatalogo();
             });
@@ -2766,7 +3021,10 @@ clientesFiltrados.forEach(c => {
                     e.stopPropagation();
                     if (confirm('¿Eliminar esta calificación?')) {
                         calificacionesClientes = calificacionesClientes.filter(c => c.id !== b.dataset.id);
-                        saveData();
+                        
+
+
+saveData();
                         modal.style.display = 'none';
                         renderCatalogo();
                     }
@@ -2830,9 +3088,9 @@ clientesFiltrados.forEach(c => {
                 <label>Monto: <input type="number" id="abonoMonto" step="0.01" min="0.01"></label>
                 <label>Tipo de pago: <select id="abonoTipoPago"><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="transferencia">Transferencia</option></select></label>
                 <div id="chequeOpcionesModal" style="display:none; margin-top:10px;"><div class="flex-row"><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="hoy" checked> Cheque del día</label><label class="checkbox-label"><input type="radio" name="chequeTipoModal" value="futuro"> Cheque posfechado</label></div><div id="fechaChequeModalContainer" style="display:none;"><label>Fecha de cobro: <input type="date" id="fechaChequeModal"></label></div></div>
-                <div style="margin-top:10px; display:flex; gap:10px;">
+               <div style="margin-top:10px; display:flex; gap:10px;">
                     <button id="guardarAbonoModalBtn" class="secondary small">Guardar abono</button>
-                    <button id="cerrarEstadoCuentaBtn" class="secondary small">Cerrar / Cancelar</button>
+                    <button id="cerrarEstadoCuentaCobroBtn" class="secondary small">Cerrar / Cancelar</button></div>
                 </div></div>`;
 
             const modal = document.getElementById('estadoCuentaModal');
@@ -2898,7 +3156,11 @@ clientesFiltrados.forEach(c => {
                     if (!hayChequesPendientes) venta.fechaCancelacion = new Date().toISOString(); 
                     else venta.fechaCancelacion = null; 
                 }
-                saveData();
+                
+
+
+
+saveData();
                 alert('Abono registrado exitosamente.');
                 modal.style.display = 'none';
                 renderCatalogo();
@@ -2916,14 +3178,18 @@ clientesFiltrados.forEach(c => {
                                 const hayChequesPendientes = abonos.some(a => a.ventaId === vAsociada.id && a.estado === 'pendiente');
                                 if (!hayChequesPendientes) vAsociada.fechaCancelacion = new Date().toISOString();
                             }
-                            saveData();
+                            
+
+
+
+saveData();
                             mostrarEstadoCuenta(clienteId); 
                         }
                     }
                 });
             });
 
-            document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+            document.getElementById('cerrarEstadoCuentaCobroBtn').addEventListener('click', () => { modal.style.display = 'none'; });
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
         }
 
@@ -2985,7 +3251,11 @@ if (prod && nombre) {
         inv.fechaVencimiento = vencimiento;
     
                             }
-                            saveData();
+                            
+
+
+
+saveData();
                             alert('Producto actualizado.');
                         }
                     });
@@ -3025,9 +3295,18 @@ if (prod && nombre) {
                     productoId: newId, nombre: nombre, stock: 0, precioUnitario: precio, costoUnitario: precio * 0.7, fechaVencimiento: vencimiento, lote: lote 
                 });
                 
-                saveData();
+               
+
+
+
+saveData();
                 modalNP.style.display = 'none';
                 render(); 
+                
+                // PARCHE: Si la pestaña activa es Venta, refrescarla para que aparezca el nuevo producto
+                if (document.querySelector('.tab.active')?.dataset.tab === 'venta') {
+                    renderVenta();
+                }
             };
         }
 
@@ -3707,7 +3986,11 @@ if (prod && nombre) {
                         
                         // 3. UNIFICAR: Ajustes Reales + Ventas Reales (Cero duplicados)
                         movimientosInventario = [...soloAjustes, ...movsReconstruidos];
-                        saveData();
+                        
+
+
+
+saveData();
                         
                         renderMovimientos();
                         hideLoader();
@@ -3839,6 +4122,8 @@ if (prod && nombre) {
                     paginacionDiv.innerHTML = '';
                 }
             }
+            // PARCHE: Exponer la función globalmente para que el Real-Time de Supabase la encuentre
+            window.renderInventarioTabla = renderInventarioTabla;
 
             function renderMovimientos() {
                 movimientosBody.innerHTML = '';
@@ -3880,13 +4165,19 @@ if (prod && nombre) {
                     modal.id = 'modalAjusteMasivo'; modal.className = 'modal';
                     document.body.appendChild(modal);
                 }
-                let filasHtml = inventario.map(item => `
+                
+                // Iterar sobre el catálogo asegura que TODOS los productos, incluso los recién creados, aparezcan
+                let filasHtml = catalogoProductos.map(prod => {
+                    const itemInv = inventario.find(i => i.productoId === prod.id) || { stock: 0 };
+                    return `
                     <tr style="border-bottom: 1px solid #e1f5fe;">
-                        <td style="padding: 10px;"><strong>${item.nombre}</strong><br><span style="font-size:0.85rem; color:#075e54;">Stock actual: <b>${item.stock}</b></span></td>
-                        <td style="padding: 10px;"><input type="number" class="ajuste-cant" data-id="${item.productoId}" placeholder="Ej: 5 o -2" style="width: 90px; padding: 8px;"></td>
-                        <td style="padding: 10px;"><input type="text" class="ajuste-motivo" data-id="${item.productoId}" placeholder="Motivo de recarga" style="width: 100%; padding: 8px;"></td>
+                        <td style="padding: 10px;"><strong>${prod.nombre}</strong><br><span style="font-size:0.85rem; color:#075e54;">Stock actual: <b>${itemInv.stock}</b></span></td>
+                        <td style="padding: 10px;"><input type="number" class="ajuste-cant" data-id="${prod.id}" placeholder="Ej: 5 o -2" style="width: 90px; padding: 8px;"></td>
+                        <td style="padding: 10px;"><input type="text" class="ajuste-motivo" data-id="${prod.id}" placeholder="Motivo de recarga" style="width: 100%; padding: 8px;"></td>
                     </tr>
-                `).join('');
+                    `;
+                }).join('');
+
                 modal.innerHTML = `
                     <div class="modal-content" style="max-width: 750px; padding: 24px;">
                         <h3 style="color: #075e54; margin-bottom: 10px;">➕ Recarga y Ajuste de Inventario</h3>
@@ -3911,24 +4202,57 @@ if (prod && nombre) {
                     let cambios = 0;
                     const inputsCant = modal.querySelectorAll('.ajuste-cant');
                     const inputsMotivo = modal.querySelectorAll('.ajuste-motivo');
+                    
                     inputsCant.forEach((inputCant, index) => {
                         const cant = parseInt(inputCant.value);
                         if (!isNaN(cant) && cant !== 0) {
                             const prodId = inputCant.dataset.id;
                             const motivo = inputsMotivo[index].value.trim() || 'Ajuste masivo';
-                            const item = inventario.find(i => i.productoId === prodId);
-                            if (item) {
+                            
+                            const prodCat = catalogoProductos.find(p => p.id === prodId);
+                            if (prodCat) {
+                                let item = inventario.find(i => i.productoId === prodId);
+                                
+                                // Si no tenía inventario previo, lo inicializamos
+                                if (!item) {
+                                    item = {
+                                        productoId: prodId,
+                                        nombre: prodCat.nombre,
+                                        stock: 0,
+                                        precioUnitario: prodCat.precioSugerido,
+                                        costoUnitario: prodCat.precioSugerido * 0.7,
+                                        fechaVencimiento: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0,10),
+                                        lote: 'S/L'
+                                    };
+                                    inventario.push(item);
+                                }
+
                                 item.stock += cant;
-                                movimientosInventario.push({ id: generarIdMovimiento(), fecha: new Date().toISOString(), productoId: item.productoId, productoNombre: item.nombre, tipo: 'ajuste', cantidad: cant, motivo: motivo, stockResultante: item.stock, usuario: nombreUsuario });
+                                movimientosInventario.push({ 
+                                    id: generarIdMovimiento(), 
+                                    fecha: new Date().toISOString(), 
+                                    productoId: item.productoId, 
+                                    productoNombre: item.nombre, 
+                                    tipo: 'ajuste', 
+                                    cantidad: cant, 
+                                    motivo: motivo, 
+                                    stockResultante: item.stock, 
+                                    usuario: nombreUsuario 
+                                });
                                 cambios++;
                             }
                         }
                     });
-                    if (cambios > 0) { saveData(); renderInventarioTabla(); renderMovimientos(); alert(`Se registraron cambios en ${cambios} productos.`); }
+                    if (cambios > 0) { 
+                        saveData(); 
+                        renderInventarioTabla(); 
+                        renderMovimientos(); 
+                        alert(`Se registraron cambios en ${cambios} productos.`); 
+                    }
                     modal.style.display = 'none';
                 };
             });
-        }
+        } // <--- ESTA ES LA LLAVE QUE FALTA AGREGAR. (Cierra renderInventario)
 
         // ================== FUNCIONES GLOBALES DE REPORTE ==================
         function generarResumenComisiones() {
@@ -5044,11 +5368,19 @@ if (prod && nombre) {
                     };
                     clientes.push(clienteFinal);
                 }
-                saveData();
+                
+
+
+
+saveData();
 
                 const nuevoCobro = { id: generarIdCobro(), vendedor_id: vendedorId, numeroDocumento: doc, fecha: new Date(document.getElementById('fechaCobro').value + 'T12:00:00').toISOString(), montoTotal: monto, clienteId: clienteFinal.id, saldoPendiente: monto, fechaCreacion: new Date().toISOString() };
                 cobros.push(nuevoCobro);
-                saveData();
+                
+
+
+
+saveData();
 
                 alert('Cobro registrado');
                 limpiarCliente();
@@ -5178,8 +5510,7 @@ if (prod && nombre) {
 
             document.getElementById('cancelarPagoCobroBtn').addEventListener('click', () => { modal.style.display = 'none'; });
     
-    // --- AGREGA ESTO AQUÍ ---
-    document.getElementById('cerrarEstadoCuentaBtn').addEventListener('click', () => { modal.style.display = 'none'; });
+    
     
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 } // <-- Fin de la función mostrarEstadoCuenta
@@ -5476,8 +5807,28 @@ if (prod && nombre) {
             });
             document.getElementById('btnSincronizarNube')?.addEventListener('click', migrarTodoASupabase);
             document.getElementById('btnAbrirRadar')?.addEventListener('click', () => document.getElementById('radarModal').style.display = 'flex');
-            document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => document.getElementById('visitaModal').style.display = 'flex');
-
+            document.getElementById('btnRegistrarVisita')?.addEventListener('click', () => {
+                document.getElementById('visitaModal').style.display = 'flex';
+                productosCotizacion = []; // Limpiar cotización anterior
+                renderizarTablaCotizacion();
+                poblarDatalistCotizacion();
+                setTimeout(() => {
+                    inicializarMapaVisita();
+                    ubicarEnMapa(); // Lanza el GPS automáticamente
+                }, 100);
+            });
+            function poblarDatalistCotizacion() {
+    const datalist = document.getElementById('datalistProductosCot');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    catalogoProductos.forEach(prod => {
+        if (prod.activo !== false) {
+            const option = document.createElement('option');
+            option.value = prod.nombre;
+            datalist.appendChild(option);
+        }
+    });
+}
             // --- INICIO EVENTO PDF VISITAS (DASHBOARD - SOLO MES ACTUAL) ---
             document.getElementById('exportarVisitasBtn')?.addEventListener('click', () => {
                 const hoy = new Date();
@@ -5818,13 +6169,281 @@ if (prod && nombre) {
         }
 
         // ========== LÓGICA RADAR Y VISITAS ==========
+        // --- VARIABLES MAPA Y COTIZADOR ---
+        let mapVisitaInstance = null;
+        let markerVisita = null;
+        let currentMapLat = 14.6349;
+        let currentMapLng = -90.5069;
+        let productosCotizacion = [];
+
+        function inicializarMapaVisita() {
+            if (mapVisitaInstance) { mapVisitaInstance.invalidateSize(); return; }
+            mapVisitaInstance = L.map('mapaVisitaInteractivo').setView([currentMapLat, currentMapLng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OS' }).addTo(mapVisitaInstance);
+            
+            markerVisita = L.marker([currentMapLat, currentMapLng], { draggable: true }).addTo(mapVisitaInstance);
+            
+            // Actualizar variables si el usuario arrastra el marcador
+            markerVisita.on('dragend', function (e) {
+                const pos = markerVisita.getLatLng();
+                currentMapLat = pos.lat; currentMapLng = pos.lng;
+            });
+            // Mover marcador si el usuario hace clic en el mapa
+            mapVisitaInstance.on('click', function (e) {
+                currentMapLat = e.latlng.lat; currentMapLng = e.latlng.lng;
+                markerVisita.setLatLng([currentMapLat, currentMapLng]);
+            });
+        }
+
+        function ubicarEnMapa() {
+            if (!("geolocation" in navigator)) return;
+            navigator.geolocation.getCurrentPosition(pos => {
+                currentMapLat = pos.coords.latitude; currentMapLng = pos.coords.longitude;
+                if (mapVisitaInstance && markerVisita) {
+                    mapVisitaInstance.setView([currentMapLat, currentMapLng], 16);
+                    markerVisita.setLatLng([currentMapLat, currentMapLng]);
+                }
+            }, err => console.warn("GPS denegado, usando default."), { enableHighAccuracy: true });
+        }
+
+        document.getElementById('btnMiUbicacionVisita').addEventListener('click', ubicarEnMapa);
+
+        // --- FUNCIONES DEL COTIZADOR ---
+        
+        // 1. Llenado seguro del Datalist (Compatible con todos los móviles)
+        function poblarDatalistCotizacion() {
+            const datalist = document.getElementById('datalistProductosCot');
+            if (!datalist) return;
+            
+            datalist.innerHTML = ''; // Limpiamos la lista por si había datos viejos
+            
+            catalogoProductos.forEach(prod => {
+                if (prod.activo !== false) {
+                    // Usar createElement es 100% confiable en cualquier dispositivo
+                    const option = document.createElement('option');
+                    option.value = prod.nombre;
+                    // Agregamos el precio como apoyo visual si el navegador lo soporta
+                    option.text = `Q${parseFloat(prod.precioSugerido).toFixed(2)}`; 
+                    datalist.appendChild(option);
+                }
+            });
+        }
+
+        // 2. Lógica del botón Agregar (Más flexible e inteligente)
+        document.getElementById('btnAgregarProductoCotizacion').addEventListener('click', () => {
+            const input = document.getElementById('buscarProductoCotizacion');
+            const nombreProd = input.value.trim().toLowerCase();
+            
+            if (!nombreProd) {
+                alert("⚠️ Escribe o selecciona un producto de la lista primero.");
+                return;
+            }
+
+            // Búsqueda flexible: Busca coincidencia exacta o si contiene la palabra
+            const prod = catalogoProductos.find(p => 
+                p.nombre.toLowerCase() === nombreProd || 
+                p.nombre.toLowerCase().includes(nombreProd)
+            );
+            
+            if (!prod) { 
+                alert("❌ Producto no encontrado. Verifica el nombre en el catálogo."); 
+                return; 
+            }
+            
+            const existente = productosCotizacion.find(p => p.productoId === prod.id);
+            if (existente) {
+                existente.cantidad++;
+                existente.subtotal = existente.cantidad * existente.precioUnitario;
+            } else {
+                productosCotizacion.push({ 
+                    productoId: prod.id, 
+                    nombre: prod.nombre, 
+                    cantidad: 1, 
+                    precioUnitario: prod.precioSugerido, 
+                    subtotal: prod.precioSugerido 
+                });
+            }
+            
+            input.value = ''; // Limpia el buscador para el siguiente producto
+            renderizarTablaCotizacion();
+        });
+
+        // 3. Renderizado y recálculo de la tabla de cotización
+        function renderizarTablaCotizacion() {
+            const tbody = document.getElementById('tablaCotizacionBody');
+            tbody.innerHTML = '';
+            let total = 0;
+            
+            productosCotizacion.forEach((p, idx) => {
+                total += p.subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:0.85rem;">${p.nombre}</td>
+                        <td><input type="number" class="cantidad-cot" data-idx="${idx}" value="${p.cantidad}" min="1" step="1" style="width:50px; padding:4px;"></td>
+                        <td><input type="number" class="precio-cot" data-idx="${idx}" value="${p.precioUnitario}" step="0.01" min="0" style="width:70px; padding:4px;"></td>
+                        <td class="subtotal-cot" style="font-weight:bold; color:#075e54;">${formatoQ(p.subtotal)}</td>
+                        <td><button class="danger small eliminar-cot" data-idx="${idx}" style="padding:4px; min-width:30px;">✖</button></td>
+                    </tr>`;
+            });
+            
+            document.getElementById('totalCotizacionSpan').innerText = formatoQ(total);
+
+            // Bindeo de eventos dinámicos para recalcular si cambias cantidades a mano
+            document.querySelectorAll('.cantidad-cot').forEach(inp => inp.addEventListener('change', (e) => {
+                const idx = e.target.dataset.idx; const cant = parseInt(e.target.value) || 0;
+                if (cant <= 0) productosCotizacion.splice(idx, 1); else productosCotizacion[idx].cantidad = cant;
+                actualizarSubtotalCot(idx);
+            }));
+            
+            document.querySelectorAll('.precio-cot').forEach(inp => inp.addEventListener('change', (e) => {
+                const idx = e.target.dataset.idx; productosCotizacion[idx].precioUnitario = parseFloat(e.target.value) || 0;
+                actualizarSubtotalCot(idx);
+            }));
+            
+            document.querySelectorAll('.eliminar-cot').forEach(btn => btn.addEventListener('click', (e) => {
+                productosCotizacion.splice(e.target.dataset.idx, 1); 
+                renderizarTablaCotizacion();
+            }));
+        }
+
+        function actualizarSubtotalCot(idx) {
+            if(productosCotizacion[idx]) {
+                productosCotizacion[idx].subtotal = productosCotizacion[idx].cantidad * productosCotizacion[idx].precioUnitario;
+            }
+            renderizarTablaCotizacion();
+        }
+
+        function renderizarTablaCotizacion() {
+            const tbody = document.getElementById('tablaCotizacionBody');
+            tbody.innerHTML = '';
+            let total = 0;
+            productosCotizacion.forEach((p, idx) => {
+                total += p.subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:0.85rem;">${p.nombre}</td>
+                        <td><input type="number" class="cantidad-cot" data-idx="${idx}" value="${p.cantidad}" min="1" step="1" style="width:50px; padding:4px;"></td>
+                        <td><input type="number" class="precio-cot" data-idx="${idx}" value="${p.precioUnitario}" step="0.01" min="0" style="width:70px; padding:4px;"></td>
+                        <td class="subtotal-cot" style="font-weight:bold; color:#075e54;">${formatoQ(p.subtotal)}</td>
+                        <td><button class="danger small eliminar-cot" data-idx="${idx}" style="padding:4px; min-width:30px;">✖</button></td>
+                    </tr>`;
+            });
+            document.getElementById('totalCotizacionSpan').innerText = formatoQ(total);
+
+            // Bindeo de eventos dinámicos
+            document.querySelectorAll('.cantidad-cot').forEach(inp => inp.addEventListener('change', (e) => {
+                const idx = e.target.dataset.idx; const cant = parseInt(e.target.value) || 0;
+                if (cant <= 0) productosCotizacion.splice(idx, 1); else productosCotizacion[idx].cantidad = cant;
+                actualizarSubtotalCot(idx);
+            }));
+            document.querySelectorAll('.precio-cot').forEach(inp => inp.addEventListener('change', (e) => {
+                const idx = e.target.dataset.idx; productosCotizacion[idx].precioUnitario = parseFloat(e.target.value) || 0;
+                actualizarSubtotalCot(idx);
+            }));
+            document.querySelectorAll('.eliminar-cot').forEach(btn => btn.addEventListener('click', (e) => {
+                productosCotizacion.splice(e.target.dataset.idx, 1); renderizarTablaCotizacion();
+            }));
+        }
+
+        function actualizarSubtotalCot(idx) {
+            if(productosCotizacion[idx]) productosCotizacion[idx].subtotal = productosCotizacion[idx].cantidad * productosCotizacion[idx].precioUnitario;
+            renderizarTablaCotizacion();
+        }
+
         document.getElementById('cerrarVisitaBtn').onclick = () => {
             document.getElementById('visitaModal').style.display = 'none';
             document.getElementById('buscarClienteV').value = '';
             document.getElementById('listaResultadosV').innerHTML = '';
         };
         document.getElementById('cerrarRadarBtn').onclick = () => document.getElementById('radarModal').style.display = 'none';
+        // EVENTO PARA GUARDAR LA VISITA MÉDICA Y LA COTIZACIÓN
+document.getElementById('guardarVisitaBtn').addEventListener('click', () => {
+    const nombre = document.getElementById('vNombre').value.trim();
+    const direccion = document.getElementById('vDireccion').value.trim();
+    const telefono = document.getElementById('vTelefono').value.trim();
+    const departamento = document.getElementById('vDepartamento').value.trim();
+    const clasificacion = document.getElementById('vClasificacion').value;
+    const especialidad = document.getElementById('vEspecialidad').value.trim();
+    const muestras = document.getElementById('vMuestras').value.trim();
+    const proximaVisita = document.getElementById('vProximaVisita').value;
+    const comentarios = document.getElementById('vComentarios').value.trim();
 
+    if (!nombre) {
+        alert('⚠️ El Nombre / Razón Social es obligatorio.');
+        return;
+    }
+
+    // Armar el enlace del GPS basado en el marcador del mapa
+    const linkA_Guardar = `https://www.google.com/maps?q=$${currentMapLat},${currentMapLng}`;
+
+    // Crear el objeto de la visita
+    const nuevaVisita = {
+        id: 'vis_' + Date.now(),
+        vendedor_id: vendedorId,
+        nombre: nombre,
+        direccion: direccion,
+        telefono: telefono,
+        departamento: departamento,
+        clasificacion: clasificacion,
+        especialidad: especialidad,
+        muestras: muestras,
+        proximaVisita: proximaVisita,
+        comentarios: comentarios,
+        ubicacionGPS: linkA_Guardar,
+        lat: currentMapLat,
+        lng: currentMapLng,
+        fecha: new Date().toISOString()
+    };
+
+    // Guardar en el arreglo y ejecutar sincronización
+    visitas.push(nuevaVisita);
+    
+    // Si hay una cotización rápida, la guardamos también
+    if (productosCotizacion.length > 0) {
+        const nuevaCotizacion = {
+            id: 'cot_' + Date.now(),
+            vendedor_id: vendedorId,
+            cliente: nombre,
+            productos: [...productosCotizacion],
+            total: document.getElementById('totalCotizacionSpan').innerText,
+            fecha: new Date().toISOString()
+        };
+        cotizaciones.push(nuevaCotizacion);
+    }
+
+    saveData(); // Esto encolará la subida a Supabase
+    
+    alert('✅ Visita registrada y ubicada exitosamente.');
+    document.getElementById('visitaModal').style.display = 'none';
+
+    // Opcional: Enviar cotización por WhatsApp si está marcado
+    const enviarWa = document.getElementById('enviarWhatsAppCotizacion').checked;
+    if (productosCotizacion.length > 0 && enviarWa) {
+        let mensaje = `¡Hola! Le saludamos de *MARIJOSE JHIRE S.A.*\n\nAdjuntamos la cotización solicitada:\n`;
+        productosCotizacion.forEach(p => {
+            mensaje += `- ${p.cantidad}x ${p.nombre} (Q${p.precioUnitario.toFixed(2)}) = Q${p.subtotal.toFixed(2)}\n`;
+        });
+        mensaje += `\n*Total: ${document.getElementById('totalCotizacionSpan').innerText}*`;
+        
+        let numTel = telefono.replace(/\D/g, '');
+        let url = numTel ? `https://wa.me/502${numTel}?text=${encodeURIComponent(mensaje)}` : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+    }
+
+    // Limpiar el formulario para la próxima vez
+    document.getElementById('vNombre').value = '';
+    document.getElementById('vDireccion').value = '';
+    document.getElementById('vTelefono').value = '';
+    document.getElementById('vDepartamento').value = '';
+    document.getElementById('vEspecialidad').value = '';
+    document.getElementById('vMuestras').value = '';
+    document.getElementById('vProximaVisita').value = '';
+    document.getElementById('vComentarios').value = '';
+    document.getElementById('buscarClienteV').value = '';
+    document.getElementById('listaResultadosV').innerHTML = '';
+    productosCotizacion = [];
+    renderizarTablaCotizacion();
+});
         // Buscador Inteligente de Visitas
         document.getElementById('buscarClienteV').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
@@ -5865,47 +6484,7 @@ if (prod && nombre) {
                 });
             });
         });
-        // Guardar Visita y Mandar a Base de Datos en Tiempo Real
-        document.getElementById('guardarVisitaBtn').addEventListener('click', () => {
-            const nombre = document.getElementById('vNombre').value.trim();
-            if(!nombre) { alert("El nombre/razón social es obligatorio"); return; }
-            showLoader();
-
-            if (!("geolocation" in navigator)) { alert("Tu dispositivo no soporta GPS."); hideLoader(); return; }
-
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const nuevaVisita = {
-                    id: 'vis_' + Date.now(),
-                    vendedor_id: vendedorId,
-                    fecha: new Date().toISOString(),
-                    nombre: nombre,
-                    direccion: document.getElementById('vDireccion').value.trim(),
-                    telefono: document.getElementById('vTelefono').value.trim(),
-                    departamento: document.getElementById('vDepartamento').value.trim(),
-                    clasificacion: document.getElementById('vClasificacion').value,
-                    comentarios: document.getElementById('vComentarios').value.trim(),
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    ubicacionGPS: `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`
-                };
-                visitas.push(nuevaVisita);
-                saveData(); // Guarda en local
-
-                // Intenta push en tiempo real a Supabase
-                const { error } = await supabase.from('visitas').insert([nuevaVisita]);
-                if(error) console.error("Error al enviar visita a Supabase:", error);
-                
-                hideLoader();
-                document.getElementById('visitaModal').style.display = 'none';
-                document.getElementById('vNombre').value = ''; document.getElementById('vDireccion').value = '';
-                document.getElementById('vTelefono').value = ''; document.getElementById('vDepartamento').value = '';
-                document.getElementById('vComentarios').value = '';
-                if(document.querySelector('.tab.active').dataset.tab === 'dashboard') renderDashboard(); // Recargar mapa
-                alert("✅ Visita registrada en el Mapa de Calor.");
-            }, (err) => { alert("Active su GPS para mapear la visita."); hideLoader(); }, { timeout: 10000 });
-        });
-
-        // Haversine: Distancia en KM
+        
         function calcularDistancia(lat1, lon1, lat2, lon2) {
             const R = 6371; const dLat = (lat2-lat1) * Math.PI / 180; const dLon = (lon2-lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
@@ -5987,7 +6566,7 @@ if (prod && nombre) {
                                         tipo: tipoLugar,
                                         dist: dist,
                                         esCadenaBloqueada: esCadena,
-                                        linkMaps: `https://www.google.com/maps?q=${el.lat},${el.lon}`
+                                        linkMaps: `https://www.google.com/maps?q=$${el.lat},${el.lon}`
                                     });
                                 }
                             }
@@ -6166,6 +6745,8 @@ if (prod && nombre) {
             else viaticos.push(registro);
 
             saveData();
+
+
             poblarHistorialViaticos();
             alert('Semana de Viáticos Guardada/Actualizada en el Historial.');
         });
@@ -6212,7 +6793,7 @@ if (prod && nombre) {
             doc.setDrawColor(200); doc.line(14, 32, doc.internal.pageSize.getWidth() - 14, 32);
 
             // --- Cálculo seguro de rubros y total ---
-const formatQ = (val) => 'Q ' + (Number(val) || 0).toFixed(2);
+
 const sumaRubros = {};
 let total = 0;
 viaticoActual.gastos.forEach(g => {
