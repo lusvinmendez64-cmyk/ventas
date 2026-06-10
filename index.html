@@ -635,16 +635,14 @@ const tablasSubida = [
 
         // --- AUTENTICACIÓN LOCAL (OFFLINE) ---
         async function verificarSesion() {
-            // Buscamos si ya hay una sesión guardada en la memoria del navegador
             const sesionLocal = localStorage.getItem('sesionActiva');
-            
             if (sesionLocal) {
-                // Si ya existe, cargamos los datos
                 const datosUsuario = JSON.parse(sesionLocal);
                 vendedorId = datosUsuario.id;
                 nombreUsuario = datosUsuario.nombre;
+                // Si hay sesión, actualizamos saludo y mostramos el sistema
+                document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
             } else {
-                // Si es la primera vez, mostramos la pantalla de bienvenida
                 mostrarLoginLocal();
             }
         }
@@ -655,9 +653,7 @@ const tablasSubida = [
                 <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 24px; padding: 30px;">
                     <h2 style="color: #075e54; margin-bottom: 10px;">🏥 Acceso al Sistema</h2>
                     <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">Modo de trabajo local activado.</p>
-                    
                     <input type="text" id="authNombre" placeholder="Ingresa tu nombre (Ej: Lusvin)" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #b0c7da; font-size: 1rem;">
-                    
                     <button id="btnIngresarAuth" class="secondary" style="width: 100%; background: #25d366; color: white; border: none; padding: 15px; border-radius: 40px; font-weight: bold; font-size: 1.1rem;">Ingresar al CRM</button>
                 </div>
             </div>`;
@@ -665,35 +661,32 @@ const tablasSubida = [
 
             document.getElementById('btnIngresarAuth').onclick = () => {
                 const nombreInput = document.getElementById('authNombre').value.trim();
-                
                 if (!nombreInput) {
                     alert('Por favor, ingresa tu nombre para continuar.');
                     return;
                 }
                 
                 showLoader();
-                
-                // Generamos un ID único simulado para tus registros de ventas
                 const nuevoId = 'vend_' + Math.random().toString(36).substr(2, 9);
                 const usuario = { id: nuevoId, nombre: nombreInput };
                 
-                // Guardamos en localStorage para que no te lo vuelva a pedir mañana
                 localStorage.setItem('sesionActiva', JSON.stringify(usuario));
-                
                 vendedorId = usuario.id;
                 nombreUsuario = usuario.nombre;
                 
                 document.getElementById('loginModalLocal').remove();
-                
-                // Actualizamos el saludo en pantalla
-                document.getElementById('greeting').innerText = \`👋 Bienvenido, \${nombreUsuario}\`;
+                document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario}`;
                 
                 hideLoader();
             };
         }
+
+        // Llamamos a la función de verificación al iniciar
         await verificarSesion();
-        inicializarRealTime();
-        document.getElementById('greeting').innerText = `👋 Bienvenido, ${nombreUsuario} (${vendedorId})`;
+        
+        // Ya no dependemos de Supabase, por lo que podemos saltarnos inicializarRealTime() si quieres trabajar 100% offline. 
+        // Si vas a seguir usando los datos simulados de Supabase que te pasé, déjalo así:
+        try { inicializarRealTime(); } catch(e) { console.log('Trabajando en modo offline puro.'); }
         function obtenerSaludo() {
             const hora = new Date().getHours();
             if (hora < 12) return 'Buenos días';
